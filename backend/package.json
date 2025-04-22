@@ -5,7 +5,8 @@
   "scripts": {
     "test": "jest --detectOpenHandles",
     "start": "nodemon index.js",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "seed": "node seed.js"
   },
   "keywords": [],
   "author": "",
