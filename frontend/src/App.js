@@ -1,24 +1,29 @@
-import logo from './logo.svg';
-import './App.css';
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Container, Typography } from '@mui/material';
+import CourseList from './components/CourseList';
+import CourseDetails from './components/CourseDetails';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
+    <BrowserRouter>
+      <Container>
+        <Typography
+          variant='h3'
+          component='h1'
+          sx={{ my: 4, textAlign: 'center' }}
         >
-          Learn React
-        </a>
-      </header>
-    </div>
+          Educ Blue
+        </Typography>
+        <Routes>
+          <Route path='/' element={<CourseList data-testid='course-list' />} />
+          <Route
+            path='/courses/:id'
+            element={<CourseDetails data-testid='course-details' />}
+          />
+        </Routes>
+      </Container>
+    </BrowserRouter>
   );
 }
 

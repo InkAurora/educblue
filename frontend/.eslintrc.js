@@ -2,33 +2,50 @@ module.exports = {
   env: {
     browser: true,
     es2021: true,
+    'jest/globals': true,
+    node: true,
   },
   extends: [
-    'airbnb',
+    'eslint:recommended',
     'plugin:react/recommended',
-    'plugin:react-hooks/recommended',
-    'plugin:jsx-a11y/recommended',
+    'plugin:jest/recommended',
+    'airbnb',
     'prettier',
   ],
-  overrides: [
-    {
-      env: {
-        node: true,
-      },
-      files: ['.eslintrc.{js,cjs}'],
-      parserOptions: {
-        sourceType: 'script',
-      },
-    },
-  ],
   parserOptions: {
+    ecmaFeatures: {
+      jsx: true,
+    },
     ecmaVersion: 'latest',
     sourceType: 'module',
   },
-  plugins: ['react', 'react-hooks', 'jsx-a11y', 'prettier'],
+  plugins: ['react', 'jest', 'prettier'],
   rules: {
-    'prettier/prettier': 'error',
+    'react/react-in-jsx-scope': 'off',
     'react/prop-types': 'off',
+    'react/jsx-props-no-spreading': 'off',
     'react/jsx-filename-extension': [1, { extensions: ['.js', '.jsx'] }],
+    'import/no-extraneous-dependencies': 'off',
+    'comma-dangle': ['error', 'always-multiline'],
+    'prettier/prettier': [
+      'error',
+      {
+        singleQuote: true,
+        arrowParens: 'always',
+        trailingComma: 'all',
+      },
+    ],
+    'no-console': 'warn',
+  },
+  settings: {
+    react: {
+      version: 'detect',
+    },
+    'import/resolver': {
+      node: {
+        extensions: ['.js', '.jsx'],
+        moduleDirectory: ['node_modules', 'src/'],
+      },
+    },
   },
 };
