@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+const cors = require('cors');
 const courseRoutes = require('./routes/courses');
 const authRoutes = require('./routes/auth');
 const enrollRoutes = require('./routes/enroll');
@@ -12,6 +13,7 @@ const app = express();
 
 // Middleware
 app.use(express.json());
+app.use(cors()); // Enable CORS for all routes
 
 // Routes
 app.use('/api/courses', courseRoutes);
