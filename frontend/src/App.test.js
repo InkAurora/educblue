@@ -23,6 +23,7 @@ jest.mock('react-router-dom', () => ({
   Route: ({ element }) => element,
   Link: ({ children }) => <a href='/'>{children}</a>,
   useNavigate: () => jest.fn(),
+  useLocation: () => ({ search: '' }), // Added useLocation
 }));
 
 describe('App', () => {

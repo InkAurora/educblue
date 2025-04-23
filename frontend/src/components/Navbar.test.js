@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import Navbar from './Navbar';
 
 // Mock jwtDecode as a named export
@@ -177,6 +177,17 @@ describe('Navbar Component', () => {
     jwtDecode.mockReset();
   });
 
+  test('handles token with empty or undefined user info', () => {
+    // Mock a token in localStorage with no email or sub
+    window.localStorage.getItem.mockReturnValue('fake-token-123');
+    jwtDecode.mockReturnValue({});
+
+    render(<Navbar />);
+
+    // Check that an empty string is displayed
+    expect(screen.getByText('Hello,')).toBeInTheDocument();
+  });
+
   test('registers event listeners on mount', () => {
     render(<Navbar />);
 
@@ -205,5 +216,84 @@ describe('Navbar Component', () => {
       'authChange',
       expect.any(Function),
     );
+  });
+
+  test('storage event listener updates auth state when token changes', () => {
+    // Setup initial state
+    window.localStorage.getItem.mockReturnValueOnce('initial-token');
+    jwtDecode.mockReturnValueOnce({ email: 'initial@example.com' });
+
+    render(<Navbar />);
+    expect(screen.getByText('Hello, initial@example.com')).toBeInTheDocument();
+
+    // Capture the storage event listener
+    const storageEventCallback = window.addEventListener.mock.calls.find(
+      (call) => call[0] === 'storage',
+    )[1];
+
+    // Update the mock to return a different token
+    window.localStorage.getItem.mockReturnValueOnce('new-token');
+    jwtDecode.mockReturnValueOnce({ email: 'updated@example.com' });
+
+    // Simulate storage event
+    act(() => {
+      storageEventCallback({ key: 'token' });
+    });
+
+    // Re-render to reflect changes
+    render(<Navbar />);
+    expect(screen.getByText('Hello, updated@example.com')).toBeInTheDocument();
+  });
+
+  test('storage event ignores non-token changes', () => {
+    // Setup initial state
+    window.localStorage.getItem.mockReturnValueOnce('initial-token');
+    jwtDecode.mockReturnValueOnce({ email: 'test@example.com' });
+
+    const { rerender } = render(<Navbar />);
+
+    // Capture the storage event listener
+    const storageEventCallback = window.addEventListener.mock.calls.find(
+      (call) => call[0] === 'storage',
+    )[1];
+
+    // Reset the mocks to track new calls
+    window.localStorage.getItem.mockClear();
+    jwtDecode.mockClear();
+
+    // Simulate storage event with non-token key
+    act(() => {
+      storageEventCallback({ key: 'not-token' });
+    });
+
+    // Token should not be checked
+    expect(window.localStorage.getItem).not.toHaveBeenCalled();
+    expect(jwtDecode).not.toHaveBeenCalled();
+  });
+
+  test('authChange event listener updates auth state', () => {
+    // Setup initial state
+    window.localStorage.getItem.mockReturnValueOnce('initial-token');
+    jwtDecode.mockReturnValueOnce({ email: 'initial@example.com' });
+
+    render(<Navbar />);
+
+    // Capture the authChange event listener
+    const authChangeCallback = window.addEventListener.mock.calls.find(
+      (call) => call[0] === 'authChange',
+    )[1];
+
+    // Update the mock to return a different token
+    window.localStorage.getItem.mockReturnValueOnce('new-token');
+    jwtDecode.mockReturnValueOnce({ email: 'new@example.com' });
+
+    // Simulate authChange event
+    act(() => {
+      authChangeCallback();
+    });
+
+    // Re-render to reflect changes
+    render(<Navbar />);
+    expect(screen.getByText('Hello, new@example.com')).toBeInTheDocument();
   });
 });

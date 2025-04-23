@@ -5,6 +5,7 @@ import CourseList from './components/CourseList';
 import CourseDetails from './components/CourseDetails';
 import Login from './components/Login';
 import Register from './components/Register';
+import Success from './components/Success';
 import Navbar from './components/Navbar';
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
           />
           <Route path='/login' element={<Login />} />
           <Route path='/register' element={<Register />} />
+          <Route path='/success' element={<Success />} />
         </Routes>
       </Container>
     </BrowserRouter>

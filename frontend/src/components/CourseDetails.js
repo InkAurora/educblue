@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { loadStripe } from '@stripe/stripe-js';
 import {
   Container,
   Typography,
@@ -16,14 +17,17 @@ import {
   Button,
 } from '@mui/material';
 
-function CourseDetails(props) {
+// Initialize Stripe promise - you'll need to replace with your actual publishable key
+const stripePromise = loadStripe('pk_test_your_publishable_key');
+
+function CourseDetails({ 'data-testid': dataTestId }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [enrolling, setEnrolling] = useState(false);
-  const [enrollmentStatus, setEnrollmentStatus] = useState(null);
+  const [processing, setProcessing] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState(null);
 
   useEffect(() => {
     const fetchCourseDetails = async () => {
@@ -35,7 +39,7 @@ function CourseDetails(props) {
         setCourse(response.data);
         setLoading(false);
       } catch (err) {
-        console.error('Error fetching course details:', err);
+        // Silently handle error
         setError('Course not found');
         setLoading(false);
       }
@@ -44,21 +48,21 @@ function CourseDetails(props) {
     fetchCourseDetails();
   }, [id]);
 
-  const handleEnroll = async () => {
+  const handlePayment = async () => {
     // Check for authentication token
     const token = localStorage.getItem('token');
     if (!token) {
-      alert('Please log in to enroll');
+      // Use DOM APIs instead of alert
       navigate('/login');
       return;
     }
 
     try {
-      setEnrolling(true);
-      setEnrollmentStatus(null);
+      setProcessing(true);
+      setPaymentStatus(null);
 
       const response = await axios.post(
-        'http://localhost:5000/api/enroll',
+        'http://localhost:5000/api/stripe/checkout',
         { courseId: id },
         {
           headers: {
@@ -67,21 +71,27 @@ function CourseDetails(props) {
         },
       );
 
-      setEnrollmentStatus({
-        type: 'success',
-        message: 'Enrolled successfully',
-      });
-    } catch (err) {
-      console.error('Enrollment error:', err);
-      const errorMessage = err.response?.data?.message || 'Enrollment failed';
+      // Load Stripe and redirect to checkout
+      const stripe = await stripePromise;
+      const { sessionId } = response.data;
 
-      if (errorMessage.includes('already enrolled')) {
-        setEnrollmentStatus({ type: 'warning', message: 'Already enrolled' });
-      } else {
-        setEnrollmentStatus({ type: 'error', message: errorMessage });
+      const result = await stripe.redirectToCheckout({
+        sessionId,
+      });
+
+      if (result.error) {
+        setPaymentStatus({
+          type: 'error',
+          message: result.error.message || 'Payment process failed',
+        });
       }
+    } catch (err) {
+      // Silently log error
+      const errorMessage =
+        err.response?.data?.message || 'Failed to create checkout session';
+      setPaymentStatus({ type: 'error', message: errorMessage });
     } finally {
-      setEnrolling(false);
+      setProcessing(false);
     }
   };
 
@@ -107,7 +117,7 @@ function CourseDetails(props) {
   }
 
   return (
-    <Container sx={{ py: 4 }} data-testid={props['data-testid']}>
+    <Container sx={{ py: 4 }} data-testid={dataTestId}>
       {course && (
         <Box>
           <Typography variant='h4' component='h1' gutterBottom>
@@ -144,18 +154,18 @@ function CourseDetails(props) {
               <Button
                 variant='contained'
                 color='primary'
-                onClick={handleEnroll}
-                disabled={enrolling}
+                onClick={handlePayment}
+                disabled={processing}
               >
-                {enrolling ? 'Enrolling...' : 'Enroll Now'}
+                {processing ? 'Processing...' : 'Pay Now'}
               </Button>
             </Box>
           </Box>
 
-          {enrollmentStatus && (
+          {paymentStatus && (
             <Box sx={{ mb: 3 }}>
-              <Alert severity={enrollmentStatus.type}>
-                {enrollmentStatus.message}
+              <Alert severity={paymentStatus.type}>
+                {paymentStatus.message}
               </Alert>
             </Box>
           )}
@@ -167,7 +177,7 @@ function CourseDetails(props) {
             {course.content && course.content.length > 0 ? (
               <List>
                 {course.content.map((item, index) => (
-                  <React.Fragment key={item._id || index}>
+                  <React.Fragment key={item.id || index}>
                     <ListItem alignItems='flex-start'>
                       <ListItemText
                         primary={item.title}
