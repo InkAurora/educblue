@@ -11,14 +11,14 @@ jest.mock('react-router-dom', () => ({
 }));
 
 // Mock localStorage
-const localStorageMock = (function() {
+const localStorageMock = (function () {
   let store = {};
   return {
-    getItem: jest.fn(key => store[key] || null),
+    getItem: jest.fn((key) => store[key] || null),
     setItem: jest.fn((key, value) => {
       store[key] = value.toString();
     }),
-    removeItem: jest.fn(key => {
+    removeItem: jest.fn((key) => {
       delete store[key];
     }),
     clear: jest.fn(() => {
@@ -35,19 +35,20 @@ describe('Navbar Component', () => {
 
   test('renders the app name', () => {
     render(<Navbar />);
-    
+
     expect(screen.getByText('Educ Blue')).toBeInTheDocument();
   });
 
-  test('shows Login link when user is not logged in', () => {
+  test('shows Login and Register links when user is not logged in', () => {
     // Ensure no token in localStorage
     window.localStorage.getItem.mockReturnValueOnce(null);
-    
+
     render(<Navbar />);
-    
+
     expect(screen.getByText('Login')).toBeInTheDocument();
+    expect(screen.getByText('Register')).toBeInTheDocument();
     expect(screen.queryByText('Logout')).not.toBeInTheDocument();
-    
+
     // Check localStorage was checked
     expect(window.localStorage.getItem).toHaveBeenCalledWith('token');
   });
@@ -55,26 +56,27 @@ describe('Navbar Component', () => {
   test('shows Logout link when user is logged in', () => {
     // Mock a token in localStorage
     window.localStorage.getItem.mockReturnValueOnce('fake-token-123');
-    
+
     render(<Navbar />);
-    
+
     expect(screen.getByText('Logout')).toBeInTheDocument();
     expect(screen.queryByText('Login')).not.toBeInTheDocument();
+    expect(screen.queryByText('Register')).not.toBeInTheDocument();
   });
 
   test('handles logout correctly', () => {
     // Mock a token in localStorage
     window.localStorage.getItem.mockReturnValueOnce('fake-token-123');
-    
+
     render(<Navbar />);
-    
+
     // Find and click the logout link
     const logoutButton = screen.getByText('Logout');
     fireEvent.click(logoutButton);
-    
+
     // Check if token was removed from localStorage
     expect(window.localStorage.removeItem).toHaveBeenCalledWith('token');
-    
+
     // Check if user was redirected to home page
     expect(mockedUsedNavigate).toHaveBeenCalledWith('/');
   });
@@ -82,12 +84,24 @@ describe('Navbar Component', () => {
   test('Login link points to login page', () => {
     // Ensure no token in localStorage
     window.localStorage.getItem.mockReturnValueOnce(null);
-    
+
     render(<Navbar />);
-    
+
     const loginLink = screen.getByText('Login');
-    
+
     // Check if the link has the correct href
     expect(loginLink.getAttribute('href')).toBe('/login');
+  });
+
+  test('Register link points to register page', () => {
+    // Ensure no token in localStorage
+    window.localStorage.getItem.mockReturnValueOnce(null);
+
+    render(<Navbar />);
+
+    const registerLink = screen.getByText('Register');
+
+    // Check if the link has the correct href
+    expect(registerLink.getAttribute('href')).toBe('/register');
   });
 });

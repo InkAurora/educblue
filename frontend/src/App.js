@@ -4,6 +4,7 @@ import { Container, Typography, Box } from '@mui/material';
 import CourseList from './components/CourseList';
 import CourseDetails from './components/CourseDetails';
 import Login from './components/Login';
+import Register from './components/Register';
 import Navbar from './components/Navbar';
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
             element={<CourseDetails data-testid='course-details' />}
           />
           <Route path='/login' element={<Login />} />
+          <Route path='/register' element={<Register />} />
         </Routes>
       </Container>
     </BrowserRouter>

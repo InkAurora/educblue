@@ -54,9 +54,19 @@ function Navbar() {
                 Logout
               </Button>
             ) : (
-              <Button color='inherit' component={RouterLink} to='/login'>
-                Login
-              </Button>
+              <>
+                <Button
+                  color='inherit'
+                  component={RouterLink}
+                  to='/login'
+                  sx={{ mr: 1 }}
+                >
+                  Login
+                </Button>
+                <Button color='inherit' component={RouterLink} to='/register'>
+                  Register
+                </Button>
+              </>
             )}
           </Box>
         </Toolbar>
