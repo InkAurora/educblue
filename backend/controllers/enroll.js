@@ -1,10 +1,25 @@
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const User = require('../models/user');
 const Course = require('../models/course');
 
 exports.enroll = async (req, res) => {
-  const { courseId } = req.body;
+  const { courseId, sessionId } = req.body;
+
+  if (!courseId || !sessionId) {
+    return res
+      .status(400)
+      .json({ message: 'Course ID and session ID are required' });
+  }
 
   try {
+    // Verify the Stripe checkout session
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    // Check if payment is completed
+    if (session.payment_status !== 'paid') {
+      return res.status(400).json({ message: 'Payment not completed' });
+    }
+
     // Check if course exists
     const course = await Course.findById(courseId);
     if (!course) {
@@ -28,9 +43,14 @@ exports.enroll = async (req, res) => {
     user.enrolledCourses.push(courseId);
     await user.save();
 
-    res.status(200).json({ message: 'Successfully enrolled in the course' });
+    return res
+      .status(200)
+      .json({ message: 'Successfully enrolled in the course' });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Enrollment error:', error);
-    res.status(500).json({ message: 'Server error' });
+    return res
+      .status(500)
+      .json({ message: 'Server error during enrollment process' });
   }
 };

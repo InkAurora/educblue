@@ -5,6 +5,39 @@ const User = require('../models/user');
 const Course = require('../models/course');
 require('./setup');
 
+// Mock Stripe since we don't want to make actual API calls in tests
+jest.mock('stripe', () => {
+  return () => ({
+    checkout: {
+      sessions: {
+        retrieve: jest.fn().mockImplementation((sessionId) => {
+          if (sessionId === 'test_paid_session_id') {
+            return Promise.resolve({
+              id: 'test_paid_session_id',
+              payment_status: 'paid',
+              metadata: {
+                courseId: 'courseid123',
+                userId: 'userid123',
+              },
+            });
+          }
+          if (sessionId === 'test_unpaid_session_id') {
+            return Promise.resolve({
+              id: 'test_unpaid_session_id',
+              payment_status: 'unpaid',
+              metadata: {
+                courseId: 'courseid123',
+                userId: 'userid123',
+              },
+            });
+          }
+          return Promise.reject(new Error('Invalid session ID'));
+        }),
+      },
+    },
+  });
+});
+
 describe('Enrollment Endpoints', () => {
   let authToken;
   let courseId;
@@ -47,11 +80,14 @@ describe('Enrollment Endpoints', () => {
   });
 
   describe('POST /api/enroll', () => {
-    it('should enroll user in a course successfully', async () => {
+    it('should enroll user with valid session ID (paid status)', async () => {
       const res = await request(app)
         .post('/api/enroll')
         .set('Authorization', `Bearer ${authToken}`)
-        .send({ courseId });
+        .send({
+          courseId,
+          sessionId: 'test_paid_session_id',
+        });
 
       expect(res.status).toBe(200);
       expect(res.body.message).toBe('Successfully enrolled in the course');
@@ -61,8 +97,51 @@ describe('Enrollment Endpoints', () => {
       expect(user.enrolledCourses).toContainEqual(courseId);
     });
 
+    it('should reject enrollment if payment is not completed', async () => {
+      const res = await request(app)
+        .post('/api/enroll')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          courseId,
+          sessionId: 'test_unpaid_session_id',
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe('Payment not completed');
+
+      // Verify user is not enrolled
+      const user = await User.findOne({ email: testUser.email });
+      expect(user.enrolledCourses).not.toContainEqual(courseId);
+    });
+
+    it('should reject if session ID is invalid', async () => {
+      const res = await request(app)
+        .post('/api/enroll')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          courseId,
+          sessionId: 'invalid_session_id',
+        });
+
+      expect(res.status).toBe(500);
+      expect(res.body.message).toBe('Server error during enrollment process');
+    });
+
+    it('should require both course ID and session ID', async () => {
+      const res = await request(app)
+        .post('/api/enroll')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ courseId });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe('Course ID and session ID are required');
+    });
+
     it('should not allow enrollment without auth token', async () => {
-      const res = await request(app).post('/api/enroll').send({ courseId });
+      const res = await request(app).post('/api/enroll').send({
+        courseId,
+        sessionId: 'test_paid_session_id',
+      });
 
       expect(res.status).toBe(401);
     });
@@ -72,7 +151,10 @@ describe('Enrollment Endpoints', () => {
       const res = await request(app)
         .post('/api/enroll')
         .set('Authorization', `Bearer ${authToken}`)
-        .send({ courseId: nonExistentCourseId });
+        .send({
+          courseId: nonExistentCourseId,
+          sessionId: 'test_paid_session_id',
+        });
 
       expect(res.status).toBe(404);
     });
@@ -82,13 +164,19 @@ describe('Enrollment Endpoints', () => {
       await request(app)
         .post('/api/enroll')
         .set('Authorization', `Bearer ${authToken}`)
-        .send({ courseId });
+        .send({
+          courseId,
+          sessionId: 'test_paid_session_id',
+        });
 
       // Attempt duplicate enrollment
       const res = await request(app)
         .post('/api/enroll')
         .set('Authorization', `Bearer ${authToken}`)
-        .send({ courseId });
+        .send({
+          courseId,
+          sessionId: 'test_paid_session_id',
+        });
 
       expect(res.status).toBe(400);
       expect(res.body.message).toBe('Already enrolled in this course');
