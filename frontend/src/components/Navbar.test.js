@@ -296,4 +296,57 @@ describe('Navbar Component', () => {
     render(<Navbar />);
     expect(screen.getByText('Hello, new@example.com')).toBeInTheDocument();
   });
+
+  test('shows Dashboard button when user is logged in', () => {
+    // Mock a token in localStorage
+    window.localStorage.getItem.mockReturnValue('fake-token-123');
+    jwtDecode.mockReturnValue({ email: 'test@example.com' });
+
+    render(<Navbar />);
+
+    // Check if Dashboard button is rendered
+    const dashboardButton = screen.getByText('Dashboard');
+    expect(dashboardButton).toBeInTheDocument();
+  });
+
+  test('Dashboard button links to dashboard page', () => {
+    // Mock a token in localStorage
+    window.localStorage.getItem.mockReturnValue('fake-token-123');
+    jwtDecode.mockReturnValue({ email: 'test@example.com' });
+
+    render(<Navbar />);
+
+    const dashboardButton = screen.getByText('Dashboard');
+
+    // Check if the link has the correct href
+    expect(dashboardButton.getAttribute('href')).toBe('/dashboard');
+  });
+
+  test('does not show Dashboard button when user is not logged in', () => {
+    // Ensure no token in localStorage
+    window.localStorage.getItem.mockReturnValue(null);
+
+    render(<Navbar />);
+
+    // Check that Dashboard button is not in the document
+    expect(screen.queryByText('Dashboard')).not.toBeInTheDocument();
+  });
+
+  test('renders Dashboard button before Logout button', () => {
+    // Mock a token in localStorage
+    window.localStorage.getItem.mockReturnValue('fake-token-123');
+    jwtDecode.mockReturnValue({ email: 'test@example.com' });
+
+    render(<Navbar />);
+
+    // Get the HTML content to check element order
+    const container = screen.getByText('Dashboard').closest('div');
+    const html = container.innerHTML;
+
+    // Check if Dashboard appears before Logout in the HTML
+    const dashboardIndex = html.indexOf('Dashboard');
+    const logoutIndex = html.indexOf('Logout');
+
+    expect(dashboardIndex).toBeLessThan(logoutIndex);
+  });
 });

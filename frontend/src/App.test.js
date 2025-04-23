@@ -15,6 +15,9 @@ jest.mock('./components/Login', () => () => (
 jest.mock('./components/Navbar', () => () => (
   <div data-testid='navbar'>Navbar Mock</div>
 ));
+jest.mock('./components/UserDashboard', () => () => (
+  <div data-testid='user-dashboard'>UserDashboard Mock</div>
+));
 
 // Mock react-router-dom with a simplified approach
 jest.mock('react-router-dom', () => ({
@@ -46,5 +49,10 @@ describe('App', () => {
   test('renders login component', () => {
     render(<App />);
     expect(screen.getByTestId('login')).toBeInTheDocument();
+  });
+
+  test('renders user dashboard component', () => {
+    render(<App />);
+    expect(screen.getByTestId('user-dashboard')).toBeInTheDocument();
   });
 });

@@ -35,7 +35,7 @@ function Navbar() {
       }
     } catch (error) {
       // If token is invalid, clear it and reset state
-      console.error('Invalid token:', error);
+      // Removed console.error to comply with ESLint
       localStorage.removeItem('token');
       setIsLoggedIn(false);
       setUserEmail('');
@@ -107,6 +107,9 @@ function Navbar() {
                 >
                   Hello, {userEmail}
                 </Typography>
+                <Button color='inherit' component={RouterLink} to='/dashboard'>
+                  Dashboard
+                </Button>
                 <Button color='inherit' onClick={handleLogout}>
                   Logout
                 </Button>

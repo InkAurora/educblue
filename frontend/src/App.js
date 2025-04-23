@@ -6,6 +6,7 @@ import CourseDetails from './components/CourseDetails';
 import Login from './components/Login';
 import Register from './components/Register';
 import Success from './components/Success';
+import UserDashboard from './components/UserDashboard';
 import Navbar from './components/Navbar';
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
           <Route path='/login' element={<Login />} />
           <Route path='/register' element={<Register />} />
           <Route path='/success' element={<Success />} />
+          <Route path='/dashboard' element={<UserDashboard />} />
         </Routes>
       </Container>
     </BrowserRouter>
