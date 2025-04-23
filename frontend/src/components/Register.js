@@ -104,6 +104,9 @@ function Register() {
       // Store the token in localStorage
       localStorage.setItem('token', response.data.token);
 
+      // Dispatch auth change event to update navbar
+      window.dispatchEvent(new Event('authChange'));
+
       // Redirect to home page
       navigate('/');
     } catch (err) {

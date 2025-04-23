@@ -1,7 +1,11 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import CourseDetails from './CourseDetails';
+
+// Mock axios before importing components that use it
+jest.mock('axios');
 import axios from 'axios';
+
+import CourseDetails from './CourseDetails';
 
 // Mock useNavigate and useParams
 const mockedUsedNavigate = jest.fn();

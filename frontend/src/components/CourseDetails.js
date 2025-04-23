@@ -172,7 +172,7 @@ function CourseDetails(props) {
                       <ListItemText
                         primary={item.title}
                         secondary={
-                          <Box component='span'>
+                          <Typography component='span' variant='body2'>
                             <Chip
                               label={item.type}
                               size='small'
@@ -180,7 +180,7 @@ function CourseDetails(props) {
                                 item.type === 'video' ? 'primary' : 'secondary'
                               }
                             />
-                          </Box>
+                          </Typography>
                         }
                       />
                     </ListItem>
