@@ -1,26 +1,28 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { Container, Typography } from '@mui/material';
+import { Container, Typography, Box } from '@mui/material';
 import CourseList from './components/CourseList';
 import CourseDetails from './components/CourseDetails';
+import Login from './components/Login';
+import Navbar from './components/Navbar';
 
 function App() {
   return (
     <BrowserRouter>
+      <Navbar />
       <Container>
-        <Typography
-          variant='h3'
-          component='h1'
-          sx={{ my: 4, textAlign: 'center' }}
-        >
-          Educ Blue
-        </Typography>
+        <Box sx={{ my: 4 }}>
+          <Typography variant='h3' component='h1' sx={{ textAlign: 'center' }}>
+            Educ Blue
+          </Typography>
+        </Box>
         <Routes>
           <Route path='/' element={<CourseList data-testid='course-list' />} />
           <Route
             path='/courses/:id'
             element={<CourseDetails data-testid='course-details' />}
           />
+          <Route path='/login' element={<Login />} />
         </Routes>
       </Container>
     </BrowserRouter>

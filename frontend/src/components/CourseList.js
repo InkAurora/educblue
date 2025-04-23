@@ -13,7 +13,7 @@ import {
   Alert,
 } from '@mui/material';
 
-function CourseList() {
+function CourseList(props) {
   const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -67,7 +67,7 @@ function CourseList() {
   }
 
   return (
-    <Container sx={{ py: 4 }}>
+    <Container sx={{ py: 4 }} data-testid={props['data-testid']}>
       <Grid container spacing={4}>
         {courses.length > 0 ? (
           courses.map((course) => (
