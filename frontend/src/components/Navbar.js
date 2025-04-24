@@ -24,10 +24,14 @@ function Navbar() {
       if (token) {
         // Decode the token to extract user information
         const decodedToken = jwtDecode(token);
+        console.log('Decoded token:', decodedToken);
 
-        // Extract email and role from token
-        const email = decodedToken.email || decodedToken.sub || '';
+        // Extract user information from the flattened token structure
+        const email = decodedToken.email || '';
         const role = decodedToken.role || '';
+
+        console.log('Extracted email:', email);
+        console.log('Extracted role:', role);
 
         setUserEmail(email);
         setUserRole(role);
@@ -39,7 +43,7 @@ function Navbar() {
       }
     } catch (error) {
       // If token is invalid, clear it and reset state
-      // Removed console.error to comply with ESLint
+      console.error('Error decoding token:', error);
       localStorage.removeItem('token');
       setIsLoggedIn(false);
       setUserEmail('');
@@ -111,8 +115,9 @@ function Navbar() {
                     color: 'inherit',
                   }}
                 >
-                  Hello, {userEmail}
+                  Hello, {userEmail || 'User'}
                 </Typography>
+                {/* Check for 'instructor' role */}
                 {userRole === 'instructor' && (
                   <Button
                     color='inherit'

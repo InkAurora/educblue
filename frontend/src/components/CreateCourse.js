@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -11,6 +11,7 @@ import {
   Paper,
   InputAdornment,
   CircularProgress,
+  FormHelperText,
 } from '@mui/material';
 import SimpleMDE from 'react-simplemde-editor';
 import 'easymde/dist/easymde.min.css';
@@ -25,21 +26,89 @@ function CreateCourse() {
     instructor: '',
     duration: '',
   });
+  const [errors, setErrors] = useState({});
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+
+    // Clear field-specific error when user types
+    if (errors[name]) {
+      setErrors({
+        ...errors,
+        [name]: '',
+      });
+    }
   };
 
+  // Memoize the SimpleMDE options to prevent re-rendering issues
+  const editorOptions = useMemo(() => {
+    return {
+      spellChecker: false,
+      placeholder: 'Write detailed course description with Markdown...',
+      status: ['lines', 'words'],
+      previewClass: ['editor-preview'],
+      autofocus: false,
+    };
+  }, []);
+
+  // Use a separate callback for markdown changes to prevent cursor issues
   const handleMarkdownChange = (value) => {
-    setFormData({ ...formData, markdownDescription: value });
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      markdownDescription: value,
+    }));
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.title.trim()) {
+      newErrors.title = 'Course title is required';
+    }
+
+    if (!formData.description.trim()) {
+      newErrors.description = 'Description is required';
+    }
+
+    if (!formData.instructor.trim()) {
+      newErrors.instructor = 'Instructor name is required';
+    }
+
+    if (!formData.duration.trim()) {
+      newErrors.duration = 'Duration is required';
+    } else if (
+      isNaN(parseFloat(formData.duration)) ||
+      parseFloat(formData.duration) <= 0
+    ) {
+      newErrors.duration = 'Duration must be a positive number';
+    }
+
+    if (!formData.price.trim()) {
+      newErrors.price = 'Price is required';
+    } else if (
+      isNaN(parseFloat(formData.price)) ||
+      parseFloat(formData.price) < 0
+    ) {
+      newErrors.price = 'Price must be a valid number (0 or greater)';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    // Validate the form before submission
+    if (!validateForm()) {
+      setError('Please fix the errors in the form before submitting.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -51,7 +120,7 @@ function CreateCourse() {
         return;
       }
 
-      // Format the price as a number
+      // Format the data as numbers for submission
       const formattedData = {
         ...formData,
         price: parseFloat(formData.price),
@@ -78,7 +147,27 @@ function CreateCourse() {
       if (err.response?.status === 403) {
         setError('Access denied. Only instructors can create courses.');
       } else if (err.response?.data?.message) {
-        setError(err.response.data.message);
+        if (
+          err.response.data.error &&
+          err.response.data.error.includes('duration')
+        ) {
+          setErrors({
+            ...errors,
+            duration: 'Duration is required and must be a valid number',
+          });
+          setError('Please check the form for errors');
+        } else if (
+          err.response.data.error &&
+          err.response.data.error.includes('price')
+        ) {
+          setErrors({
+            ...errors,
+            price: 'Price must be a valid number',
+          });
+          setError('Please check the form for errors');
+        } else {
+          setError(err.response.data.message);
+        }
       } else {
         setError(
           'An error occurred while creating the course. Please try again.',
@@ -127,6 +216,8 @@ function CreateCourse() {
               autoFocus
               value={formData.title}
               onChange={handleChange}
+              error={!!errors.title}
+              helperText={errors.title}
             />
 
             <TextField
@@ -140,21 +231,18 @@ function CreateCourse() {
               name='description'
               value={formData.description}
               onChange={handleChange}
+              error={!!errors.description}
+              helperText={errors.description}
             />
 
             <Typography variant='subtitle1' sx={{ mt: 2, mb: 1 }}>
               Detailed Description (Markdown)
             </Typography>
             <SimpleMDE
+              id='markdownEditor'
               value={formData.markdownDescription}
               onChange={handleMarkdownChange}
-              options={{
-                spellChecker: false,
-                placeholder:
-                  'Write detailed course description with Markdown...',
-                status: ['lines', 'words'],
-                previewClass: ['editor-preview'],
-              }}
+              options={editorOptions}
             />
 
             <Box
@@ -181,6 +269,8 @@ function CreateCourse() {
                 }}
                 value={formData.price}
                 onChange={handleChange}
+                error={!!errors.price}
+                helperText={errors.price}
               />
 
               <TextField
@@ -192,6 +282,8 @@ function CreateCourse() {
                 name='instructor'
                 value={formData.instructor}
                 onChange={handleChange}
+                error={!!errors.instructor}
+                helperText={errors.instructor}
               />
 
               <TextField
@@ -210,6 +302,8 @@ function CreateCourse() {
                 }}
                 value={formData.duration}
                 onChange={handleChange}
+                error={!!errors.duration}
+                helperText={errors.duration}
               />
             </Box>
 

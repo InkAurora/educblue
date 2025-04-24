@@ -43,19 +43,23 @@ describe('Course Endpoints', () => {
 
     // Generate tokens
     instructorToken = jwt.sign(
-      { id: instructorUser._id, role: instructorUser.role },
+      {
+        id: instructorUser._id,
+        role: instructorUser.role,
+        email: instructorUser.email,
+      },
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
 
     adminToken = jwt.sign(
-      { id: adminUser._id, role: adminUser.role },
+      { id: adminUser._id, role: adminUser.role, email: adminUser.email },
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
 
     studentToken = jwt.sign(
-      { id: studentUser._id, role: studentUser.role },
+      { id: studentUser._id, role: studentUser.role, email: studentUser.email },
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );

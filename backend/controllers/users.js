@@ -8,7 +8,7 @@ const User = require('../models/user');
 exports.getUserProfile = async (req, res) => {
   try {
     // Get user ID from auth middleware
-    const userId = req.user.user.id;
+    const userId = req.user.id;
 
     // Find user by ID and populate enrolledCourses
     const user = await User.findById(userId).populate('enrolledCourses');

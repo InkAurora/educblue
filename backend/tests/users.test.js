@@ -47,7 +47,7 @@ describe('User Profile Endpoints', () => {
     const payload = JSON.parse(
       Buffer.from(authToken.split('.')[1], 'base64').toString()
     );
-    userId = payload.user.id;
+    userId = payload.id;
 
     // Create a test course
     const course = await Course.create(testCourse);
