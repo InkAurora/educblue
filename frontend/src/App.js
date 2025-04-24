@@ -7,6 +7,7 @@ import Login from './components/Login';
 import Register from './components/Register';
 import Success from './components/Success';
 import UserDashboard from './components/UserDashboard';
+import CreateCourse from './components/CreateCourse';
 import Navbar from './components/Navbar';
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
           <Route path='/register' element={<Register />} />
           <Route path='/success' element={<Success />} />
           <Route path='/dashboard' element={<UserDashboard />} />
+          <Route path='/create-course' element={<CreateCourse />} />
         </Routes>
       </Container>
     </BrowserRouter>

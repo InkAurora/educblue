@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { loadStripe } from '@stripe/stripe-js';
+import ReactMarkdown from 'react-markdown';
+import DOMPurify from 'dompurify';
 import {
   Container,
   Typography,
@@ -19,6 +21,12 @@ import {
 
 // Initialize Stripe promise - you'll need to replace with your actual publishable key
 const stripePromise = loadStripe('pk_test_your_publishable_key');
+
+// Helper function to sanitize markdown content
+const sanitizeMarkdown = (content) => {
+  if (!content) return '';
+  return DOMPurify.sanitize(content);
+};
 
 function CourseDetails({ 'data-testid': dataTestId }) {
   const { id } = useParams();
@@ -39,7 +47,6 @@ function CourseDetails({ 'data-testid': dataTestId }) {
         setCourse(response.data);
         setLoading(false);
       } catch (err) {
-        // Silently handle error
         setError('Course not found');
         setLoading(false);
       }
@@ -49,10 +56,8 @@ function CourseDetails({ 'data-testid': dataTestId }) {
   }, [id]);
 
   const handlePayment = async () => {
-    // Check for authentication token
     const token = localStorage.getItem('token');
     if (!token) {
-      // Use DOM APIs instead of alert
       navigate('/login');
       return;
     }
@@ -71,7 +76,6 @@ function CourseDetails({ 'data-testid': dataTestId }) {
         },
       );
 
-      // Load Stripe and redirect to checkout
       const stripe = await stripePromise;
       const { sessionId } = response.data;
 
@@ -86,7 +90,6 @@ function CourseDetails({ 'data-testid': dataTestId }) {
         });
       }
     } catch (err) {
-      // Silently log error
       const errorMessage =
         err.response?.data?.message || 'Failed to create checkout session';
       setPaymentStatus({ type: 'error', message: errorMessage });
@@ -129,6 +132,38 @@ function CourseDetails({ 'data-testid': dataTestId }) {
               {course.description}
             </Typography>
           </Box>
+
+          {course.markdownDescription && (
+            <Paper variant='outlined' sx={{ p: 3, mb: 4 }}>
+              <Typography variant='h6' component='h2' gutterBottom>
+                Course Details
+              </Typography>
+              <Box
+                sx={{
+                  '& p': { mb: 2 },
+                  '& h1, & h2, & h3, & h4, & h5, & h6': { mt: 3, mb: 2 },
+                  '& ul, & ol': { pl: 4, mb: 2 },
+                  '& code': {
+                    p: 0.5,
+                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                    borderRadius: 1,
+                    fontSize: '0.9em',
+                  },
+                  '& pre': {
+                    p: 1.5,
+                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                    borderRadius: 1,
+                    overflowX: 'auto',
+                  },
+                  '& img': { maxWidth: '100%' },
+                }}
+              >
+                <ReactMarkdown>
+                  {sanitizeMarkdown(course.markdownDescription)}
+                </ReactMarkdown>
+              </Box>
+            </Paper>
+          )}
 
           <Box
             sx={{
@@ -178,7 +213,10 @@ function CourseDetails({ 'data-testid': dataTestId }) {
               <List>
                 {course.content.map((item, index) => (
                   <React.Fragment key={item.id || index}>
-                    <ListItem alignItems='flex-start'>
+                    <ListItem
+                      alignItems='flex-start'
+                      sx={{ flexDirection: 'column' }}
+                    >
                       <ListItemText
                         primary={item.title}
                         secondary={
@@ -193,6 +231,31 @@ function CourseDetails({ 'data-testid': dataTestId }) {
                           </Typography>
                         }
                       />
+
+                      {item.type === 'markdown' && item.content && (
+                        <Box
+                          sx={{
+                            mt: 2,
+                            width: '100%',
+                            '& p': { mb: 1.5 },
+                            '& h1, & h2, & h3, & h4, & h5, & h6': {
+                              mt: 2,
+                              mb: 1.5,
+                            },
+                            '& ul, & ol': { pl: 3, mb: 1.5 },
+                            '& code': {
+                              p: 0.5,
+                              backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                              borderRadius: 1,
+                              fontSize: '0.9em',
+                            },
+                          }}
+                        >
+                          <ReactMarkdown>
+                            {sanitizeMarkdown(item.content)}
+                          </ReactMarkdown>
+                        </Box>
+                      )}
                     </ListItem>
                     {index < course.content.length - 1 && <Divider />}
                   </React.Fragment>

@@ -349,4 +349,70 @@ describe('Navbar Component', () => {
 
     expect(dashboardIndex).toBeLessThan(logoutIndex);
   });
+
+  // New tests for Create Course button
+  test('shows Create Course button when user is an instructor', () => {
+    // Mock a token in localStorage with instructor role
+    window.localStorage.getItem.mockReturnValue('fake-token-123');
+    jwtDecode.mockReturnValue({
+      email: 'instructor@example.com',
+      role: 'instructor',
+    });
+
+    render(<Navbar />);
+
+    // Check if Create Course button is rendered
+    expect(screen.getByText('Create Course')).toBeInTheDocument();
+  });
+
+  test('does not show Create Course button when user is a student', () => {
+    // Mock a token in localStorage with student role
+    window.localStorage.getItem.mockReturnValue('fake-token-123');
+    jwtDecode.mockReturnValue({
+      email: 'student@example.com',
+      role: 'student',
+    });
+
+    render(<Navbar />);
+
+    // Check that Create Course button is not in the document
+    expect(screen.queryByText('Create Course')).not.toBeInTheDocument();
+  });
+
+  test('Create Course button links to create-course page', () => {
+    // Mock a token in localStorage with instructor role
+    window.localStorage.getItem.mockReturnValue('fake-token-123');
+    jwtDecode.mockReturnValue({
+      email: 'instructor@example.com',
+      role: 'instructor',
+    });
+
+    render(<Navbar />);
+
+    const createCourseButton = screen.getByText('Create Course');
+
+    // Check if the link has the correct href
+    expect(createCourseButton.getAttribute('href')).toBe('/create-course');
+  });
+
+  test('renders Create Course button before Dashboard button', () => {
+    // Mock a token in localStorage with instructor role
+    window.localStorage.getItem.mockReturnValue('fake-token-123');
+    jwtDecode.mockReturnValue({
+      email: 'instructor@example.com',
+      role: 'instructor',
+    });
+
+    render(<Navbar />);
+
+    // Get the HTML content to check element order
+    const container = screen.getByText('Create Course').closest('div');
+    const html = container.innerHTML;
+
+    // Check if Create Course appears before Dashboard in the HTML
+    const createCourseIndex = html.indexOf('Create Course');
+    const dashboardIndex = html.indexOf('Dashboard');
+
+    expect(createCourseIndex).toBeLessThan(dashboardIndex);
+  });
 });

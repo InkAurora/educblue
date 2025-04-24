@@ -15,6 +15,7 @@ function Navbar() {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState('');
+  const [userRole, setUserRole] = useState('');
 
   const checkLoginStatus = () => {
     try {
@@ -24,14 +25,17 @@ function Navbar() {
         // Decode the token to extract user information
         const decodedToken = jwtDecode(token);
 
-        // Extract email from token (adjust the property name if needed based on your token structure)
+        // Extract email and role from token
         const email = decodedToken.email || decodedToken.sub || '';
+        const role = decodedToken.role || '';
 
         setUserEmail(email);
+        setUserRole(role);
         setIsLoggedIn(true);
       } else {
         setIsLoggedIn(false);
         setUserEmail('');
+        setUserRole('');
       }
     } catch (error) {
       // If token is invalid, clear it and reset state
@@ -39,6 +43,7 @@ function Navbar() {
       localStorage.removeItem('token');
       setIsLoggedIn(false);
       setUserEmail('');
+      setUserRole('');
     }
   };
 
@@ -68,6 +73,7 @@ function Navbar() {
     localStorage.removeItem('token');
     setIsLoggedIn(false);
     setUserEmail('');
+    setUserRole('');
     // Dispatch auth change event
     window.dispatchEvent(new Event('authChange'));
     // Redirect to home page
@@ -107,6 +113,15 @@ function Navbar() {
                 >
                   Hello, {userEmail}
                 </Typography>
+                {userRole === 'instructor' && (
+                  <Button
+                    color='inherit'
+                    component={RouterLink}
+                    to='/create-course'
+                  >
+                    Create Course
+                  </Button>
+                )}
                 <Button color='inherit' component={RouterLink} to='/dashboard'>
                   Dashboard
                 </Button>
