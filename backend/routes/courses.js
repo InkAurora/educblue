@@ -5,9 +5,11 @@ const {
   getCourseById,
   createCourse,
 } = require('../controllers/courses');
+const auth = require('../middleware/auth');
+const restrictTo = require('../middleware/role');
 
 router.get('/', getCourses);
 router.get('/:id', getCourseById);
-router.post('/', createCourse);
+router.post('/', auth, restrictTo('instructor', 'admin'), createCourse);
 
 module.exports = router;

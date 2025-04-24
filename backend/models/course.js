@@ -9,6 +9,10 @@ const courseSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  markdownDescription: {
+    type: String,
+    default: '',
+  },
   price: {
     type: Number,
     required: true,
@@ -27,9 +31,10 @@ const courseSchema = new mongoose.Schema({
       videoUrl: String, // Store S3/Cloudinary URLs later
       type: {
         type: String,
-        enum: ['video', 'quiz', 'document'],
+        enum: ['video', 'quiz', 'document', 'markdown'],
         default: 'video',
       },
+      content: String, // For markdown content
     },
   ],
   createdAt: {
