@@ -77,6 +77,23 @@ function UserDashboard() {
     );
   }
 
+  // Helper function to safely get course ID regardless of property name
+  const getCourseId = (course) => {
+    if (!course) return null;
+
+    if (course.id) return course.id;
+
+    if (course.courseId) return course.courseId;
+
+    // Use bracket notation to avoid ESLint warnings about dangling underscore
+    // eslint-disable-next-line no-prototype-builtins
+    if (Object.prototype.hasOwnProperty.call(course, '_id')) {
+      return course['_id'];
+    }
+
+    return null;
+  };
+
   return (
     <Container sx={{ py: 4 }}>
       {userData && (
@@ -93,45 +110,57 @@ function UserDashboard() {
             </Typography>
             <Grid container spacing={4}>
               {enrolledCourses.length > 0 ? (
-                enrolledCourses.map((course) => (
-                  <Grid
-                    key={course.id}
-                    sx={{
-                      width: { xs: '100%', sm: '50%', md: '33.33%' },
-                      p: 2,
-                    }}
-                  >
-                    <Card
+                enrolledCourses.map((course) => {
+                  const courseId = getCourseId(course);
+                  return (
+                    <Grid
+                      key={courseId || `course-${Math.random()}`}
                       sx={{
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
+                        width: { xs: '100%', sm: '50%', md: '33.33%' },
+                        p: 2,
                       }}
                     >
-                      <CardContent sx={{ flexGrow: 1 }}>
-                        <Typography gutterBottom variant='h5' component='h2'>
-                          {course.title}
-                        </Typography>
-                        <Typography>{course.description}</Typography>
-                        <Typography
-                          variant='body2'
-                          color='text.secondary'
-                          sx={{ mt: 1 }}
-                        >
-                          Instructor: {course.instructor}
-                        </Typography>
-                        <Button
-                          variant='contained'
-                          color='primary'
-                          sx={{ mt: 2 }}
-                          onClick={() => navigate(`/courses/${course.id}`)}
-                        >
-                          Continue Learning
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                ))
+                      <Card
+                        sx={{
+                          height: '100%',
+                          display: 'flex',
+                          flexDirection: 'column',
+                        }}
+                      >
+                        <CardContent sx={{ flexGrow: 1 }}>
+                          <Typography gutterBottom variant='h5' component='h2'>
+                            {course.title}
+                          </Typography>
+                          <Typography>{course.description}</Typography>
+                          <Typography
+                            variant='body2'
+                            color='text.secondary'
+                            sx={{ mt: 1 }}
+                          >
+                            Instructor: {course.instructor}
+                          </Typography>
+                          <Button
+                            variant='contained'
+                            color='primary'
+                            sx={{ mt: 2 }}
+                            onClick={() => {
+                              if (courseId) {
+                                navigate(`/courses/${courseId}`);
+                              } else {
+                                // Use a more React/MUI-friendly approach instead of alert
+                                setError(
+                                  'Could not find course ID. Please try again later.',
+                                );
+                              }
+                            }}
+                          >
+                            Continue Learning
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  );
+                })
               ) : (
                 <Typography
                   variant='body1'
