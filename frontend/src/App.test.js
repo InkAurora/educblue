@@ -2,37 +2,52 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import App from './App';
 
-// Mock the components
+// Mock all components that will be rendered in the app
+jest.mock('./components/Navbar', () => () => (
+  <div data-testid='navbar'>Navbar Component</div>
+));
 jest.mock('./components/CourseList', () => () => (
-  <div data-testid='course-list'>CourseList Mock</div>
+  <div data-testid='course-list'>Course List Component</div>
 ));
 jest.mock('./components/CourseDetails', () => () => (
-  <div data-testid='course-details'>CourseDetails Mock</div>
+  <div data-testid='course-details'>Course Details Component</div>
 ));
 jest.mock('./components/Login', () => () => (
-  <div data-testid='login'>Login Mock</div>
+  <div data-testid='login'>Login Component</div>
 ));
-jest.mock('./components/Navbar', () => () => (
-  <div data-testid='navbar'>Navbar Mock</div>
+jest.mock('./components/Register', () => () => (
+  <div data-testid='register'>Register Component</div>
 ));
 jest.mock('./components/UserDashboard', () => () => (
-  <div data-testid='user-dashboard'>UserDashboard Mock</div>
+  <div data-testid='dashboard'>Dashboard Component</div>
+));
+jest.mock('./components/CreateCourse', () => () => (
+  <div data-testid='create-course'>Create Course Component</div>
+));
+jest.mock('./components/CourseContentEditor', () => () => (
+  <div data-testid='content-editor'>Content Editor Component</div>
+));
+jest.mock('./components/MyCourses', () => () => (
+  <div data-testid='my-courses'>My Courses Component</div>
+));
+jest.mock('./components/Success', () => () => (
+  <div data-testid='success'>Success Component</div>
 ));
 
-// Mock react-router-dom with a simplified approach
+// Mock react-router-dom without requiring the actual module
 jest.mock('react-router-dom', () => ({
   BrowserRouter: ({ children }) => <div>{children}</div>,
   Routes: ({ children }) => <div>{children}</div>,
-  Route: ({ element }) => element,
-  Link: ({ children }) => <a href='/'>{children}</a>,
+  Route: ({ path, element }) => element, // Render all route elements
+  Link: ({ children, to }) => <a href={to}>{children}</a>,
   useNavigate: () => jest.fn(),
-  useLocation: () => ({ search: '' }), // Added useLocation
+  useParams: () => ({ id: 'test-id', courseId: 'test-course-id' }),
+  useLocation: () => ({ pathname: '/' }),
 }));
 
 describe('App', () => {
   test('renders without crashing', () => {
     render(<App />);
-    // Check for the Navbar component which contains the app name
     expect(screen.getByTestId('navbar')).toBeInTheDocument();
   });
 
@@ -43,6 +58,7 @@ describe('App', () => {
 
   test('renders course list component', () => {
     render(<App />);
+    // In our mocked Routes environment, all routes are rendered
     expect(screen.getByTestId('course-list')).toBeInTheDocument();
   });
 
@@ -53,6 +69,6 @@ describe('App', () => {
 
   test('renders user dashboard component', () => {
     render(<App />);
-    expect(screen.getByTestId('user-dashboard')).toBeInTheDocument();
+    expect(screen.getByTestId('dashboard')).toBeInTheDocument();
   });
 });

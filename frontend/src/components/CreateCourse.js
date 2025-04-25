@@ -11,14 +11,13 @@ import {
   Paper,
   InputAdornment,
   CircularProgress,
-  FormHelperText,
 } from '@mui/material';
 import SimpleMDE from 'react-simplemde-editor';
 import 'easymde/dist/easymde.min.css';
 
 function CreateCourse() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
+  const [course, setCourse] = useState({
     title: '',
     description: '',
     markdownDescription: '',
@@ -26,18 +25,18 @@ function CreateCourse() {
     instructor: '',
     duration: '',
   });
-  const [errors, setErrors] = useState({});
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [validationError, setValidationError] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setCourse({ ...course, [name]: value });
 
     // Clear field-specific error when user types
-    if (errors[name]) {
-      setErrors({
-        ...errors,
+    if (validationError[name]) {
+      setValidationError({
+        ...validationError,
         [name]: '',
       });
     }
@@ -56,81 +55,41 @@ function CreateCourse() {
 
   // Use a separate callback for markdown changes to prevent cursor issues
   const handleMarkdownChange = (value) => {
-    setFormData((prevFormData) => ({
-      ...prevFormData,
+    setCourse((prevCourse) => ({
+      ...prevCourse,
       markdownDescription: value,
     }));
   };
 
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.title.trim()) {
-      newErrors.title = 'Course title is required';
-    }
-
-    if (!formData.description.trim()) {
-      newErrors.description = 'Description is required';
-    }
-
-    if (!formData.instructor.trim()) {
-      newErrors.instructor = 'Instructor name is required';
-    }
-
-    if (!formData.duration.trim()) {
-      newErrors.duration = 'Duration is required';
-    } else if (
-      isNaN(parseFloat(formData.duration)) ||
-      parseFloat(formData.duration) <= 0
-    ) {
-      newErrors.duration = 'Duration must be a positive number';
-    }
-
-    if (!formData.price.trim()) {
-      newErrors.price = 'Price is required';
-    } else if (
-      isNaN(parseFloat(formData.price)) ||
-      parseFloat(formData.price) < 0
-    ) {
-      newErrors.price = 'Price must be a valid number (0 or greater)';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
 
-    // Validate the form before submission
-    if (!validateForm()) {
-      setError('Please fix the errors in the form before submitting.');
+    // Form validation
+    if (
+      !course.title ||
+      !course.description ||
+      !course.price ||
+      !course.instructor ||
+      !course.duration
+    ) {
+      setValidationError('Please fill in all required fields');
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setError('You need to be logged in to create a course');
       return;
     }
 
     setLoading(true);
+    setError('');
+    setValidationError('');
 
     try {
-      // Get JWT token from localStorage
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('You need to be logged in to create a course');
-        setLoading(false);
-        return;
-      }
-
-      // Format the data as numbers for submission
-      const formattedData = {
-        ...formData,
-        price: parseFloat(formData.price),
-        duration: parseInt(formData.duration, 10),
-      };
-
-      // Send POST request to create a new course
       const response = await axios.post(
         'http://localhost:5000/api/courses',
-        formattedData,
+        course,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -138,65 +97,36 @@ function CreateCourse() {
         },
       );
 
-      // Redirect to the new course details page
-      navigate(`/courses/${response.data._id}`);
+      navigate(`/create-course/${response.data._id}/content`);
     } catch (err) {
-      console.error('Error creating course:', err);
-
-      // Handle specific error responses
-      if (err.response?.status === 403) {
-        setError('Access denied. Only instructors can create courses.');
-      } else if (err.response?.data?.message) {
-        if (
-          err.response.data.error &&
-          err.response.data.error.includes('duration')
-        ) {
-          setErrors({
-            ...errors,
-            duration: 'Duration is required and must be a valid number',
-          });
-          setError('Please check the form for errors');
-        } else if (
-          err.response.data.error &&
-          err.response.data.error.includes('price')
-        ) {
-          setErrors({
-            ...errors,
-            price: 'Price must be a valid number',
-          });
-          setError('Please check the form for errors');
-        } else {
-          setError(err.response.data.message);
-        }
-      } else {
-        setError(
-          'An error occurred while creating the course. Please try again.',
-        );
-      }
-
       setLoading(false);
+      if (err.response && err.response.data && err.response.data.message) {
+        setError(err.response.data.message);
+      } else if (err.response && err.response.status === 403) {
+        setError('Access denied. Only instructors can create courses.');
+      } else {
+        setError('Failed to create course. Please try again later.');
+      }
     }
   };
 
   return (
     <Container maxWidth='md'>
-      <Box
-        sx={{
-          mt: 8,
-          mb: 4,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
-        <Paper elevation={3} sx={{ p: 4, width: '100%' }}>
-          <Typography component='h1' variant='h5' align='center' gutterBottom>
+      <Box sx={{ my: 4 }}>
+        <Paper elevation={3} sx={{ p: 4 }}>
+          <Typography variant='h5' align='center' gutterBottom>
             Create New Course
           </Typography>
 
           {error && (
             <Alert severity='error' sx={{ mb: 2 }}>
               {error}
+            </Alert>
+          )}
+
+          {validationError && (
+            <Alert severity='error' sx={{ mb: 2 }}>
+              {validationError}
             </Alert>
           )}
 
@@ -214,10 +144,8 @@ function CreateCourse() {
               label='Course Title'
               name='title'
               autoFocus
-              value={formData.title}
+              value={course.title}
               onChange={handleChange}
-              error={!!errors.title}
-              helperText={errors.title}
             />
 
             <TextField
@@ -229,10 +157,8 @@ function CreateCourse() {
               id='description'
               label='Short Description'
               name='description'
-              value={formData.description}
+              value={course.description}
               onChange={handleChange}
-              error={!!errors.description}
-              helperText={errors.description}
             />
 
             <Typography variant='subtitle1' sx={{ mt: 2, mb: 1 }}>
@@ -240,7 +166,7 @@ function CreateCourse() {
             </Typography>
             <SimpleMDE
               id='markdownEditor'
-              value={formData.markdownDescription}
+              value={course.markdownDescription}
               onChange={handleMarkdownChange}
               options={editorOptions}
             />
@@ -267,10 +193,8 @@ function CreateCourse() {
                   ),
                   inputProps: { min: 0, step: 0.01 },
                 }}
-                value={formData.price}
+                value={course.price}
                 onChange={handleChange}
-                error={!!errors.price}
-                helperText={errors.price}
               />
 
               <TextField
@@ -280,10 +204,8 @@ function CreateCourse() {
                 id='instructor'
                 label='Instructor Name'
                 name='instructor'
-                value={formData.instructor}
+                value={course.instructor}
                 onChange={handleChange}
-                error={!!errors.instructor}
-                helperText={errors.instructor}
               />
 
               <TextField
@@ -300,10 +222,8 @@ function CreateCourse() {
                   ),
                   inputProps: { min: 1 },
                 }}
-                value={formData.duration}
+                value={course.duration}
                 onChange={handleChange}
-                error={!!errors.duration}
-                helperText={errors.duration}
               />
             </Box>
 
@@ -312,10 +232,10 @@ function CreateCourse() {
               fullWidth
               variant='contained'
               color='primary'
-              sx={{ mt: 3, mb: 2 }}
               disabled={loading}
+              sx={{ mt: 3, mb: 2 }}
             >
-              {loading ? <CircularProgress size={24} /> : 'Create Course'}
+              {loading ? 'Creating...' : 'Next'}
             </Button>
           </Box>
         </Paper>

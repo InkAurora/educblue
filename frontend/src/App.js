@@ -8,6 +8,8 @@ import Register from './components/Register';
 import Success from './components/Success';
 import UserDashboard from './components/UserDashboard';
 import CreateCourse from './components/CreateCourse';
+import CourseContentEditor from './components/CourseContentEditor';
+import MyCourses from './components/MyCourses';
 import Navbar from './components/Navbar';
 
 function App() {
@@ -31,6 +33,11 @@ function App() {
           <Route path='/success' element={<Success />} />
           <Route path='/dashboard' element={<UserDashboard />} />
           <Route path='/create-course' element={<CreateCourse />} />
+          <Route
+            path='/create-course/:id/content'
+            element={<CourseContentEditor />}
+          />
+          <Route path='/my-courses' element={<MyCourses />} />
         </Routes>
       </Container>
     </BrowserRouter>

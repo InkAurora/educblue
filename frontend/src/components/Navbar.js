@@ -119,13 +119,22 @@ function Navbar() {
                 </Typography>
                 {/* Check for 'instructor' role */}
                 {userRole === 'instructor' && (
-                  <Button
-                    color='inherit'
-                    component={RouterLink}
-                    to='/create-course'
-                  >
-                    Create Course
-                  </Button>
+                  <>
+                    <Button
+                      color='inherit'
+                      component={RouterLink}
+                      to='/create-course'
+                    >
+                      Create Course
+                    </Button>
+                    <Button
+                      color='inherit'
+                      component={RouterLink}
+                      to='/my-courses'
+                    >
+                      My Courses
+                    </Button>
+                  </>
                 )}
                 <Button color='inherit' component={RouterLink} to='/dashboard'>
                   Dashboard

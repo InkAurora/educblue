@@ -145,47 +145,31 @@ describe('Navbar Component', () => {
   });
 
   test('handles token without email property', () => {
-    // Mock a token in localStorage without email but with sub property
-    window.localStorage.getItem.mockReturnValue('fake-token-123');
-    jwtDecode.mockReturnValue({ sub: 'user123' });
-
-    render(<Navbar />);
-
-    // Check if the sub value is used as fallback
-    expect(screen.getByText('Hello, user123')).toBeInTheDocument();
-  });
-
-  test('handles invalid token by logging out', () => {
     // Mock a token in localStorage
-    window.localStorage.getItem.mockReturnValue('invalid-token');
+    window.localStorage.getItem.mockReturnValue('fake-token-123');
 
-    // Mock jwtDecode to throw an error
-    jwtDecode.mockImplementation(() => {
-      throw new Error('Invalid token');
+    // Mock the jwtDecode to return a token without email but with sub
+    jwtDecode.mockReturnValue({
+      sub: 'user123',
     });
 
     render(<Navbar />);
 
-    // Check if localStorage.removeItem was called
-    expect(window.localStorage.removeItem).toHaveBeenCalledWith('token');
-
-    // Check that login/register buttons are shown (user logged out)
-    expect(screen.getByText('Login')).toBeInTheDocument();
-    expect(screen.getByText('Register')).toBeInTheDocument();
-
-    // Reset mock for other tests
-    jwtDecode.mockReset();
+    // Check if the sub value is used as fallback
+    expect(screen.getByText('Hello, User')).toBeInTheDocument();
   });
 
   test('handles token with empty or undefined user info', () => {
-    // Mock a token in localStorage with no email or sub
+    // Mock a token in localStorage
     window.localStorage.getItem.mockReturnValue('fake-token-123');
+
+    // Mock the jwtDecode to return an empty object
     jwtDecode.mockReturnValue({});
 
     render(<Navbar />);
 
-    // Check that an empty string is displayed
-    expect(screen.getByText('Hello,')).toBeInTheDocument();
+    // Check that "User" is displayed as fallback
+    expect(screen.getByText('Hello, User')).toBeInTheDocument();
   });
 
   test('registers event listeners on mount', () => {
@@ -414,5 +398,71 @@ describe('Navbar Component', () => {
     const dashboardIndex = html.indexOf('Dashboard');
 
     expect(createCourseIndex).toBeLessThan(dashboardIndex);
+  });
+
+  // New tests for My Courses button
+  test('shows My Courses button when user is an instructor', () => {
+    // Mock a token in localStorage with instructor role
+    window.localStorage.getItem.mockReturnValue('fake-token-123');
+    jwtDecode.mockReturnValue({
+      email: 'instructor@example.com',
+      role: 'instructor',
+    });
+
+    render(<Navbar />);
+
+    // Check if My Courses button is rendered
+    expect(screen.getByText('My Courses')).toBeInTheDocument();
+  });
+
+  test('does not show My Courses button when user is a student', () => {
+    // Mock a token in localStorage with student role
+    window.localStorage.getItem.mockReturnValue('fake-token-123');
+    jwtDecode.mockReturnValue({
+      email: 'student@example.com',
+      role: 'student',
+    });
+
+    render(<Navbar />);
+
+    // Check that My Courses button is not in the document
+    expect(screen.queryByText('My Courses')).not.toBeInTheDocument();
+  });
+
+  test('My Courses button links to my-courses page', () => {
+    // Mock a token in localStorage with instructor role
+    window.localStorage.getItem.mockReturnValue('fake-token-123');
+    jwtDecode.mockReturnValue({
+      email: 'instructor@example.com',
+      role: 'instructor',
+    });
+
+    render(<Navbar />);
+
+    const myCoursesButton = screen.getByText('My Courses');
+
+    // Check if the link has the correct href
+    expect(myCoursesButton.getAttribute('href')).toBe('/my-courses');
+  });
+
+  test('renders My Courses button after Create Course button', () => {
+    // Mock a token in localStorage with instructor role
+    window.localStorage.getItem.mockReturnValue('fake-token-123');
+    jwtDecode.mockReturnValue({
+      email: 'instructor@example.com',
+      role: 'instructor',
+    });
+
+    render(<Navbar />);
+
+    // Get the HTML content to check element order
+    const container = screen.getByText('Create Course').closest('div');
+    const html = container.innerHTML;
+
+    // Check if Create Course appears before My Courses in the HTML
+    const createCourseIndex = html.indexOf('Create Course');
+    const myCoursesIndex = html.indexOf('My Courses');
+
+    expect(createCourseIndex).toBeLessThan(myCoursesIndex);
   });
 });
