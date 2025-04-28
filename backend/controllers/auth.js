@@ -4,7 +4,7 @@ const User = require('../models/user');
 
 // Register a new user
 exports.register = async (req, res) => {
-  const { email, password, role } = req.body;
+  const { email, password, role, fullName } = req.body;
 
   // Validate required fields
   if (!email || !password) {
@@ -17,7 +17,16 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    user = new User({ email, password, role });
+    // Use provided fullName or generate one from email
+    const userFullName = fullName || email.split('@')[0];
+
+    user = new User({
+      email,
+      password,
+      role,
+      fullName: userFullName,
+    });
+
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(password, salt);
     await user.save();
@@ -29,7 +38,8 @@ exports.register = async (req, res) => {
 
     res.status(201).json({ token });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.error('Registration error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 

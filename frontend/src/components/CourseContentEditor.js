@@ -63,6 +63,13 @@ function CourseContentEditor() {
           return;
         }
 
+        // Check if the ID is undefined or invalid
+        if (!id || id === 'undefined') {
+          setError('Invalid course ID. Please try creating the course again.');
+          setLoading(false);
+          return;
+        }
+
         const response = await axios.get(
           `http://localhost:5000/api/courses/${id}`,
           {
@@ -71,6 +78,13 @@ function CourseContentEditor() {
             },
           },
         );
+
+        // Make sure we received valid course data
+        if (!response.data || !response.data._id) {
+          setError('Could not load course data. Please try again.');
+          setLoading(false);
+          return;
+        }
 
         setCourse(response.data);
         // Initialize content array if it exists in the course data
@@ -87,7 +101,7 @@ function CourseContentEditor() {
         } else if (err.response?.status === 403) {
           setError('You do not have permission to edit this course');
         } else {
-          setError('Failed to load course. Please try again later.');
+          setError(`Failed to load course: ${err.message || 'Unknown error'}`);
         }
 
         setLoading(false);
@@ -276,9 +290,10 @@ function CourseContentEditor() {
         return;
       }
 
-      await axios.patch(
-        `http://localhost:5000/api/courses/${id}/publish`,
-        {},
+      // First, save the latest content to ensure everything is up to date
+      await axios.put(
+        `http://localhost:5000/api/courses/${id}/content`,
+        { content },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -286,18 +301,42 @@ function CourseContentEditor() {
         },
       );
 
+      // Then, publish the course with the required data
+      await axios.patch(
+        `http://localhost:5000/api/courses/${id}/publish`,
+        {
+          status: 'published',
+          content: content,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      console.log('Course published successfully');
       // Redirect to the published course
       navigate(`/courses/${id}`);
     } catch (err) {
       console.error('Error publishing course:', err);
-
-      if (err.response?.status === 403) {
-        setError('Access denied. Only instructors can publish courses.');
-      } else {
-        setError('Failed to publish course. Please try again.');
-      }
-
       setPublishing(false);
+
+      if (err.response) {
+        console.error('Response error data:', err.response.data);
+
+        if (err.response.status === 403) {
+          setError('Access denied. Only instructors can publish courses.');
+        } else if (err.response.status === 400 && err.response.data?.message) {
+          setError(`Failed to publish: ${err.response.data.message}`);
+        } else {
+          setError(
+            `Failed to publish course (${err.response.status}). Please try again.`,
+          );
+        }
+      } else {
+        setError(`Failed to publish course: ${err.message || 'Unknown error'}`);
+      }
     }
   };
 

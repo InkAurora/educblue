@@ -107,8 +107,8 @@ function Register() {
       // Dispatch auth change event to update navbar
       window.dispatchEvent(new Event('authChange'));
 
-      // Redirect to home page
-      navigate('/');
+      // Redirect to personal information page
+      navigate('/personal-information');
     } catch (err) {
       console.error('Registration error:', err);
 

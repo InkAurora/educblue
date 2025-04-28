@@ -97,8 +97,23 @@ function CreateCourse() {
         },
       );
 
-      navigate(`/create-course/${response.data._id}/content`);
+      console.log('Course creation response:', response.data);
+
+      // Check for courseId directly or from the course object
+      const courseId =
+        response.data.courseId ||
+        (response.data.course && response.data.course._id);
+
+      if (courseId) {
+        console.log('Created course with ID:', courseId);
+        navigate(`/create-course/${courseId}/content`);
+      } else {
+        setError('Created course but received invalid course ID from server');
+        setLoading(false);
+        console.error('Invalid course ID received:', response.data);
+      }
     } catch (err) {
+      console.error('Error creating course:', err);
       setLoading(false);
       if (err.response && err.response.data && err.response.data.message) {
         setError(err.response.data.message);

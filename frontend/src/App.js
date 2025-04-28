@@ -11,6 +11,7 @@ import CreateCourse from './components/CreateCourse';
 import CourseContentEditor from './components/CourseContentEditor';
 import MyCourses from './components/MyCourses';
 import Navbar from './components/Navbar';
+import PersonalInformation from './components/PersonalInformation';
 
 function App() {
   return (
@@ -38,6 +39,11 @@ function App() {
             element={<CourseContentEditor />}
           />
           <Route path='/my-courses' element={<MyCourses />} />
+          <Route path='/profile' element={<PersonalInformation />} />
+          <Route
+            path='/personal-information'
+            element={<PersonalInformation />}
+          />
         </Routes>
       </Container>
     </BrowserRouter>

@@ -95,12 +95,14 @@ const coursesData = [
 // Sample users data
 const usersData = [
   {
+    fullName: 'Student User',
     email: 'student@example.com',
     password: 'password123',
     role: 'student',
     enrolledCourses: [],
   },
   {
+    fullName: 'Instructor User',
     email: 'instructor@example.com',
     password: 'instructor456',
     role: 'instructor',

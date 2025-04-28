@@ -136,6 +136,13 @@ function Navbar() {
                     </Button>
                   </>
                 )}
+                <Button
+                  color='inherit'
+                  component={RouterLink}
+                  to='/personal-information'
+                >
+                  Profile
+                </Button>
                 <Button color='inherit' component={RouterLink} to='/dashboard'>
                   Dashboard
                 </Button>
