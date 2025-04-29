@@ -12,7 +12,7 @@ const auth = require('../middleware/auth');
 const restrictTo = require('../middleware/role');
 
 router.get('/', getCourses);
-router.get('/:id', getCourseById);
+router.get('/:id', auth, getCourseById);
 router.post('/', auth, restrictTo('instructor', 'admin'), createCourse);
 router.put(
   '/:id/content',

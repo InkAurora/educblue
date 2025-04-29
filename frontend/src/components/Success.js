@@ -17,6 +17,7 @@ function Success() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [courseId, setCourseId] = useState(null);
 
   useEffect(() => {
     const enrollCourse = async () => {
@@ -24,6 +25,12 @@ function Success() {
         // Get session_id from URL query params
         const queryParams = new URLSearchParams(location.search);
         const sessionId = queryParams.get('session_id');
+        const queryCourseId = queryParams.get('course_id');
+
+        // Store course ID for later use after successful enrollment
+        const courseToPurchase =
+          queryCourseId || localStorage.getItem('enrollingCourseId');
+        setCourseId(courseToPurchase);
 
         if (!sessionId) {
           setError('Missing session information');
@@ -42,13 +49,19 @@ function Success() {
         // Send enrollment request to the backend
         await axios.post(
           'http://localhost:5000/api/enroll',
-          { session_id: sessionId },
+          {
+            sessionId, // Using shorthand property
+            courseId: courseToPurchase, // Use courseId from query or localStorage backup
+          },
           {
             headers: {
               Authorization: `Bearer ${token}`,
             },
           },
         );
+
+        // Clear any saved course ID after successful enrollment
+        localStorage.removeItem('enrollingCourseId');
 
         setSuccess(true);
         setLoading(false);
@@ -68,6 +81,15 @@ function Success() {
 
     enrollCourse();
   }, [location.search]);
+
+  // Navigate directly to course page with the enrolled course
+  const handleContinueToCourse = () => {
+    if (courseId) {
+      navigate(`/courses/${courseId}`);
+    } else {
+      navigate('/');
+    }
+  };
 
   return (
     <Container maxWidth='sm'>
@@ -101,9 +123,9 @@ function Success() {
                 fullWidth
                 variant='contained'
                 color='primary'
-                onClick={() => navigate('/')}
+                onClick={handleContinueToCourse}
               >
-                Return to Courses
+                Continue to Course
               </Button>
             </>
           ) : (

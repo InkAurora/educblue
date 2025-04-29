@@ -14,11 +14,44 @@ exports.getCourses = async (req, res) => {
 // Get course by ID
 exports.getCourseById = async (req, res) => {
   try {
+    // Check if user exists in the request (set by auth middleware)
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
     const course = await Course.findById(req.params.id);
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
     }
-    return res.json(course);
+
+    // Find the user to check enrollment status
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if user is the course instructor or is enrolled in the course
+    const isInstructor = course.instructor === user.fullName;
+    const isEnrolled = user.enrolledCourses.includes(req.params.id);
+
+    // If user is either the instructor or enrolled, return full course details
+    if (isInstructor || isEnrolled) {
+      return res.json(course);
+    }
+
+    // For non-enrolled users, return limited course information
+    const limitedCourse = {
+      _id: course._id,
+      title: course.title,
+      description: course.description,
+      markdownDescription: course.markdownDescription,
+      price: course.price,
+      instructor: course.instructor,
+      duration: course.duration,
+      status: course.status,
+    };
+
+    return res.json(limitedCourse);
   } catch (error) {
     return res.status(500).json({ message: 'Server error' });
   }
@@ -176,6 +209,20 @@ exports.publishCourse = async (req, res) => {
       return res.status(404).json({ message: 'Course not found' });
     }
 
+    // Find the user with the ID from the auth middleware
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Ensure the course's instructor field matches the user's fullName
+    if (course.instructor !== user.fullName) {
+      return res.status(403).json({
+        message: 'Access denied. You are not the instructor of this course',
+      });
+    }
+
     // Check if course has at least one content item
     if (!course.content || course.content.length === 0) {
       return res.status(400).json({
@@ -184,17 +231,23 @@ exports.publishCourse = async (req, res) => {
       });
     }
 
-    // Update only the status field to 'published'
-    // This ensures the instructor field can't be modified
+    // Update the status field to 'published'
     course.status = 'published';
     await course.save();
+
+    // Add the course ID to the user's enrolledCourses array using $addToSet to avoid duplicates
+    await User.findByIdAndUpdate(
+      user.id,
+      { $addToSet: { enrolledCourses: id } },
+      { new: true }
+    );
 
     return res.json({
       message: 'Course published successfully',
       courseId: course.id,
     });
   } catch (error) {
-    return res.status(400).json({
+    return res.status(500).json({
       message: 'Failed to publish course',
       error: error.message,
     });

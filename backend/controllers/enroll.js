@@ -1,4 +1,15 @@
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+// Import dotenv to ensure environment variables are loaded
+require('dotenv').config();
+
+// Directly access the Stripe key from process.env
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+
+// Initialize Stripe with the secret key
+const stripe = require('stripe')(stripeSecretKey);
+
+// Debug logging to help troubleshoot
+console.log('Enrollment controller - Stripe key available:', !!stripeSecretKey);
+
 const User = require('../models/user');
 const Course = require('../models/course');
 
