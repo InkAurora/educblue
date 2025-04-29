@@ -17,10 +17,13 @@ exports.getUserProfile = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Return only necessary user data
+    // Return user data with the requested fields
     return res.json({
       email: user.email,
       role: user.role,
+      fullName: user.fullName,
+      bio: user.bio,
+      phoneNumber: user.phoneNumber,
       enrolledCourses: user.enrolledCourses,
     });
   } catch (error) {

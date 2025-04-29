@@ -1,4 +1,5 @@
 const Course = require('../models/course');
+const User = require('../models/user');
 
 // Get all courses
 exports.getCourses = async (req, res) => {
@@ -25,15 +26,8 @@ exports.getCourseById = async (req, res) => {
 
 // Create a course (for instructors)
 exports.createCourse = async (req, res) => {
-  const {
-    title,
-    description,
-    markdownDescription,
-    price,
-    instructor,
-    duration,
-    content,
-  } = req.body;
+  const { title, description, markdownDescription, price, duration, content } =
+    req.body;
 
   // Validate markdown description if provided
   if (
@@ -76,12 +70,18 @@ exports.createCourse = async (req, res) => {
   }
 
   try {
+    // Get the user's fullName from database using the ID from JWT token
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
     const course = new Course({
       title,
       description,
       markdownDescription,
       price,
-      instructor,
+      instructor: user.fullName, // Set instructor to user's fullName
       duration,
       content,
       status: 'draft', // Setting status to 'draft' by default
@@ -142,6 +142,7 @@ exports.updateCourseContent = async (req, res) => {
   }
 
   try {
+    // We only update the content field, ensuring instructor field can't be modified
     const course = await Course.findByIdAndUpdate(
       id,
       { content },
@@ -183,7 +184,8 @@ exports.publishCourse = async (req, res) => {
       });
     }
 
-    // Update the course status to 'published'
+    // Update only the status field to 'published'
+    // This ensures the instructor field can't be modified
     course.status = 'published';
     await course.save();
 

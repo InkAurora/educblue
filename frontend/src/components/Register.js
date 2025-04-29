@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import {
   Container,
   Box,
@@ -15,6 +14,7 @@ import {
   Select,
   FormHelperText,
 } from '@mui/material';
+import axiosInstance from '../utils/axiosConfig';
 
 function Register() {
   const navigate = useNavigate();
@@ -96,13 +96,11 @@ function Register() {
     setLoading(true);
 
     try {
-      const response = await axios.post(
-        'http://localhost:5000/api/auth/register',
-        formData,
-      );
+      const response = await axiosInstance.post('/api/auth/register', formData);
 
-      // Store the token in localStorage
-      localStorage.setItem('token', response.data.token);
+      // Store both tokens in localStorage
+      localStorage.setItem('token', response.data.accessToken);
+      localStorage.setItem('refreshToken', response.data.refreshToken);
 
       // Dispatch auth change event to update navbar
       window.dispatchEvent(new Event('authChange'));

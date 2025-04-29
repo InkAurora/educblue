@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 import {
   Grid,
@@ -14,35 +13,36 @@ import {
   Alert,
   Chip,
 } from '@mui/material';
+import axiosInstance from '../utils/axiosConfig';
 
 function MyCourses() {
   const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [userEmail, setUserEmail] = useState('');
+  const [instructorName, setInstructorName] = useState('');
 
   useEffect(() => {
-    // Extract user email from the token
-    const getUserEmail = () => {
+    // Extract user fullName from the token
+    const getInstructorName = () => {
       try {
         const token = localStorage.getItem('token');
         if (token) {
           const decodedToken = jwtDecode(token);
-          return decodedToken.email || '';
+          return decodedToken.fullName || '';
         }
         return '';
-      } catch (error) {
-        console.error('Error decoding token:', error);
+      } catch (err) {
+        setError('Error decoding authentication token');
         return '';
       }
     };
 
-    const email = getUserEmail();
-    setUserEmail(email);
+    const fullName = getInstructorName();
+    setInstructorName(fullName);
 
     const fetchMyCourses = async () => {
-      if (!email) {
+      if (!fullName) {
         setError('You must be logged in to view your courses');
         setLoading(false);
         return;
@@ -50,22 +50,17 @@ function MyCourses() {
 
       try {
         setLoading(true);
-        const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:5000/api/courses', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        // Using axiosInstance - no need to manually include the token
+        const response = await axiosInstance.get('/api/courses');
 
-        // Filter courses by the instructor's email
+        // Filter courses by the instructor's fullName
         const myCourses = response.data.filter(
-          (course) => course.instructor === email,
+          (course) => course.instructor === fullName,
         );
 
         setCourses(myCourses);
         setLoading(false);
       } catch (err) {
-        console.error('Error fetching courses:', err);
         if (err.response?.status === 403) {
           setError(
             'Access denied. You do not have permission to view these courses.',
@@ -109,10 +104,16 @@ function MyCourses() {
         My Courses
       </Typography>
 
+      {instructorName && (
+        <Typography variant='subtitle1' color='text.secondary' gutterBottom>
+          Instructor: {instructorName}
+        </Typography>
+      )}
+
       {courses.length === 0 ? (
         <Alert severity='info'>
-          You haven't created any courses yet. Click "Create Course" to get
-          started.
+          You haven&apos;t created any courses yet. Click &quot;Create
+          Course&quot; to get started.
         </Alert>
       ) : (
         <Grid container spacing={4}>
@@ -131,8 +132,12 @@ function MyCourses() {
                   </Typography>
                   <Box sx={{ mb: 2 }}>
                     <Chip
-                      label={course.published ? 'Published' : 'Draft'}
-                      color={course.published ? 'success' : 'default'}
+                      label={
+                        course.status === 'published' ? 'Published' : 'Draft'
+                      }
+                      color={
+                        course.status === 'published' ? 'success' : 'default'
+                      }
                       size='small'
                     />
                   </Box>

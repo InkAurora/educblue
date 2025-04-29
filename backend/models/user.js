@@ -26,6 +26,10 @@ const userSchema = new mongoose.Schema({
     enum: ['student', 'instructor', 'admin'],
     default: 'student',
   },
+  refreshTokens: {
+    type: [String],
+    default: [],
+  },
   enrolledCourses: [
     {
       type: mongoose.Schema.Types.ObjectId,

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import {
   Container,
   Box,
@@ -10,6 +9,7 @@ import {
   Alert,
   Paper,
 } from '@mui/material';
+import axiosInstance from '../utils/axiosConfig';
 
 function Login() {
   const navigate = useNavigate();
@@ -31,19 +31,18 @@ function Login() {
     setLoading(true);
 
     try {
-      const response = await axios.post(
-        'http://localhost:5000/api/auth/login',
-        formData,
-      );
+      // Using axiosInstance without the full URL
+      const response = await axiosInstance.post('/api/auth/login', formData);
 
-      // Store the token in localStorage
-      localStorage.setItem('token', response.data.token);
+      // Store both tokens in localStorage
+      localStorage.setItem('token', response.data.accessToken);
+      localStorage.setItem('refreshToken', response.data.refreshToken);
 
       // Dispatch auth change event to update navbar
       window.dispatchEvent(new Event('authChange'));
 
-      // Redirect to home page
-      navigate('/');
+      // Redirect to dashboard page
+      navigate('/dashboard');
     } catch (err) {
       console.error('Login error:', err);
 

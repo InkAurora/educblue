@@ -10,12 +10,30 @@ import {
   Box,
   Stack,
 } from '@mui/material';
+import axiosInstance from '../utils/axiosConfig';
 
 function Navbar() {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [userRole, setUserRole] = useState('');
+  const [userFullName, setUserFullName] = useState('');
+
+  const fetchUserData = async (token) => {
+    try {
+      const response = await axiosInstance.get('/api/users/me', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.data && response.data.fullName) {
+        setUserFullName(response.data.fullName);
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    }
+  };
 
   const checkLoginStatus = () => {
     try {
@@ -36,10 +54,14 @@ function Navbar() {
         setUserEmail(email);
         setUserRole(role);
         setIsLoggedIn(true);
+
+        // Fetch additional user data including fullName
+        fetchUserData(token);
       } else {
         setIsLoggedIn(false);
         setUserEmail('');
         setUserRole('');
+        setUserFullName('');
       }
     } catch (error) {
       // If token is invalid, clear it and reset state
@@ -48,6 +70,7 @@ function Navbar() {
       setIsLoggedIn(false);
       setUserEmail('');
       setUserRole('');
+      setUserFullName('');
     }
   };
 
@@ -72,16 +95,34 @@ function Navbar() {
     };
   }, []);
 
-  const handleLogout = () => {
-    // Remove token from localStorage
-    localStorage.removeItem('token');
-    setIsLoggedIn(false);
-    setUserEmail('');
-    setUserRole('');
-    // Dispatch auth change event
-    window.dispatchEvent(new Event('authChange'));
-    // Redirect to home page
-    navigate('/');
+  const handleLogout = async () => {
+    try {
+      const refreshToken = localStorage.getItem('refreshToken');
+
+      if (refreshToken) {
+        // Send logout request to the server
+        await axiosInstance.post('/api/auth/logout', { refreshToken });
+      }
+    } catch (error) {
+      console.error('Error during logout:', error);
+      // Continue with cleanup even if the API call fails
+    } finally {
+      // Remove both tokens from localStorage
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+
+      // Update state
+      setIsLoggedIn(false);
+      setUserEmail('');
+      setUserRole('');
+      setUserFullName('');
+
+      // Dispatch auth change event
+      window.dispatchEvent(new Event('authChange'));
+
+      // Redirect to home page
+      navigate('/');
+    }
   };
 
   return (
@@ -115,7 +156,7 @@ function Navbar() {
                     color: 'inherit',
                   }}
                 >
-                  Hello, {userEmail || 'User'}
+                  Hello, {userFullName || userEmail || 'User'}
                 </Typography>
                 {/* Check for 'instructor' role */}
                 {userRole === 'instructor' && (

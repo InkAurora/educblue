@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import {
   Container,
   Box,
@@ -32,6 +31,7 @@ import {
 } from '@mui/icons-material';
 import SimpleMDE from 'react-simplemde-editor';
 import 'easymde/dist/easymde.min.css';
+import axiosInstance from '../utils/axiosConfig';
 
 function CourseContentEditor() {
   const { id } = useParams();
@@ -56,12 +56,6 @@ function CourseContentEditor() {
     const fetchCourse = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem('token');
-        if (!token) {
-          setError('You need to be logged in to edit this course');
-          setLoading(false);
-          return;
-        }
 
         // Check if the ID is undefined or invalid
         if (!id || id === 'undefined') {
@@ -70,14 +64,8 @@ function CourseContentEditor() {
           return;
         }
 
-        const response = await axios.get(
-          `http://localhost:5000/api/courses/${id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        );
+        // Using axiosInstance - no need to manually include the token
+        const response = await axiosInstance.get(`/api/courses/${id}`);
 
         // Make sure we received valid course data
         if (!response.data || !response.data._id) {
@@ -236,23 +224,9 @@ function CourseContentEditor() {
 
     try {
       setSavingContent(true);
-      const token = localStorage.getItem('token');
 
-      if (!token) {
-        setError('You need to be logged in to save course content');
-        setSavingContent(false);
-        return;
-      }
-
-      await axios.put(
-        `http://localhost:5000/api/courses/${id}/content`,
-        { content },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
+      // Using axiosInstance - no need to manually include the token
+      await axiosInstance.put(`/api/courses/${id}/content`, { content });
 
       setSavingContent(false);
       setError('');
@@ -282,38 +256,16 @@ function CourseContentEditor() {
 
     try {
       setPublishing(true);
-      const token = localStorage.getItem('token');
-
-      if (!token) {
-        setError('You need to be logged in to publish a course');
-        setPublishing(false);
-        return;
-      }
 
       // First, save the latest content to ensure everything is up to date
-      await axios.put(
-        `http://localhost:5000/api/courses/${id}/content`,
-        { content },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
+      // Using axiosInstance - no need to manually include the token
+      await axiosInstance.put(`/api/courses/${id}/content`, { content });
 
       // Then, publish the course with the required data
-      await axios.patch(
-        `http://localhost:5000/api/courses/${id}/publish`,
-        {
-          status: 'published',
-          content: content,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
+      await axiosInstance.patch(`/api/courses/${id}/publish`, {
+        status: 'published',
+        content: content,
+      });
 
       console.log('Course published successfully');
       // Redirect to the published course

@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import {
   Container,
   Box,
@@ -11,9 +10,12 @@ import {
   Paper,
   InputAdornment,
   CircularProgress,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import SimpleMDE from 'react-simplemde-editor';
 import 'easymde/dist/easymde.min.css';
+import axiosInstance from '../utils/axiosConfig';
 
 function CreateCourse() {
   const navigate = useNavigate();
@@ -22,16 +24,17 @@ function CreateCourse() {
     description: '',
     markdownDescription: '',
     price: '',
-    instructor: '',
     duration: '',
+    acceptPayments: false,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [validationError, setValidationError] = useState('');
+  const [validationError, setValidationError] = useState({});
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setCourse({ ...course, [name]: value });
+    const { name, value, type, checked } = e.target;
+    const newValue = type === 'checkbox' ? checked : value;
+    setCourse({ ...course, [name]: newValue });
 
     // Clear field-specific error when user types
     if (validationError[name]) {
@@ -43,15 +46,16 @@ function CreateCourse() {
   };
 
   // Memoize the SimpleMDE options to prevent re-rendering issues
-  const editorOptions = useMemo(() => {
-    return {
+  const editorOptions = useMemo(
+    () => ({
       spellChecker: false,
       placeholder: 'Write detailed course description with Markdown...',
       status: ['lines', 'words'],
       previewClass: ['editor-preview'],
       autofocus: false,
-    };
-  }, []);
+    }),
+    [],
+  );
 
   // Use a separate callback for markdown changes to prevent cursor issues
   const handleMarkdownChange = (value) => {
@@ -65,55 +69,37 @@ function CreateCourse() {
     e.preventDefault();
 
     // Form validation
-    if (
-      !course.title ||
-      !course.description ||
-      !course.price ||
-      !course.instructor ||
-      !course.duration
-    ) {
-      setValidationError('Please fill in all required fields');
-      return;
-    }
+    const errors = {};
+    if (!course.title) errors.title = 'Title is required';
+    if (!course.description) errors.description = 'Description is required';
+    if (!course.price) errors.price = 'Price is required';
+    if (!course.duration) errors.duration = 'Duration is required';
 
-    const token = localStorage.getItem('token');
-    if (!token) {
-      setError('You need to be logged in to create a course');
+    if (Object.keys(errors).length > 0) {
+      setValidationError(errors);
       return;
     }
 
     setLoading(true);
     setError('');
-    setValidationError('');
+    setValidationError({});
 
     try {
-      const response = await axios.post(
-        'http://localhost:5000/api/courses',
-        course,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-
-      console.log('Course creation response:', response.data);
+      // Using axiosInstance - no need to manually include the token
+      const response = await axiosInstance.post('/api/courses', course);
 
       // Check for courseId directly or from the course object
       const courseId =
         response.data.courseId ||
-        (response.data.course && response.data.course._id);
+        (response.data.course && response.data.course.id);
 
       if (courseId) {
-        console.log('Created course with ID:', courseId);
         navigate(`/create-course/${courseId}/content`);
       } else {
         setError('Created course but received invalid course ID from server');
         setLoading(false);
-        console.error('Invalid course ID received:', response.data);
       }
     } catch (err) {
-      console.error('Error creating course:', err);
       setLoading(false);
       if (err.response && err.response.data && err.response.data.message) {
         setError(err.response.data.message);
@@ -139,9 +125,9 @@ function CreateCourse() {
             </Alert>
           )}
 
-          {validationError && (
+          {Object.keys(validationError).length > 0 && (
             <Alert severity='error' sx={{ mb: 2 }}>
-              {validationError}
+              Please fix the highlighted fields
             </Alert>
           )}
 
@@ -161,6 +147,8 @@ function CreateCourse() {
               autoFocus
               value={course.title}
               onChange={handleChange}
+              error={!!validationError.title}
+              helperText={validationError.title}
             />
 
             <TextField
@@ -174,6 +162,8 @@ function CreateCourse() {
               name='description'
               value={course.description}
               onChange={handleChange}
+              error={!!validationError.description}
+              helperText={validationError.description}
             />
 
             <Typography variant='subtitle1' sx={{ mt: 2, mb: 1 }}>
@@ -210,17 +200,8 @@ function CreateCourse() {
                 }}
                 value={course.price}
                 onChange={handleChange}
-              />
-
-              <TextField
-                margin='normal'
-                required
-                fullWidth
-                id='instructor'
-                label='Instructor Name'
-                name='instructor'
-                value={course.instructor}
-                onChange={handleChange}
+                error={!!validationError.price}
+                helperText={validationError.price}
               />
 
               <TextField
@@ -239,8 +220,23 @@ function CreateCourse() {
                 }}
                 value={course.duration}
                 onChange={handleChange}
+                error={!!validationError.duration}
+                helperText={validationError.duration}
               />
             </Box>
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={course.acceptPayments}
+                  onChange={handleChange}
+                  name='acceptPayments'
+                  color='primary'
+                />
+              }
+              label='Enable Stripe payments for this course'
+              sx={{ mt: 2 }}
+            />
 
             <Button
               type='submit'
@@ -250,7 +246,7 @@ function CreateCourse() {
               disabled={loading}
               sx={{ mt: 3, mb: 2 }}
             >
-              {loading ? 'Creating...' : 'Next'}
+              {loading ? <CircularProgress size={24} /> : 'Next'}
             </Button>
           </Box>
         </Paper>

@@ -100,7 +100,7 @@ function UserDashboard() {
         <>
           <Box mb={4}>
             <Typography variant='h4' component='h1' gutterBottom>
-              Welcome, {userData.email}
+              Welcome, {userData.fullName || userData.email}
             </Typography>
           </Box>
 
