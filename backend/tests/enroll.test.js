@@ -46,6 +46,7 @@ describe('Enrollment Endpoints', () => {
     email: 'student@test.com',
     password: 'password123',
     role: 'student',
+    fullName: 'Test Student', // Added fullName field
   };
 
   const testCourse = {
@@ -72,7 +73,9 @@ describe('Enrollment Endpoints', () => {
     const registerRes = await request(app)
       .post('/api/auth/register')
       .send(testUser);
-    authToken = registerRes.body.token;
+
+    // Handle both token formats (old or new)
+    authToken = registerRes.body.token || registerRes.body.accessToken;
 
     // Create a test course
     const courseRes = await Course.create(testCourse);
@@ -94,7 +97,9 @@ describe('Enrollment Endpoints', () => {
 
       // Verify user is enrolled
       const user = await User.findOne({ email: testUser.email });
-      expect(user.enrolledCourses).toContainEqual(courseId);
+      expect(
+        user.enrolledCourses.some((id) => id.toString() === courseId.toString())
+      ).toBe(true);
     });
 
     it('should reject enrollment if payment is not completed', async () => {
@@ -111,7 +116,9 @@ describe('Enrollment Endpoints', () => {
 
       // Verify user is not enrolled
       const user = await User.findOne({ email: testUser.email });
-      expect(user.enrolledCourses).not.toContainEqual(courseId);
+      expect(
+        user.enrolledCourses.some((id) => id.toString() === courseId.toString())
+      ).toBe(false);
     });
 
     it('should reject if session ID is invalid', async () => {

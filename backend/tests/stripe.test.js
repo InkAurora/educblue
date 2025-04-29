@@ -29,6 +29,7 @@ describe('Stripe Endpoints', () => {
     email: 'student@test.com',
     password: 'password123',
     role: 'student',
+    fullName: 'Test Student', // Added fullName field
   };
 
   const testCourse = {
@@ -55,7 +56,9 @@ describe('Stripe Endpoints', () => {
     const registerRes = await request(app)
       .post('/api/auth/register')
       .send(testUser);
-    authToken = registerRes.body.token;
+
+    // Handle both token formats (old or new)
+    authToken = registerRes.body.token || registerRes.body.accessToken;
 
     // Create a test course
     const courseRes = await Course.create(testCourse);
