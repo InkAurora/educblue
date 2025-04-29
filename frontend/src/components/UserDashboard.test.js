@@ -222,4 +222,139 @@ describe('UserDashboard Component', () => {
       screen.getByText('You are not enrolled in any courses yet.'),
     ).toBeInTheDocument();
   });
+
+  test('handles course with courseId property instead of id', async () => {
+    // Mock a token in localStorage
+    window.localStorage.getItem.mockReturnValueOnce('fake-token');
+
+    // Mock API response with course using courseId instead of id
+    const userWithAlternateCourseIds = {
+      ...mockUserData,
+      enrolledCourses: [
+        {
+          courseId: 'alt-course-id',
+          title: 'Course with courseId',
+          description: 'This course uses courseId property',
+          instructor: 'Alice Johnson',
+        },
+      ],
+    };
+
+    axios.get.mockResolvedValueOnce({ data: userWithAlternateCourseIds });
+
+    render(<UserDashboard />);
+
+    // Wait for course to be displayed
+    await waitFor(() => {
+      expect(screen.getByText('Course with courseId')).toBeInTheDocument();
+    });
+
+    // Click the Continue Learning button
+    const continueButton = screen.getByText('Continue Learning');
+    userEvent.click(continueButton);
+
+    // Check if navigate was called with the correct course ID using courseId property
+    expect(mockedNavigate).toHaveBeenCalledWith(
+      `/courses/${userWithAlternateCourseIds.enrolledCourses[0].courseId}`,
+    );
+  });
+
+  test('handles course with _id property instead of id', async () => {
+    // Mock a token in localStorage
+    window.localStorage.getItem.mockReturnValueOnce('fake-token');
+
+    // Mock API response with course using _id instead of id
+    const userWithUnderscoreIds = {
+      ...mockUserData,
+      enrolledCourses: [
+        {
+          _id: 'mongo-id-format',
+          title: 'MongoDB Course',
+          description: 'This course uses MongoDB-style _id property',
+          instructor: 'Bob Smith',
+        },
+      ],
+    };
+
+    axios.get.mockResolvedValueOnce({ data: userWithUnderscoreIds });
+
+    render(<UserDashboard />);
+
+    // Wait for course to be displayed
+    await waitFor(() => {
+      expect(screen.getByText('MongoDB Course')).toBeInTheDocument();
+    });
+
+    // Click the Continue Learning button
+    const continueButton = screen.getByText('Continue Learning');
+    userEvent.click(continueButton);
+
+    // Check if navigate was called with the correct course ID using _id property
+    expect(mockedNavigate).toHaveBeenCalledWith(
+      `/courses/${userWithUnderscoreIds.enrolledCourses[0]._id}`,
+    );
+  });
+
+  test('handles error when course has no ID property', async () => {
+    // Mock a token in localStorage
+    window.localStorage.getItem.mockReturnValueOnce('fake-token');
+
+    // Mock API response with course missing any ID property
+    const userWithInvalidCourse = {
+      ...mockUserData,
+      enrolledCourses: [
+        {
+          // No id, courseId, or _id property
+          title: 'Invalid Course',
+          description: 'This course has no ID property',
+          instructor: 'Unknown',
+        },
+      ],
+    };
+
+    axios.get.mockResolvedValueOnce({ data: userWithInvalidCourse });
+
+    render(<UserDashboard />);
+
+    // Wait for course to be displayed
+    await waitFor(() => {
+      expect(screen.getByText('Invalid Course')).toBeInTheDocument();
+    });
+
+    // Click the Continue Learning button
+    const continueButton = screen.getByText('Continue Learning');
+    userEvent.click(continueButton);
+
+    // Check if error is set correctly (component will display error message)
+    await waitFor(() => {
+      expect(
+        screen.getByText('Could not find course ID. Please try again later.'),
+      ).toBeInTheDocument();
+    });
+
+    // Verify navigate was NOT called
+    expect(mockedNavigate).not.toHaveBeenCalled();
+  });
+
+  test('handles fullName property if available instead of email', async () => {
+    // Mock a token in localStorage
+    window.localStorage.getItem.mockReturnValueOnce('fake-token');
+
+    // Mock API response with fullName property
+    const userWithFullName = {
+      ...mockUserData,
+      fullName: 'John Doe User',
+    };
+
+    axios.get.mockResolvedValueOnce({ data: userWithFullName });
+
+    render(<UserDashboard />);
+
+    // Check if fullName is displayed instead of email
+    await waitFor(() => {
+      expect(
+        screen.getByText(`Welcome, ${userWithFullName.fullName}`),
+      ).toBeInTheDocument();
+    });
+  });
 });

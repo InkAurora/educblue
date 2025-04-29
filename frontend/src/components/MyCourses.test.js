@@ -1,13 +1,12 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import axios from 'axios';
-import { jwtDecode } from 'jwt-decode';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import MyCourses from './MyCourses';
+import { jwtDecode } from 'jwt-decode';
+import axiosInstance from '../utils/axiosConfig';
 
-jest.mock('axios');
-jest.mock('jwt-decode', () => ({
-  jwtDecode: jest.fn(),
+jest.mock('jwt-decode');
+jest.mock('../utils/axiosConfig', () => ({
+  get: jest.fn(),
 }));
 
 // Mock useNavigate
@@ -34,13 +33,15 @@ Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 describe('MyCourses Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    window.localStorage.getItem.mockReturnValue('fake-token');
   });
 
   test('renders loading state initially', async () => {
     // Setup token and mocks
-    window.localStorage.getItem.mockReturnValue('fake-token');
-    jwtDecode.mockReturnValue({ email: 'instructor@example.com' });
-    axios.get.mockImplementation(() => new Promise(() => {})); // Never resolves to keep loading
+    jwtDecode.mockReturnValue({ fullName: 'Test Instructor' });
+
+    // This will keep the component in loading state during the test
+    axiosInstance.get.mockImplementation(() => new Promise(() => {}));
 
     render(<MyCourses />);
 
@@ -51,6 +52,9 @@ describe('MyCourses Component', () => {
   test('displays error when not logged in', async () => {
     // Setup empty token
     window.localStorage.getItem.mockReturnValue(null);
+
+    // Mock decode to return null
+    jwtDecode.mockReturnValue({});
 
     render(<MyCourses />);
 
@@ -63,12 +67,11 @@ describe('MyCourses Component', () => {
 
   test('displays error message on API error', async () => {
     // Setup token
-    window.localStorage.getItem.mockReturnValue('fake-token');
-    jwtDecode.mockReturnValue({ email: 'instructor@example.com' });
+    jwtDecode.mockReturnValue({ fullName: 'Test Instructor' });
 
     // Setup axios error
     const errorMessage = 'Network Error';
-    axios.get.mockRejectedValueOnce({ message: errorMessage });
+    axiosInstance.get.mockRejectedValueOnce(new Error(errorMessage));
 
     render(<MyCourses />);
 
@@ -81,11 +84,10 @@ describe('MyCourses Component', () => {
 
   test('displays access denied message on 403 error', async () => {
     // Setup token
-    window.localStorage.getItem.mockReturnValue('fake-token');
-    jwtDecode.mockReturnValue({ email: 'instructor@example.com' });
+    jwtDecode.mockReturnValue({ fullName: 'Test Instructor' });
 
     // Setup axios 403 error
-    axios.get.mockRejectedValueOnce({
+    axiosInstance.get.mockRejectedValueOnce({
       response: { status: 403 },
     });
 
@@ -101,62 +103,59 @@ describe('MyCourses Component', () => {
   });
 
   test('displays message when no courses are available', async () => {
-    // Setup token
-    window.localStorage.getItem.mockReturnValue('fake-token');
-    jwtDecode.mockReturnValue({ email: 'instructor@example.com' });
+    // Setup token with instructor name
+    const instructorName = 'Test Instructor';
+    jwtDecode.mockReturnValue({ fullName: instructorName });
 
     // Setup axios response with empty array
-    axios.get.mockResolvedValueOnce({ data: [] });
+    axiosInstance.get.mockResolvedValueOnce({ data: [] });
 
     render(<MyCourses />);
 
     await waitFor(() => {
       expect(
-        screen.getByText(
-          'You haven\'t created any courses yet. Click "Create Course" to get started.',
-        ),
+        screen.getByText(/You haven't created any courses yet/),
       ).toBeInTheDocument();
     });
   });
 
   test('displays courses created by the instructor', async () => {
-    // Setup token and instructor email
-    const instructorEmail = 'instructor@example.com';
-    window.localStorage.getItem.mockReturnValue('fake-token');
-    jwtDecode.mockReturnValue({ email: instructorEmail });
+    // Setup token with instructor name
+    const instructorName = 'Test Instructor';
+    jwtDecode.mockReturnValue({ fullName: instructorName });
 
-    // Mock courses data
+    // Mock courses data - note that courses are filtered by instructor name
     const courses = [
       {
         _id: '1',
         title: 'React Basics',
         description: 'Learn React fundamentals',
         price: 29.99,
-        instructor: instructorEmail,
+        instructor: instructorName, // Match the instructor name from token
         duration: 10,
-        published: true,
+        status: 'published',
       },
       {
         _id: '2',
         title: 'Advanced JavaScript',
         description: 'Master JavaScript concepts',
         price: 39.99,
-        instructor: instructorEmail,
+        instructor: instructorName, // Match the instructor name from token
         duration: 15,
-        published: false,
+        status: 'draft',
       },
       {
         _id: '3',
-        title: 'Another Course',
-        description: 'Not by this instructor',
+        title: 'Other Course',
+        description: 'By different instructor',
         price: 19.99,
-        instructor: 'another@example.com',
-        duration: 5,
-        published: true,
+        instructor: 'Different Instructor', // Different instructor, should be filtered out
+        duration: 8,
+        status: 'published',
       },
     ];
 
-    axios.get.mockResolvedValueOnce({ data: courses });
+    axiosInstance.get.mockResolvedValueOnce({ data: courses });
 
     render(<MyCourses />);
 
@@ -164,21 +163,15 @@ describe('MyCourses Component', () => {
       // Should find the two courses by the current instructor
       expect(screen.getByText('React Basics')).toBeInTheDocument();
       expect(screen.getByText('Advanced JavaScript')).toBeInTheDocument();
-
-      // Should not find the course by another instructor
-      expect(screen.queryByText('Another Course')).not.toBeInTheDocument();
-
-      // Should display status chips
-      expect(screen.getByText('Published')).toBeInTheDocument();
-      expect(screen.getByText('Draft')).toBeInTheDocument();
+      // Should not find the course by a different instructor
+      expect(screen.queryByText('Other Course')).not.toBeInTheDocument();
     });
   });
 
   test('navigates to edit content page when Edit Content button is clicked', async () => {
-    // Setup token and instructor email
-    const instructorEmail = 'instructor@example.com';
-    window.localStorage.getItem.mockReturnValue('fake-token');
-    jwtDecode.mockReturnValue({ email: instructorEmail });
+    // Setup token with instructor name
+    const instructorName = 'Test Instructor';
+    jwtDecode.mockReturnValue({ fullName: instructorName });
 
     // Mock course data
     const courses = [
@@ -187,13 +180,13 @@ describe('MyCourses Component', () => {
         title: 'React Basics',
         description: 'Learn React fundamentals',
         price: 29.99,
-        instructor: instructorEmail,
+        instructor: instructorName,
         duration: 10,
-        published: true,
+        status: 'published',
       },
     ];
 
-    axios.get.mockResolvedValueOnce({ data: courses });
+    axiosInstance.get.mockResolvedValueOnce({ data: courses });
 
     render(<MyCourses />);
 
@@ -203,18 +196,16 @@ describe('MyCourses Component', () => {
     });
 
     // Click the Edit Content button
-    const editButton = screen.getByText('Edit Content');
-    userEvent.click(editButton);
+    fireEvent.click(screen.getByText('Edit Content'));
 
     // Verify navigation
     expect(mockedNavigate).toHaveBeenCalledWith('/create-course/1/content');
   });
 
   test('navigates to course details page when View Course button is clicked', async () => {
-    // Setup token and instructor email
-    const instructorEmail = 'instructor@example.com';
-    window.localStorage.getItem.mockReturnValue('fake-token');
-    jwtDecode.mockReturnValue({ email: instructorEmail });
+    // Setup token with instructor name
+    const instructorName = 'Test Instructor';
+    jwtDecode.mockReturnValue({ fullName: instructorName });
 
     // Mock course data
     const courses = [
@@ -223,13 +214,13 @@ describe('MyCourses Component', () => {
         title: 'React Basics',
         description: 'Learn React fundamentals',
         price: 29.99,
-        instructor: instructorEmail,
+        instructor: instructorName,
         duration: 10,
-        published: true,
+        status: 'published',
       },
     ];
 
-    axios.get.mockResolvedValueOnce({ data: courses });
+    axiosInstance.get.mockResolvedValueOnce({ data: courses });
 
     render(<MyCourses />);
 
@@ -239,8 +230,7 @@ describe('MyCourses Component', () => {
     });
 
     // Click the View Course button
-    const viewButton = screen.getByText('View Course');
-    userEvent.click(viewButton);
+    fireEvent.click(screen.getByText('View Course'));
 
     // Verify navigation
     expect(mockedNavigate).toHaveBeenCalledWith('/courses/1');
@@ -248,10 +238,12 @@ describe('MyCourses Component', () => {
 
   test('handles invalid JWT token gracefully', async () => {
     // Setup token but make jwtDecode throw an error
-    window.localStorage.getItem.mockReturnValue('invalid-token');
     jwtDecode.mockImplementation(() => {
       throw new Error('Invalid token');
     });
+
+    // Mock axios to resolve since we're only testing token error handling
+    axiosInstance.get.mockResolvedValueOnce({ data: [] });
 
     render(<MyCourses />);
 
@@ -263,10 +255,9 @@ describe('MyCourses Component', () => {
   });
 
   test('displays correct price formatting', async () => {
-    // Setup token and instructor email
-    const instructorEmail = 'instructor@example.com';
-    window.localStorage.getItem.mockReturnValue('fake-token');
-    jwtDecode.mockReturnValue({ email: instructorEmail });
+    // Setup token with instructor name
+    const instructorName = 'Test Instructor';
+    jwtDecode.mockReturnValue({ fullName: instructorName });
 
     // Mock course data with different price formats
     const courses = [
@@ -275,22 +266,22 @@ describe('MyCourses Component', () => {
         title: 'Free Course',
         description: 'A free course',
         price: 0,
-        instructor: instructorEmail,
+        instructor: instructorName,
         duration: 5,
-        published: true,
+        status: 'published',
       },
       {
         _id: '2',
         title: 'Paid Course',
         description: 'A paid course',
         price: 29.99,
-        instructor: instructorEmail,
+        instructor: instructorName,
         duration: 10,
-        published: false,
+        status: 'draft',
       },
     ];
 
-    axios.get.mockResolvedValueOnce({ data: courses });
+    axiosInstance.get.mockResolvedValueOnce({ data: courses });
 
     render(<MyCourses />);
 
@@ -302,10 +293,9 @@ describe('MyCourses Component', () => {
   });
 
   test('displays course duration correctly', async () => {
-    // Setup token and instructor email
-    const instructorEmail = 'instructor@example.com';
-    window.localStorage.getItem.mockReturnValue('fake-token');
-    jwtDecode.mockReturnValue({ email: instructorEmail });
+    // Setup token with instructor name
+    const instructorName = 'Test Instructor';
+    jwtDecode.mockReturnValue({ fullName: instructorName });
 
     // Mock course data
     const courses = [
@@ -314,28 +304,82 @@ describe('MyCourses Component', () => {
         title: 'Short Course',
         description: 'A short course',
         price: 19.99,
-        instructor: instructorEmail,
+        instructor: instructorName,
         duration: 1,
-        published: true,
+        status: 'published',
       },
       {
         _id: '2',
         title: 'Long Course',
         description: 'A long course',
         price: 49.99,
-        instructor: instructorEmail,
+        instructor: instructorName,
         duration: 20,
-        published: false,
+        status: 'draft',
       },
     ];
 
-    axios.get.mockResolvedValueOnce({ data: courses });
+    axiosInstance.get.mockResolvedValueOnce({ data: courses });
 
     render(<MyCourses />);
 
     await waitFor(() => {
       expect(screen.getByText('Duration: 1 hours')).toBeInTheDocument();
       expect(screen.getByText('Duration: 20 hours')).toBeInTheDocument();
+    });
+  });
+
+  test('displays course status chips correctly', async () => {
+    // Setup token with instructor name
+    const instructorName = 'Test Instructor';
+    jwtDecode.mockReturnValue({ fullName: instructorName });
+
+    // Mock course data
+    const courses = [
+      {
+        _id: '1',
+        title: 'Published Course',
+        description: 'A published course',
+        price: 19.99,
+        instructor: instructorName,
+        duration: 5,
+        status: 'published',
+      },
+      {
+        _id: '2',
+        title: 'Draft Course',
+        description: 'A draft course',
+        price: 29.99,
+        instructor: instructorName,
+        duration: 10,
+        status: 'draft',
+      },
+    ];
+
+    axiosInstance.get.mockResolvedValueOnce({ data: courses });
+
+    render(<MyCourses />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Published')).toBeInTheDocument();
+      expect(screen.getByText('Draft')).toBeInTheDocument();
+    });
+  });
+
+  test('displays instructor name from token', async () => {
+    // Setup token with instructor name
+    const instructorName = 'Test Instructor';
+    jwtDecode.mockReturnValue({ fullName: instructorName });
+
+    // Setup axios response with empty array
+    axiosInstance.get.mockResolvedValueOnce({ data: [] });
+
+    render(<MyCourses />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(`Instructor: ${instructorName}`),
+      ).toBeInTheDocument();
     });
   });
 });

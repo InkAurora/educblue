@@ -98,4 +98,41 @@ describe('CourseList', () => {
       ).toBeInTheDocument();
     });
   });
+
+  test('navigates to course details when View Details button is clicked', async () => {
+    axios.get.mockResolvedValueOnce({ data: mockCourses });
+    render(<CourseList />);
+
+    await waitFor(() => {
+      expect(screen.getAllByText('View Details')[0]).toBeInTheDocument();
+    });
+
+    const viewDetailsButtons = screen.getAllByText('View Details');
+    await userEvent.click(viewDetailsButtons[0]);
+
+    expect(mockedNavigate).toHaveBeenCalledWith(
+      `/courses/${mockCourses[0]._id}`,
+    );
+  });
+
+  test('displays a CORS error message when appropriate', async () => {
+    const corsError = new Error('Network Error');
+    corsError.message = 'CORS error: No access-control-allow-origin header';
+    axios.get.mockRejectedValueOnce(corsError);
+
+    render(<CourseList />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/CORS error:/i)).toBeInTheDocument();
+    });
+  });
+
+  test('accepts and uses data-testid prop', async () => {
+    axios.get.mockResolvedValueOnce({ data: mockCourses });
+    render(<CourseList data-testid='custom-test-id' />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('custom-test-id')).toBeInTheDocument();
+    });
+  });
 });

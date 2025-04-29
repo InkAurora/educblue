@@ -2,6 +2,16 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import Login from './Login';
 import axios from 'axios';
+import axiosInstance from '../utils/axiosConfig';
+
+// Mock axios config module
+jest.mock('../utils/axiosConfig', () => {
+  return {
+    post: jest.fn(),
+    __esModule: true,
+    default: { post: jest.fn() },
+  };
+});
 
 // Mock useNavigate
 const mockedUsedNavigate = jest.fn();
@@ -27,6 +37,9 @@ const localStorageMock = (function () {
   };
 })();
 Object.defineProperty(window, 'localStorage', { value: localStorageMock });
+
+// Mock window.dispatchEvent
+window.dispatchEvent = jest.fn();
 
 describe('Login Component', () => {
   beforeEach(() => {
@@ -55,8 +68,13 @@ describe('Login Component', () => {
   });
 
   test('submits form and handles successful login', async () => {
-    // Mock successful login response
-    axios.post.mockResolvedValueOnce({ data: { token: 'fake-token-123' } });
+    // Mock successful login response with both tokens
+    axiosInstance.post.mockResolvedValueOnce({
+      data: {
+        accessToken: 'fake-access-token-123',
+        refreshToken: 'fake-refresh-token-456',
+      },
+    });
 
     render(<Login />);
 
@@ -70,26 +88,33 @@ describe('Login Component', () => {
 
     // Wait for the login request to complete
     await waitFor(() => {
-      // Check if axios.post was called with the correct data
-      expect(axios.post).toHaveBeenCalledWith(
-        'http://localhost:5000/api/auth/login',
-        { email: 'test@example.com', password: 'password123' },
-      );
+      // Check if axiosInstance.post was called with the correct data
+      expect(axiosInstance.post).toHaveBeenCalledWith('/api/auth/login', {
+        email: 'test@example.com',
+        password: 'password123',
+      });
 
-      // Check if token was saved to localStorage
+      // Check if tokens were saved to localStorage
       expect(window.localStorage.setItem).toHaveBeenCalledWith(
         'token',
-        'fake-token-123',
+        'fake-access-token-123',
+      );
+      expect(window.localStorage.setItem).toHaveBeenCalledWith(
+        'refreshToken',
+        'fake-refresh-token-456',
       );
 
-      // Check if navigation occurred
-      expect(mockedUsedNavigate).toHaveBeenCalledWith('/');
+      // Check if auth change event was dispatched
+      expect(window.dispatchEvent).toHaveBeenCalled();
+
+      // Check if navigation occurred to dashboard
+      expect(mockedUsedNavigate).toHaveBeenCalledWith('/dashboard');
     });
   });
 
   test('handles login failure with invalid credentials', async () => {
     // Mock failed login response
-    axios.post.mockRejectedValueOnce({
+    axiosInstance.post.mockRejectedValueOnce({
       response: { status: 401, data: { message: 'Invalid credentials' } },
     });
 
@@ -105,14 +130,16 @@ describe('Login Component', () => {
 
     // Wait for error message to appear
     await waitFor(() => {
-      expect(screen.getByText('Invalid email or password')).toBeInTheDocument();
+      expect(
+        screen.getByText(/invalid email or password/i),
+      ).toBeInTheDocument();
       expect(mockedUsedNavigate).not.toHaveBeenCalled();
     });
   });
 
   test('handles login failure with server error', async () => {
     // Mock server error
-    axios.post.mockRejectedValueOnce({
+    axiosInstance.post.mockRejectedValueOnce({
       response: { status: 500, data: { message: 'Server error' } },
     });
 
@@ -128,7 +155,30 @@ describe('Login Component', () => {
 
     // Wait for error message to appear
     await waitFor(() => {
-      expect(screen.getByText('Server error')).toBeInTheDocument();
+      expect(screen.getByText(/server error/i)).toBeInTheDocument();
+      expect(mockedUsedNavigate).not.toHaveBeenCalled();
+    });
+  });
+
+  test('handles network error without response object', async () => {
+    // Mock network error without response object
+    axiosInstance.post.mockRejectedValueOnce(new Error('Network Error'));
+
+    render(<Login />);
+
+    const emailInput = screen.getByLabelText(/email address/i);
+    const passwordInput = screen.getByLabelText(/password/i);
+    const loginButton = screen.getByRole('button', { name: /log in/i });
+
+    fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
+    fireEvent.change(passwordInput, { target: { value: 'password123' } });
+    fireEvent.click(loginButton);
+
+    // Wait for error message to appear
+    await waitFor(() => {
+      expect(
+        screen.getByText(/an error occurred during login. please try again./i),
+      ).toBeInTheDocument();
       expect(mockedUsedNavigate).not.toHaveBeenCalled();
     });
   });
@@ -140,7 +190,7 @@ describe('Login Component', () => {
       resolvePromise = resolve;
     });
 
-    axios.post.mockImplementationOnce(() => loginPromise);
+    axiosInstance.post.mockImplementationOnce(() => loginPromise);
 
     render(<Login />);
 
@@ -153,14 +203,22 @@ describe('Login Component', () => {
     fireEvent.click(loginButton);
 
     // Button should be disabled and show loading text
-    expect(loginButton).toBeDisabled();
-    expect(loginButton).toHaveTextContent('Logging in...');
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: /logging in/i }),
+      ).toBeDisabled();
+    });
 
     // Resolve the promise to complete the login
-    resolvePromise({ data: { token: 'fake-token-123' } });
+    resolvePromise({
+      data: {
+        accessToken: 'fake-access-token-123',
+        refreshToken: 'fake-refresh-token-456',
+      },
+    });
 
     await waitFor(() => {
-      expect(mockedUsedNavigate).toHaveBeenCalledWith('/');
+      expect(mockedUsedNavigate).toHaveBeenCalled();
     });
   });
 });

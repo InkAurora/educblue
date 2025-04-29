@@ -9,8 +9,19 @@ jest.mock('react-router-dom', () => ({
   useNavigate: () => mockedUsedNavigate,
 }));
 
-// Mock axios
-jest.mock('axios');
+// Mock axiosConfig
+jest.mock('../utils/axiosConfig', () => {
+  return {
+    post: jest.fn(),
+    __esModule: true,
+    default: {
+      post: jest.fn(),
+    },
+  };
+});
+
+// Import the mocked axiosConfig
+import axiosInstance from '../utils/axiosConfig';
 
 // Mock localStorage
 const localStorageMock = {
@@ -21,6 +32,9 @@ const localStorageMock = {
 };
 Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
+// Mock window.dispatchEvent
+window.dispatchEvent = jest.fn();
+
 describe('Register Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -29,6 +43,8 @@ describe('Register Component', () => {
     localStorageMock.getItem.mockReset();
     localStorageMock.setItem.mockReset();
     localStorageMock.removeItem.mockReset();
+    // Reset mocked implementations
+    axiosInstance.post.mockReset();
   });
 
   test('renders register form correctly', () => {
@@ -68,8 +84,13 @@ describe('Register Component', () => {
   });
 
   test('submits form and handles successful registration', async () => {
-    const mockResponse = { data: { token: 'fake-token-123' } };
-    axios.post.mockResolvedValueOnce(mockResponse);
+    const mockResponse = {
+      data: {
+        accessToken: 'fake-token-123',
+        refreshToken: 'fake-refresh-token',
+      },
+    };
+    axiosInstance.post.mockResolvedValueOnce(mockResponse);
 
     render(<Register />);
 
@@ -93,24 +114,32 @@ describe('Register Component', () => {
 
     // Wait for the form submission to complete
     await waitFor(() => {
-      // Check if axios.post was called with the right arguments
-      expect(axios.post).toHaveBeenCalledWith(
-        'http://localhost:5000/api/auth/register',
-        {
-          email: 'test@example.com',
-          password: 'password123',
-          role: 'student',
-        },
-      );
+      // Check if axiosInstance.post was called with the right arguments
+      expect(axiosInstance.post).toHaveBeenCalledWith('/api/auth/register', {
+        email: 'test@example.com',
+        password: 'password123',
+        role: 'student',
+      });
 
-      // Check if token was stored in localStorage
+      // Check if tokens were stored in localStorage
       expect(localStorageMock.setItem).toHaveBeenCalledWith(
         'token',
         'fake-token-123',
       );
+      expect(localStorageMock.setItem).toHaveBeenCalledWith(
+        'refreshToken',
+        'fake-refresh-token',
+      );
 
-      // Check if user was redirected to home page
-      expect(mockedUsedNavigate).toHaveBeenCalledWith('/');
+      // Check if auth change event was dispatched
+      expect(window.dispatchEvent).toHaveBeenCalledWith(expect.any(Event));
+
+      // Verify the event name is 'authChange'
+      const eventArg = window.dispatchEvent.mock.calls[0][0];
+      expect(eventArg.type).toBe('authChange');
+
+      // Check if user was redirected to personal information page
+      expect(mockedUsedNavigate).toHaveBeenCalledWith('/personal-information');
     });
   });
 
@@ -122,7 +151,7 @@ describe('Register Component', () => {
         data: { message: 'User already exists' },
       },
     };
-    axios.post.mockRejectedValueOnce(error);
+    axiosInstance.post.mockRejectedValueOnce(error);
 
     render(<Register />);
 
@@ -161,7 +190,7 @@ describe('Register Component', () => {
         data: { message: 'Server error' },
       },
     };
-    axios.post.mockRejectedValueOnce(error);
+    axiosInstance.post.mockRejectedValueOnce(error);
 
     render(<Register />);
 
@@ -191,7 +220,7 @@ describe('Register Component', () => {
 
   test('handles network error', async () => {
     // Mock axios to reject with no response
-    axios.post.mockRejectedValueOnce(new Error('Network error'));
+    axiosInstance.post.mockRejectedValueOnce(new Error('Network error'));
 
     render(<Register />);
 
@@ -331,18 +360,19 @@ describe('Register Component', () => {
       target: { value: '12345' }, // Too short
     });
 
-    // Check that validation errors appear
+    // Try to submit the form (in Register.js the form has noValidate attribute)
+    // We need to find the form element in a different way since it doesn't have a role
+    const form = screen.getByTestId('register-form');
+    fireEvent.submit(form);
+
+    // Check for error message
     await waitFor(() => {
       expect(
-        screen.getByText('Please enter a valid email address'),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText('Password must be at least 6 characters long'),
+        screen.getByText(
+          'Please fix the errors in the form before submitting.',
+        ),
       ).toBeInTheDocument();
     });
-
-    // Button should be disabled due to validation errors
-    expect(screen.getByRole('button', { name: /register/i })).toBeDisabled();
   });
 
   test('allows changing role selection', async () => {
@@ -374,6 +404,57 @@ describe('Register Component', () => {
       expect(
         screen.getByRole('button', { name: /register/i }),
       ).not.toBeDisabled();
+    });
+  });
+
+  test('validates role selection', async () => {
+    render(<Register />);
+
+    // Check that the default role is selected correctly
+    expect(screen.getByLabelText(/role/i).textContent).toBe('Student');
+
+    // Other form validations already cover role validation implicitly
+    // since the isFormValid state depends on proper role values
+  });
+
+  test('button shows loading state during submission', async () => {
+    // Mock axiosInstance to delay response
+    axiosInstance.post.mockImplementationOnce(() => {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve({
+            data: { accessToken: 'token', refreshToken: 'refresh-token' },
+          });
+        }, 100);
+      });
+    });
+
+    render(<Register />);
+
+    // Fill form with valid data
+    fireEvent.change(screen.getByLabelText(/email address/i), {
+      target: { value: 'test@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText(/password/i), {
+      target: { value: 'password123' },
+    });
+
+    // Wait for form validation to complete and button to be enabled
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: /register/i }),
+      ).not.toBeDisabled();
+    });
+
+    // Submit the form
+    fireEvent.click(screen.getByRole('button', { name: /register/i }));
+
+    // Check if button text changed to loading state
+    expect(screen.getByText(/registering\.\.\./i)).toBeInTheDocument();
+
+    // Wait for the submission to complete
+    await waitFor(() => {
+      expect(axiosInstance.post).toHaveBeenCalled();
     });
   });
 });

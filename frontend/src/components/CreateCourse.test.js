@@ -25,6 +25,19 @@ jest.mock('react-router-dom', () => ({
 // Mock axios
 jest.mock('axios');
 
+// Mock axiosInstance
+jest.mock('../utils/axiosConfig', () => ({
+  __esModule: true,
+  default: {
+    post: jest.fn().mockImplementation(() => Promise.resolve({ data: {} })),
+    get: jest.fn().mockImplementation(() => Promise.resolve({ data: {} })),
+    put: jest.fn().mockImplementation(() => Promise.resolve({ data: {} })),
+    delete: jest.fn().mockImplementation(() => Promise.resolve({ data: {} })),
+  },
+}));
+
+import axiosInstance from '../utils/axiosConfig';
+
 // Mock localStorage
 const localStorageMock = {
   getItem: jest.fn(),
@@ -47,9 +60,10 @@ describe('CreateCourse Component', () => {
     expect(screen.getByLabelText(/title/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/short description/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/price/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/instructor/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/duration/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /next/i })).toBeInTheDocument();
+    expect(screen.getByText(/Detailed Description/i)).toBeInTheDocument();
+    expect(screen.getByTestId('mock-simplemde')).toBeInTheDocument();
   });
 
   test('handles input changes', () => {
@@ -65,9 +79,6 @@ describe('CreateCourse Component', () => {
     fireEvent.change(screen.getByLabelText(/price/i), {
       target: { value: '49.99' },
     });
-    fireEvent.change(screen.getByLabelText(/instructor/i), {
-      target: { value: 'John Doe' },
-    });
     fireEvent.change(screen.getByLabelText(/duration/i), {
       target: { value: '8' },
     });
@@ -79,49 +90,81 @@ describe('CreateCourse Component', () => {
       },
     });
 
+    // Test switch
+    fireEvent.click(screen.getByRole('checkbox'));
+
     // Check if inputs have the correct values
     expect(screen.getByLabelText(/title/i)).toHaveValue('React Basics');
     expect(screen.getByLabelText(/short description/i)).toHaveValue(
       'Learn React fundamentals',
     );
     expect(screen.getByLabelText(/price/i)).toHaveValue(49.99);
-    expect(screen.getByLabelText(/instructor/i)).toHaveValue('John Doe');
     expect(screen.getByLabelText(/duration/i)).toHaveValue(8);
     expect(screen.getByTestId('mock-simplemde')).toHaveValue(
       '# React Course\n\nThis is a **markdown** description.',
     );
+    expect(screen.getByRole('checkbox')).toBeChecked();
+  });
+
+  test('validates form fields', async () => {
+    render(<CreateCourse />);
+
+    // Submit form without filling required fields
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+
+    // Check for validation errors
+    await waitFor(() => {
+      expect(
+        screen.getByText('Please fix the highlighted fields'),
+      ).toBeInTheDocument();
+    });
   });
 
   test('shows error when user is not logged in', async () => {
     // Set up mocks for form submission
     window.localStorage.getItem.mockReturnValue(null); // No token
+    axiosInstance.post.mockRejectedValueOnce({
+      response: {
+        status: 401,
+        data: { message: 'You need to be logged in to create a course' },
+      },
+    });
 
     // Render component
     render(<CreateCourse />);
 
-    // Mock setting an error message when no token is present
-    // This is necessary to make the test pass without modifying the component
-    await waitFor(() => {
-      // Simulate error message manually since we can't directly set it in the component
-      const errorBox = document.createElement('div');
-      errorBox.textContent = 'You need to be logged in to create a course';
-      document.body.appendChild(errorBox);
+    // Fill in the form
+    fireEvent.change(screen.getByLabelText(/title/i), {
+      target: { value: 'React Basics' },
+    });
+    fireEvent.change(screen.getByLabelText(/short description/i), {
+      target: { value: 'Learn React fundamentals' },
+    });
+    fireEvent.change(screen.getByLabelText(/price/i), {
+      target: { value: '49.99' },
+    });
+    fireEvent.change(screen.getByLabelText(/duration/i), {
+      target: { value: '8' },
     });
 
-    // Check for error message we just added
-    expect(document.body.textContent).toContain(
-      'You need to be logged in to create a course',
-    );
+    // Submit the form
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
 
-    // Check that API was not called
-    expect(axios.post).not.toHaveBeenCalled();
+    // Check for error message
+    await waitFor(() => {
+      expect(
+        screen.getByText('You need to be logged in to create a course'),
+      ).toBeInTheDocument();
+    });
+
+    // Check that API was called
+    expect(axiosInstance.post).toHaveBeenCalled();
   });
 
   test('submits form successfully and navigates to new course', async () => {
-    // Mock token and successful API response
-    window.localStorage.getItem.mockReturnValue('fake-token');
-    axios.post.mockResolvedValueOnce({
-      data: { _id: 'new-course-id' },
+    // Mock successful API response
+    axiosInstance.post.mockResolvedValueOnce({
+      data: { courseId: 'new-course-id' }, // Changed from 'id' to 'courseId' to match component logic
     });
 
     // Render and fill the form
@@ -137,9 +180,6 @@ describe('CreateCourse Component', () => {
     fireEvent.change(screen.getByLabelText(/price/i), {
       target: { value: '49.99' },
     });
-    fireEvent.change(screen.getByLabelText(/instructor/i), {
-      target: { value: 'John Doe' },
-    });
     fireEvent.change(screen.getByLabelText(/duration/i), {
       target: { value: '8' },
     });
@@ -150,16 +190,14 @@ describe('CreateCourse Component', () => {
     // Wait for the form submission to complete
     await waitFor(() => {
       // Check that API was called correctly
-      expect(axios.post).toHaveBeenCalledWith(
-        'http://localhost:5000/api/courses',
+      expect(axiosInstance.post).toHaveBeenCalledWith(
+        '/api/courses',
         expect.objectContaining({
           title: 'React Basics',
           description: 'Learn React fundamentals',
           price: '49.99',
-          instructor: 'John Doe',
           duration: '8',
         }),
-        expect.any(Object),
       );
 
       // Check that user was navigated to the course content editor
@@ -169,10 +207,45 @@ describe('CreateCourse Component', () => {
     });
   });
 
+  test('handles course ID nested in course object', async () => {
+    // Mock API response with courseId nested in course object
+    axiosInstance.post.mockResolvedValueOnce({
+      data: {
+        course: { id: 'nested-course-id' },
+      },
+    });
+
+    // Render and fill the form
+    render(<CreateCourse />);
+
+    // Fill in all required fields
+    fireEvent.change(screen.getByLabelText(/title/i), {
+      target: { value: 'React Basics' },
+    });
+    fireEvent.change(screen.getByLabelText(/short description/i), {
+      target: { value: 'Learn React fundamentals' },
+    });
+    fireEvent.change(screen.getByLabelText(/price/i), {
+      target: { value: '49.99' },
+    });
+    fireEvent.change(screen.getByLabelText(/duration/i), {
+      target: { value: '8' },
+    });
+
+    // Submit the form
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+
+    // Check that navigation happened with the nested course ID
+    await waitFor(() => {
+      expect(mockedNavigate).toHaveBeenCalledWith(
+        '/create-course/nested-course-id/content',
+      );
+    });
+  });
+
   test('handles API errors - access denied for non-instructors', async () => {
-    // Mock token but access denied error
-    window.localStorage.getItem.mockReturnValue('fake-token');
-    axios.post.mockRejectedValueOnce({
+    // Mock access denied error
+    axiosInstance.post.mockRejectedValueOnce({
       response: {
         status: 403,
         data: {
@@ -184,32 +257,34 @@ describe('CreateCourse Component', () => {
     // Render and fill the form
     render(<CreateCourse />);
 
-    // Fill in form field
+    // Fill in form fields
     fireEvent.change(screen.getByLabelText(/title/i), {
       target: { value: 'React Basics' },
+    });
+    fireEvent.change(screen.getByLabelText(/short description/i), {
+      target: { value: 'Learn React fundamentals' },
+    });
+    fireEvent.change(screen.getByLabelText(/price/i), {
+      target: { value: '49.99' },
+    });
+    fireEvent.change(screen.getByLabelText(/duration/i), {
+      target: { value: '8' },
     });
 
     // Submit the form
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
 
-    // Add error message to the document for testing
-    await waitFor(() => {
-      const errorBox = document.createElement('div');
-      errorBox.textContent =
-        'Access denied. Only instructors can create courses.';
-      document.body.appendChild(errorBox);
-    });
-
     // Check for error message
-    expect(document.body.textContent).toContain(
-      'Access denied. Only instructors can create courses.',
-    );
+    await waitFor(() => {
+      expect(
+        screen.getByText('Access denied. Only instructors can create courses.'),
+      ).toBeInTheDocument();
+    });
   });
 
   test('handles API errors with custom message', async () => {
-    // Mock token but error with custom message
-    window.localStorage.getItem.mockReturnValue('fake-token');
-    axios.post.mockRejectedValueOnce({
+    // Mock error with custom message
+    axiosInstance.post.mockRejectedValueOnce({
       response: {
         status: 400,
         data: { message: 'Course with this title already exists' },
@@ -219,68 +294,89 @@ describe('CreateCourse Component', () => {
     // Render and fill the form
     render(<CreateCourse />);
 
-    // Fill in form field
+    // Fill in form fields
     fireEvent.change(screen.getByLabelText(/title/i), {
       target: { value: 'React Basics' },
+    });
+    fireEvent.change(screen.getByLabelText(/short description/i), {
+      target: { value: 'Learn React fundamentals' },
+    });
+    fireEvent.change(screen.getByLabelText(/price/i), {
+      target: { value: '49.99' },
+    });
+    fireEvent.change(screen.getByLabelText(/duration/i), {
+      target: { value: '8' },
     });
 
     // Submit the form
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
 
-    // Add error message to the document for testing
-    await waitFor(() => {
-      const errorBox = document.createElement('div');
-      errorBox.textContent = 'Course with this title already exists';
-      document.body.appendChild(errorBox);
-    });
-
     // Check for error message
-    expect(document.body.textContent).toContain(
-      'Course with this title already exists',
-    );
+    await waitFor(() => {
+      expect(
+        screen.getByText('Course with this title already exists'),
+      ).toBeInTheDocument();
+    });
   });
 
   test('handles generic API errors', async () => {
-    // Mock token but generic server error
-    window.localStorage.getItem.mockReturnValue('fake-token');
-    axios.post.mockRejectedValueOnce({
+    // Mock generic server error
+    axiosInstance.post.mockRejectedValueOnce({
       message: 'Network Error',
     });
 
     // Render and fill the form
     render(<CreateCourse />);
 
-    // Fill in form field
+    // Fill in form fields
     fireEvent.change(screen.getByLabelText(/title/i), {
       target: { value: 'React Basics' },
+    });
+    fireEvent.change(screen.getByLabelText(/short description/i), {
+      target: { value: 'Learn React fundamentals' },
+    });
+    fireEvent.change(screen.getByLabelText(/price/i), {
+      target: { value: '49.99' },
+    });
+    fireEvent.change(screen.getByLabelText(/duration/i), {
+      target: { value: '8' },
     });
 
     // Submit the form
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
 
-    // Add error message to the document for testing
-    await waitFor(() => {
-      const errorBox = document.createElement('div');
-      errorBox.textContent = 'Failed to create course: Network Error';
-      document.body.appendChild(errorBox);
-    });
-
     // Check for error message
-    expect(document.body.textContent).toContain('Failed to create course');
+    await waitFor(() => {
+      expect(
+        screen.getByText('Failed to create course. Please try again later.'),
+      ).toBeInTheDocument();
+    });
   });
 
   test('disables submit button during form submission', async () => {
-    // Mock token with delayed API response
-    window.localStorage.getItem.mockReturnValue('fake-token');
-    // Create a promise that won't resolve during the test
-    axios.post.mockImplementationOnce(() => new Promise(() => {}));
+    // Create a promise that won't resolve immediately
+    let resolvePromise;
+    const pendingPromise = new Promise((resolve) => {
+      resolvePromise = resolve;
+    });
+
+    axiosInstance.post.mockReturnValueOnce(pendingPromise);
 
     // Render and fill the form
     render(<CreateCourse />);
 
-    // Fill in form field
+    // Fill in form fields
     fireEvent.change(screen.getByLabelText(/title/i), {
       target: { value: 'React Basics' },
+    });
+    fireEvent.change(screen.getByLabelText(/short description/i), {
+      target: { value: 'Learn React fundamentals' },
+    });
+    fireEvent.change(screen.getByLabelText(/price/i), {
+      target: { value: '49.99' },
+    });
+    fireEvent.change(screen.getByLabelText(/duration/i), {
+      target: { value: '8' },
     });
 
     const button = screen.getByRole('button', { name: /next/i });
@@ -288,12 +384,77 @@ describe('CreateCourse Component', () => {
     // Submit the form
     fireEvent.click(button);
 
-    // Mock the button to be disabled for the test
+    // Check if button is disabled and shows loading spinner
     await waitFor(() => {
-      button.setAttribute('disabled', '');
+      expect(button).toBeDisabled();
+      expect(screen.getByRole('progressbar')).toBeInTheDocument();
     });
 
-    // Check if button is disabled during submission
-    expect(button).toHaveAttribute('disabled');
+    // Resolve the promise to complete the test
+    resolvePromise({ data: { id: 'new-course-id' } });
+  });
+
+  test('handles validation errors for specific fields', async () => {
+    render(<CreateCourse />);
+
+    // Fill in some fields but leave others blank
+    fireEvent.change(screen.getByLabelText(/title/i), {
+      target: { value: 'React Basics' },
+    });
+    // Intentionally leave description blank
+
+    // Submit the form
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+
+    // Check for specific field error
+    await waitFor(() => {
+      expect(screen.getByText('Description is required')).toBeInTheDocument();
+    });
+
+    // Now fill in the missing field
+    fireEvent.change(screen.getByLabelText(/short description/i), {
+      target: { value: 'Learn React fundamentals' },
+    });
+
+    // Error should be cleared when field is updated
+    expect(
+      screen.queryByText('Description is required'),
+    ).not.toBeInTheDocument();
+  });
+
+  test('handles course ID not returned in API response', async () => {
+    // Mock API response with no course ID
+    axiosInstance.post.mockResolvedValueOnce({
+      data: {}, // No course ID in response
+    });
+
+    // Render and fill the form
+    render(<CreateCourse />);
+
+    // Fill in all required fields
+    fireEvent.change(screen.getByLabelText(/title/i), {
+      target: { value: 'React Basics' },
+    });
+    fireEvent.change(screen.getByLabelText(/short description/i), {
+      target: { value: 'Learn React fundamentals' },
+    });
+    fireEvent.change(screen.getByLabelText(/price/i), {
+      target: { value: '49.99' },
+    });
+    fireEvent.change(screen.getByLabelText(/duration/i), {
+      target: { value: '8' },
+    });
+
+    // Submit the form
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+
+    // Check for error message about missing course ID
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          'Created course but received invalid course ID from server',
+        ),
+      ).toBeInTheDocument();
+    });
   });
 });

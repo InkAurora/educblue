@@ -33,6 +33,9 @@ jest.mock('./components/MyCourses', () => () => (
 jest.mock('./components/Success', () => () => (
   <div data-testid='success'>Success Component</div>
 ));
+jest.mock('./components/PersonalInformation', () => () => (
+  <div data-testid='personal-information'>Personal Information Component</div>
+));
 
 // Mock react-router-dom without requiring the actual module
 jest.mock('react-router-dom', () => ({
@@ -56,10 +59,19 @@ describe('App', () => {
     expect(screen.getByTestId('navbar')).toBeInTheDocument();
   });
 
+  test('renders page title', () => {
+    render(<App />);
+    expect(screen.getByText('Educ Blue')).toBeInTheDocument();
+  });
+
   test('renders course list component', () => {
     render(<App />);
-    // In our mocked Routes environment, all routes are rendered
     expect(screen.getByTestId('course-list')).toBeInTheDocument();
+  });
+
+  test('renders course details component', () => {
+    render(<App />);
+    expect(screen.getByTestId('course-details')).toBeInTheDocument();
   });
 
   test('renders login component', () => {
@@ -67,8 +79,41 @@ describe('App', () => {
     expect(screen.getByTestId('login')).toBeInTheDocument();
   });
 
+  test('renders register component', () => {
+    render(<App />);
+    expect(screen.getByTestId('register')).toBeInTheDocument();
+  });
+
+  test('renders success component', () => {
+    render(<App />);
+    expect(screen.getByTestId('success')).toBeInTheDocument();
+  });
+
   test('renders user dashboard component', () => {
     render(<App />);
     expect(screen.getByTestId('dashboard')).toBeInTheDocument();
+  });
+
+  test('renders create course component', () => {
+    render(<App />);
+    expect(screen.getByTestId('create-course')).toBeInTheDocument();
+  });
+
+  test('renders course content editor component', () => {
+    render(<App />);
+    expect(screen.getByTestId('content-editor')).toBeInTheDocument();
+  });
+
+  test('renders my courses component', () => {
+    render(<App />);
+    expect(screen.getByTestId('my-courses')).toBeInTheDocument();
+  });
+
+  test('renders personal information component', () => {
+    render(<App />);
+    // Using getAllByTestId as there are two routes rendering the same component
+    expect(
+      screen.getAllByTestId('personal-information').length,
+    ).toBeGreaterThanOrEqual(1);
   });
 });

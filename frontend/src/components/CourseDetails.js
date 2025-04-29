@@ -361,9 +361,19 @@ function CourseDetails({ 'data-testid': dataTestId }) {
             }}
           >
             <Box sx={{ mb: { xs: 2, sm: 0 } }}>
-              <Typography variant='h5' color='primary' gutterBottom>
-                ${course.price}
-              </Typography>
+              {/* Only show price if user is not enrolled */}
+              {!isEnrolled && (
+                <Typography variant='h5' color='primary' gutterBottom>
+                  ${course.price}
+                </Typography>
+              )}
+              {/* Show "Enrolled" badge for enrolled users */}
+              {isEnrolled && (
+                <Typography variant='h6' color='success.main' gutterBottom>
+                  <CheckCircleIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                  Enrolled
+                </Typography>
+              )}
               <Typography variant='body2' color='text.secondary'>
                 Duration: {course.duration} hours
               </Typography>

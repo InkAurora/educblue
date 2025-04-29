@@ -148,6 +148,7 @@ function Register() {
             onSubmit={handleSubmit}
             noValidate
             sx={{ mt: 1 }}
+            data-testid='register-form'
           >
             <TextField
               margin='normal'

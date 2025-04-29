@@ -52,7 +52,7 @@ describe('Success Component', () => {
   test('shows success message after successful enrollment', async () => {
     // Mock location with a session ID
     jest.spyOn(require('react-router-dom'), 'useLocation').mockReturnValue({
-      search: '?session_id=test_session_123',
+      search: '?session_id=test_session_123&course_id=course123',
     });
 
     // Mock localStorage token
@@ -72,7 +72,10 @@ describe('Success Component', () => {
     // Verify axios was called with the right parameters
     expect(axios.post).toHaveBeenCalledWith(
       'http://localhost:5000/api/enroll',
-      { session_id: 'test_session_123' },
+      {
+        sessionId: 'test_session_123',
+        courseId: 'course123',
+      },
       {
         headers: {
           Authorization: 'Bearer valid-token',
@@ -172,10 +175,10 @@ describe('Success Component', () => {
     });
   });
 
-  test('navigates back to courses when return button is clicked', async () => {
-    // Mock location with a session ID
+  test('navigates to course when continue button is clicked', async () => {
+    // Mock location with a session ID and course ID
     jest.spyOn(require('react-router-dom'), 'useLocation').mockReturnValue({
-      search: '?session_id=test_session_123',
+      search: '?session_id=test_session_123&course_id=course123',
     });
 
     // Mock localStorage token
@@ -194,6 +197,32 @@ describe('Success Component', () => {
 
     // Wait for the success state
     await waitFor(() => {
+      expect(screen.getByText('Continue to Course')).toBeInTheDocument();
+    });
+
+    // Click the continue button
+    userEvent.click(screen.getByText('Continue to Course'));
+
+    // Check if navigation was called with correct course ID
+    expect(mockNavigate).toHaveBeenCalledWith('/courses/course123');
+  });
+
+  test('navigates back to courses when return button is clicked on error', async () => {
+    // Mock location without a session ID to trigger error
+    jest.spyOn(require('react-router-dom'), 'useLocation').mockReturnValue({
+      search: '',
+    });
+
+    // Mock navigate function
+    const mockNavigate = jest.fn();
+    jest
+      .spyOn(require('react-router-dom'), 'useNavigate')
+      .mockReturnValue(mockNavigate);
+
+    render(<Success />);
+
+    // Wait for the error state to be shown with Return to Courses button
+    await waitFor(() => {
       expect(screen.getByText('Return to Courses')).toBeInTheDocument();
     });
 
@@ -202,5 +231,46 @@ describe('Success Component', () => {
 
     // Check if navigation was called
     expect(mockNavigate).toHaveBeenCalledWith('/');
+  });
+
+  test('uses enrollingCourseId from localStorage when course_id is not in URL', async () => {
+    // Mock location with a session ID but no course_id
+    jest.spyOn(require('react-router-dom'), 'useLocation').mockReturnValue({
+      search: '?session_id=test_session_123',
+    });
+
+    // Mock localStorage token and enrollingCourseId
+    localStorage.getItem.mockImplementation((key) => {
+      if (key === 'token') return 'valid-token';
+      if (key === 'enrollingCourseId') return 'localStorage-course-123';
+      return null;
+    });
+
+    // Mock successful API response
+    axios.post.mockResolvedValueOnce({});
+
+    render(<Success />);
+
+    // Wait for the success state to be shown
+    await waitFor(() => {
+      expect(screen.getByText('Payment Successful')).toBeInTheDocument();
+    });
+
+    // Verify axios was called with the right parameters including course ID from localStorage
+    expect(axios.post).toHaveBeenCalledWith(
+      'http://localhost:5000/api/enroll',
+      {
+        sessionId: 'test_session_123',
+        courseId: 'localStorage-course-123',
+      },
+      {
+        headers: {
+          Authorization: 'Bearer valid-token',
+        },
+      },
+    );
+
+    // Verify localStorage.removeItem was called to clean up
+    expect(localStorage.removeItem).toHaveBeenCalledWith('enrollingCourseId');
   });
 });

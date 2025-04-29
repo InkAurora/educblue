@@ -1,6 +1,22 @@
 import React from 'react';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  act,
+  waitFor,
+} from '@testing-library/react';
 import Navbar from './Navbar';
+import axiosInstance from '../utils/axiosConfig';
+
+// Mock axios instance
+jest.mock('../utils/axiosConfig', () => ({
+  __esModule: true,
+  default: {
+    get: jest.fn(),
+    post: jest.fn(() => Promise.resolve({ data: {} })),
+  },
+}));
 
 // Mock jwtDecode as a named export
 jest.mock('jwt-decode', () => ({
@@ -88,24 +104,76 @@ describe('Navbar Component', () => {
     expect(screen.queryByText('Register')).not.toBeInTheDocument();
   });
 
-  test('handles logout correctly', () => {
+  test('handles logout correctly', async () => {
     // Mock a token in localStorage
-    window.localStorage.getItem.mockReturnValue('fake-token-123');
+    window.localStorage.getItem.mockImplementation((key) => {
+      if (key === 'token') return 'fake-token-123';
+      if (key === 'refreshToken') return 'fake-refresh-token-123';
+      return null;
+    });
     jwtDecode.mockReturnValue({ email: 'test@example.com' });
+
+    // Setup axios mock response for logout
+    axiosInstance.post.mockResolvedValueOnce({ data: { success: true } });
 
     render(<Navbar />);
 
     // Find and click the logout link
     const logoutButton = screen.getByText('Logout');
-    fireEvent.click(logoutButton);
+
+    await act(async () => {
+      fireEvent.click(logoutButton);
+    });
+
+    // Verify axios was called with correct parameters
+    expect(axiosInstance.post).toHaveBeenCalledWith('/api/auth/logout', {
+      refreshToken: 'fake-refresh-token-123',
+    });
 
     // Check if token was removed from localStorage
     expect(window.localStorage.removeItem).toHaveBeenCalledWith('token');
+    expect(window.localStorage.removeItem).toHaveBeenCalledWith('refreshToken');
 
     // Check if user was redirected to home page
     expect(mockedUsedNavigate).toHaveBeenCalledWith('/');
 
     // Check if authChange event was dispatched
+    expect(window.dispatchEvent).toHaveBeenCalled();
+  });
+
+  test('handles logout when API call fails', async () => {
+    // Mock a token in localStorage
+    window.localStorage.getItem.mockImplementation((key) => {
+      if (key === 'token') return 'fake-token-123';
+      if (key === 'refreshToken') return 'fake-refresh-token-123';
+      return null;
+    });
+    jwtDecode.mockReturnValue({ email: 'test@example.com' });
+
+    // Setup axios mock to throw an error
+    axiosInstance.post.mockRejectedValueOnce(new Error('Network Error'));
+
+    render(<Navbar />);
+
+    // Find and click the logout link
+    const logoutButton = screen.getByText('Logout');
+
+    // Suppress console.error for this test
+    const originalError = console.error;
+    console.error = jest.fn();
+
+    await act(async () => {
+      fireEvent.click(logoutButton);
+    });
+
+    // Verify error was logged
+    expect(console.error).toHaveBeenCalled();
+    console.error = originalError;
+
+    // Should still clean up even if API fails
+    expect(window.localStorage.removeItem).toHaveBeenCalledWith('token');
+    expect(window.localStorage.removeItem).toHaveBeenCalledWith('refreshToken');
+    expect(mockedUsedNavigate).toHaveBeenCalledWith('/');
     expect(window.dispatchEvent).toHaveBeenCalled();
   });
 
@@ -464,5 +532,89 @@ describe('Navbar Component', () => {
     const myCoursesIndex = html.indexOf('My Courses');
 
     expect(createCourseIndex).toBeLessThan(myCoursesIndex);
+  });
+
+  test('shows Profile button when user is logged in', () => {
+    // Mock a token in localStorage
+    window.localStorage.getItem.mockReturnValue('fake-token-123');
+    jwtDecode.mockReturnValue({ email: 'test@example.com' });
+
+    render(<Navbar />);
+
+    // Check if Profile button is rendered
+    expect(screen.getByText('Profile')).toBeInTheDocument();
+    expect(screen.getByText('Profile').getAttribute('href')).toBe(
+      '/personal-information',
+    );
+  });
+
+  test('fetchUserData sets user full name when API returns data', async () => {
+    // Mock a token in localStorage
+    window.localStorage.getItem.mockReturnValue('fake-token-123');
+    jwtDecode.mockReturnValue({ email: 'test@example.com' });
+
+    // Mock successful API response
+    axiosInstance.get.mockResolvedValueOnce({
+      data: {
+        fullName: 'John Doe',
+      },
+    });
+
+    await act(async () => {
+      render(<Navbar />);
+    });
+
+    // Check API call was made with correct parameters
+    expect(axiosInstance.get).toHaveBeenCalledWith('/api/users/me', {
+      headers: {
+        Authorization: 'Bearer fake-token-123',
+      },
+    });
+
+    // Check the user's full name is displayed
+    expect(screen.getByText('Hello, John Doe')).toBeInTheDocument();
+  });
+
+  test('fetchUserData handles API error gracefully', async () => {
+    // Mock a token in localStorage
+    window.localStorage.getItem.mockReturnValue('fake-token-123');
+    jwtDecode.mockReturnValue({ email: 'test@example.com' });
+
+    // Mock failed API response
+    axiosInstance.get.mockRejectedValueOnce(new Error('API Error'));
+
+    // Suppress console.error for this test
+    const originalError = console.error;
+    console.error = jest.fn();
+
+    await act(async () => {
+      render(<Navbar />);
+    });
+
+    // Check error was logged
+    expect(console.error).toHaveBeenCalled();
+    console.error = originalError;
+
+    // Should still display email as fallback
+    expect(screen.getByText('Hello, test@example.com')).toBeInTheDocument();
+  });
+
+  test('handles error in token decoding', () => {
+    // Mock a token in localStorage
+    window.localStorage.getItem.mockReturnValue('invalid-token');
+
+    // Mock jwtDecode to throw an error
+    jwtDecode.mockImplementationOnce(() => {
+      throw new Error('Invalid token');
+    });
+
+    render(<Navbar />);
+
+    // Check that token was removed from localStorage
+    expect(window.localStorage.removeItem).toHaveBeenCalledWith('token');
+
+    // Check login status was reset
+    expect(screen.getByText('Login')).toBeInTheDocument();
+    expect(screen.getByText('Register')).toBeInTheDocument();
   });
 });
