@@ -19,12 +19,15 @@ import {
   Button,
   Grid,
   TextField,
+  Card,
+  CardContent,
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import DescriptionIcon from '@mui/icons-material/Description';
 import QuizIcon from '@mui/icons-material/Quiz';
 import LockIcon from '@mui/icons-material/Lock';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import axiosInstance from '../utils/axiosConfig';
 
 // Initialize Stripe promise - you'll need to replace with your actual publishable key
@@ -376,7 +379,7 @@ function CourseDetails({ 'data-testid': dataTestId }) {
                     onClick={handlePayment}
                     disabled={processing}
                   >
-                    {processing ? 'Processing...' : 'Pay Now'}
+                    {processing ? 'Processing...' : 'Enroll Now'}
                   </Button>
                 ) : (
                   <Button
@@ -407,11 +410,33 @@ function CourseDetails({ 'data-testid': dataTestId }) {
                 Course Content
               </Typography>
 
-              {/* Access alert for non-enrolled users */}
+              {/* Enhanced Access warning for non-enrolled users */}
               {!isEnrolled && !isInstructor && (
-                <Alert severity='info' sx={{ mb: 3 }}>
-                  Please enroll to access course content
-                </Alert>
+                <Card
+                  sx={{
+                    mb: 3,
+                    border: '1px solid #3f51b5',
+                    backgroundColor: '#eef1fa',
+                  }}
+                >
+                  <CardContent
+                    sx={{ display: 'flex', alignItems: 'center', gap: 2 }}
+                  >
+                    <ErrorOutlineIcon color='primary' fontSize='large' />
+                    <Box>
+                      <Typography
+                        variant='subtitle1'
+                        sx={{ fontWeight: 'bold', color: '#3f51b5' }}
+                      >
+                        Locked Content
+                      </Typography>
+                      <Typography variant='body2' color='text.secondary'>
+                        You need to enroll in this course to access the full
+                        content.
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
               )}
 
               <Grid container spacing={3}>
@@ -457,47 +482,69 @@ function CourseDetails({ 'data-testid': dataTestId }) {
                     {/* Content for non-enrolled users */}
                     {!isEnrolled && !isInstructor ? (
                       <Box sx={{ textAlign: 'center', py: 4 }}>
-                        <LockIcon
+                        <Card
                           sx={{
-                            fontSize: 60,
-                            color: 'text.secondary',
-                            mb: 2,
+                            backgroundColor: '#eef1fa',
+                            border: '1px solid #3f51b5',
+                            maxWidth: 500,
+                            margin: '0 auto',
+                            p: 2,
                           }}
-                        />
-                        <Typography variant='h6' gutterBottom>
-                          Content Locked
-                        </Typography>
-                        <Typography
-                          variant='body1'
-                          color='text.secondary'
-                          paragraph
                         >
-                          You need to enroll in this course to access the
-                          content.
-                        </Typography>
-                        {course.price > 0 ? (
-                          <Button
-                            variant='contained'
-                            color='primary'
-                            onClick={handlePayment}
-                            disabled={processing}
-                            sx={{ mt: 2 }}
-                          >
-                            {processing
-                              ? 'Processing...'
-                              : `Pay Now $${course.price}`}
-                          </Button>
-                        ) : (
-                          <Button
-                            variant='contained'
-                            color='primary'
-                            onClick={handleEnrollFree}
-                            disabled={processing}
-                            sx={{ mt: 2 }}
-                          >
-                            {processing ? 'Processing...' : 'Enroll for Free'}
-                          </Button>
-                        )}
+                          <CardContent>
+                            <LockIcon
+                              sx={{
+                                fontSize: 80,
+                                color: '#3f51b5',
+                                mb: 2,
+                              }}
+                            />
+                            <Typography
+                              variant='h5'
+                              gutterBottom
+                              sx={{ color: '#3f51b5', fontWeight: 'bold' }}
+                            >
+                              Locked Content
+                            </Typography>
+                            <Typography
+                              variant='body1'
+                              color='text.secondary'
+                              paragraph
+                              sx={{ mb: 3 }}
+                            >
+                              This course content is only available to enrolled
+                              students. Please enroll to access all lessons,
+                              videos, and course materials.
+                            </Typography>
+                            {course.price > 0 ? (
+                              <Button
+                                variant='contained'
+                                color='primary'
+                                onClick={handlePayment}
+                                disabled={processing}
+                                size='large'
+                                fullWidth
+                              >
+                                {processing
+                                  ? 'Processing...'
+                                  : `Enroll Now - $${course.price}`}
+                              </Button>
+                            ) : (
+                              <Button
+                                variant='contained'
+                                color='primary'
+                                onClick={handleEnrollFree}
+                                disabled={processing}
+                                size='large'
+                                fullWidth
+                              >
+                                {processing
+                                  ? 'Processing...'
+                                  : 'Enroll For Free'}
+                              </Button>
+                            )}
+                          </CardContent>
+                        </Card>
                       </Box>
                     ) : selectedContent ? (
                       <Box>
@@ -616,8 +663,74 @@ function CourseDetails({ 'data-testid': dataTestId }) {
                 </Grid>
               </Grid>
             </Box>
+          ) : // Show locked content warning for empty courses when user is not enrolled
+          !isEnrolled && !isInstructor ? (
+            <Paper variant='outlined' sx={{ p: 3, mt: 4 }}>
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Card
+                  sx={{
+                    backgroundColor: '#eef1fa',
+                    border: '1px solid #3f51b5',
+                    maxWidth: 500,
+                    margin: '0 auto',
+                    p: 2,
+                  }}
+                >
+                  <CardContent>
+                    <LockIcon
+                      sx={{
+                        fontSize: 80,
+                        color: '#3f51b5',
+                        mb: 2,
+                      }}
+                    />
+                    <Typography
+                      variant='h5'
+                      gutterBottom
+                      sx={{ color: '#3f51b5', fontWeight: 'bold' }}
+                    >
+                      Locked Content
+                    </Typography>
+                    <Typography
+                      variant='body1'
+                      color='text.secondary'
+                      paragraph
+                      sx={{ mb: 3 }}
+                    >
+                      This course content is only available to enrolled
+                      students. Please enroll to access all course materials.
+                    </Typography>
+                    {course.price > 0 ? (
+                      <Button
+                        variant='contained'
+                        color='primary'
+                        onClick={handlePayment}
+                        disabled={processing}
+                        size='large'
+                        fullWidth
+                      >
+                        {processing
+                          ? 'Processing...'
+                          : `Enroll Now - $${course.price}`}
+                      </Button>
+                    ) : (
+                      <Button
+                        variant='contained'
+                        color='primary'
+                        onClick={handleEnrollFree}
+                        disabled={processing}
+                        size='large'
+                        fullWidth
+                      >
+                        {processing ? 'Processing...' : 'Enroll For Free'}
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              </Box>
+            </Paper>
           ) : (
-            <Paper variant='outlined' sx={{ p: 3 }}>
+            <Paper variant='outlined' sx={{ p: 3, mt: 4 }}>
               <Typography variant='body2' color='text.secondary'>
                 No content available for this course.
               </Typography>
