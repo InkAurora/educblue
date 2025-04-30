@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import CourseContent from './CourseContent';
+import CourseContent from './CourseContent'; // Importing directly from the same directory
 import useCourseProgress from '../../hooks/useCourseProgress';
 import axiosInstance from '../../utils/axiosConfig';
 

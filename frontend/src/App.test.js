@@ -25,7 +25,7 @@ jest.mock('./components/CourseList', () => () => (
 jest.mock('./components/CourseDetails', () => () => (
   <div data-testid='mock-course-details'>Course Details Component</div>
 ));
-jest.mock('./components/CourseContent', () => () => (
+jest.mock('./components/courses/CourseContent', () => () => (
   <div data-testid='mock-course-content'>Course Content Component</div>
 ));
 jest.mock('./components/Login', () => () => (
@@ -43,7 +43,7 @@ jest.mock('./components/UserDashboard', () => () => (
 jest.mock('./components/CreateCourse', () => () => (
   <div data-testid='mock-create-course'>Create Course Component</div>
 ));
-jest.mock('./components/CourseContentEditor', () => () => (
+jest.mock('./components/courses/editor/CourseContentEditor', () => () => (
   <div data-testid='mock-course-content-editor'>
     Course Content Editor Component
   </div>
