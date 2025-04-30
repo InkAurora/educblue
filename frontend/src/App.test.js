@@ -1,119 +1,106 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, cleanup } from '@testing-library/react';
 import App from './App';
 
-// Mock all components that will be rendered in the app
-jest.mock('./components/Navbar', () => () => (
-  <div data-testid='navbar'>Navbar Component</div>
-));
-jest.mock('./components/CourseList', () => () => (
-  <div data-testid='course-list'>Course List Component</div>
-));
-jest.mock('./components/CourseDetails', () => () => (
-  <div data-testid='course-details'>Course Details Component</div>
-));
-jest.mock('./components/Login', () => () => (
-  <div data-testid='login'>Login Component</div>
-));
-jest.mock('./components/Register', () => () => (
-  <div data-testid='register'>Register Component</div>
-));
-jest.mock('./components/UserDashboard', () => () => (
-  <div data-testid='dashboard'>Dashboard Component</div>
-));
-jest.mock('./components/CreateCourse', () => () => (
-  <div data-testid='create-course'>Create Course Component</div>
-));
-jest.mock('./components/CourseContentEditor', () => () => (
-  <div data-testid='content-editor'>Content Editor Component</div>
-));
-jest.mock('./components/MyCourses', () => () => (
-  <div data-testid='my-courses'>My Courses Component</div>
-));
-jest.mock('./components/Success', () => () => (
-  <div data-testid='success'>Success Component</div>
-));
-jest.mock('./components/PersonalInformation', () => () => (
-  <div data-testid='personal-information'>Personal Information Component</div>
-));
-
-// Mock react-router-dom without requiring the actual module
+// Mock react-router-dom components directly
 jest.mock('react-router-dom', () => ({
-  BrowserRouter: ({ children }) => <div>{children}</div>,
-  Routes: ({ children }) => <div>{children}</div>,
-  Route: ({ path, element }) => element, // Render all route elements
-  Link: ({ children, to }) => <a href={to}>{children}</a>,
-  useNavigate: () => jest.fn(),
-  useParams: () => ({ id: 'test-id', courseId: 'test-course-id' }),
-  useLocation: () => ({ pathname: '/' }),
+  BrowserRouter: ({ children }) => (
+    <div data-testid='mock-browser-router'>{children}</div>
+  ),
+  Routes: ({ children }) => <div data-testid='mock-routes'>{children}</div>,
+  Route: ({ path, element }) => (
+    <div
+      data-testid={`route-${path.replace(/\//g, '-').replace(/:/g, '')}`}
+      data-path={path}
+    >
+      {element}
+    </div>
+  ),
 }));
 
-describe('App', () => {
-  test('renders without crashing', () => {
-    render(<App />);
-    expect(screen.getByTestId('navbar')).toBeInTheDocument();
-  });
+// Mock all the components that routes render
+jest.mock('./components/CourseList', () => () => (
+  <div data-testid='mock-course-list'>Course List Component</div>
+));
+jest.mock('./components/CourseDetails', () => () => (
+  <div data-testid='mock-course-details'>Course Details Component</div>
+));
+jest.mock('./components/CourseContent', () => () => (
+  <div data-testid='mock-course-content'>Course Content Component</div>
+));
+jest.mock('./components/Login', () => () => (
+  <div data-testid='mock-login'>Login Component</div>
+));
+jest.mock('./components/Register', () => () => (
+  <div data-testid='mock-register'>Register Component</div>
+));
+jest.mock('./components/Success', () => () => (
+  <div data-testid='mock-success'>Success Component</div>
+));
+jest.mock('./components/UserDashboard', () => () => (
+  <div data-testid='mock-dashboard'>User Dashboard Component</div>
+));
+jest.mock('./components/CreateCourse', () => () => (
+  <div data-testid='mock-create-course'>Create Course Component</div>
+));
+jest.mock('./components/CourseContentEditor', () => () => (
+  <div data-testid='mock-course-content-editor'>
+    Course Content Editor Component
+  </div>
+));
+jest.mock('./components/MyCourses', () => () => (
+  <div data-testid='mock-my-courses'>My Courses Component</div>
+));
+jest.mock('./components/PersonalInformation', () => () => (
+  <div data-testid='mock-personal-info'>Personal Information Component</div>
+));
+jest.mock('./components/Navbar', () => () => (
+  <div data-testid='mock-navbar'>Navbar Component</div>
+));
 
-  test('renders Navbar component', () => {
-    render(<App />);
-    expect(screen.getByTestId('navbar')).toBeInTheDocument();
-  });
+// Also mock Material UI components
+jest.mock('@mui/material', () => ({
+  Container: ({ children }) => (
+    <div data-testid='mock-container'>{children}</div>
+  ),
+  Typography: ({ children }) => (
+    <div data-testid='mock-typography'>{children}</div>
+  ),
+  Box: ({ children }) => <div data-testid='mock-box'>{children}</div>,
+}));
 
-  test('renders page title', () => {
+// Clean up after each test
+afterEach(cleanup);
+
+describe('App Component', () => {
+  test('should render App with all routes correctly', () => {
     render(<App />);
+
+    // Check for navbar
+    expect(screen.getByTestId('mock-navbar')).toBeInTheDocument();
+
+    // Check for header content
     expect(screen.getByText('Educ Blue')).toBeInTheDocument();
-  });
 
-  test('renders course list component', () => {
-    render(<App />);
-    expect(screen.getByTestId('course-list')).toBeInTheDocument();
-  });
+    // Verify all routes are present
+    expect(screen.getByTestId('mock-routes')).toBeInTheDocument();
 
-  test('renders course details component', () => {
-    render(<App />);
-    expect(screen.getByTestId('course-details')).toBeInTheDocument();
-  });
-
-  test('renders login component', () => {
-    render(<App />);
-    expect(screen.getByTestId('login')).toBeInTheDocument();
-  });
-
-  test('renders register component', () => {
-    render(<App />);
-    expect(screen.getByTestId('register')).toBeInTheDocument();
-  });
-
-  test('renders success component', () => {
-    render(<App />);
-    expect(screen.getByTestId('success')).toBeInTheDocument();
-  });
-
-  test('renders user dashboard component', () => {
-    render(<App />);
-    expect(screen.getByTestId('dashboard')).toBeInTheDocument();
-  });
-
-  test('renders create course component', () => {
-    render(<App />);
-    expect(screen.getByTestId('create-course')).toBeInTheDocument();
-  });
-
-  test('renders course content editor component', () => {
-    render(<App />);
-    expect(screen.getByTestId('content-editor')).toBeInTheDocument();
-  });
-
-  test('renders my courses component', () => {
-    render(<App />);
-    expect(screen.getByTestId('my-courses')).toBeInTheDocument();
-  });
-
-  test('renders personal information component', () => {
-    render(<App />);
-    // Using getAllByTestId as there are two routes rendering the same component
+    // Check that all components are rendered
+    expect(screen.getByTestId('mock-course-list')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-course-details')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-course-content')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-login')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-register')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-success')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-dashboard')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-create-course')).toBeInTheDocument();
     expect(
-      screen.getAllByTestId('personal-information').length,
-    ).toBeGreaterThanOrEqual(1);
+      screen.getByTestId('mock-course-content-editor'),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('mock-my-courses')).toBeInTheDocument();
+
+    // Check for PersonalInformation component (used in two routes)
+    const personalInfoElements = screen.getAllByTestId('mock-personal-info');
+    expect(personalInfoElements.length).toBe(2);
   });
 });

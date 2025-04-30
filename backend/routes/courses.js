@@ -7,12 +7,14 @@ const {
   createCourse,
   updateCourseContent,
   publishCourse,
+  getCourseContentById,
 } = require('../controllers/courses');
 const auth = require('../middleware/auth');
 const restrictTo = require('../middleware/role');
 
 router.get('/', getCourses);
 router.get('/:id', auth, getCourseById);
+router.get('/:id/content/:contentId', auth, getCourseContentById);
 router.post('/', auth, restrictTo('instructor', 'admin'), createCourse);
 router.put(
   '/:id/content',

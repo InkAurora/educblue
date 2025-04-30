@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Container, Typography, Box } from '@mui/material';
 import CourseList from './components/CourseList';
 import CourseDetails from './components/CourseDetails';
+import CourseContent from './components/CourseContent';
 import Login from './components/Login';
 import Register from './components/Register';
 import Success from './components/Success';
@@ -28,6 +29,10 @@ function App() {
           <Route
             path='/courses/:id'
             element={<CourseDetails data-testid='course-details' />}
+          />
+          <Route
+            path='/courses/:id/content/:contentId'
+            element={<CourseContent data-testid='course-content' />}
           />
           <Route path='/login' element={<Login />} />
           <Route path='/register' element={<Register />} />

@@ -41,7 +41,7 @@ exports.getCourseById = async (req, res) => {
 
     // For non-enrolled users, return limited course information
     const limitedCourse = {
-      _id: course._id,
+      _id: course._id,  // Changed from 'id' to '_id' to match test expectations
       title: course.title,
       description: course.description,
       markdownDescription: course.markdownDescription,
@@ -52,6 +52,51 @@ exports.getCourseById = async (req, res) => {
     };
 
     return res.json(limitedCourse);
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Get course content by ID
+exports.getCourseContentById = async (req, res) => {
+  try {
+    const { id, contentId } = req.params;
+
+    // Check if user exists in the request (set by auth middleware)
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    // Find the course
+    const course = await Course.findById(id);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    // Find the user to check enrollment status
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if user is the course instructor or is enrolled in the course
+    const isInstructor = course.instructor === user.fullName;
+    const isEnrolled = user.enrolledCourses.includes(id);
+
+    if (!isInstructor && !isEnrolled) {
+      return res.status(403).json({ message: 'Not enrolled in this course' });
+    }
+
+    // Find the specific content item
+    const contentItem = course.content.find(
+      (item) => item.id.toString() === contentId
+    );
+
+    if (!contentItem) {
+      return res.status(404).json({ message: 'Content not found' });
+    }
+
+    return res.json(contentItem);
   } catch (error) {
     return res.status(500).json({ message: 'Server error' });
   }
