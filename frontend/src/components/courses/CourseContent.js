@@ -6,7 +6,6 @@ import {
   CircularProgress,
   Alert,
   Button,
-  Grid,
   Paper,
   useTheme,
   useMediaQuery,
@@ -56,7 +55,7 @@ function CourseContent({ 'data-testid': dataTestId }) {
         setUser(userResponse.data);
         setLoadingUser(false);
       } catch (err) {
-        console.error('Error fetching user data:', err);
+        // Log error
         if (err.response?.status === 401) {
           localStorage.removeItem('token');
           localStorage.removeItem('refreshToken');
@@ -94,7 +93,7 @@ function CourseContent({ 'data-testid': dataTestId }) {
           );
 
           // If not found by ID, try by index
-          if (foundIndex === -1 && !isNaN(parseInt(contentId, 10))) {
+          if (foundIndex === -1 && !Number.isNaN(parseInt(contentId, 10))) {
             foundIndex = parseInt(contentId, 10);
             if (foundIndex >= 0 && foundIndex < courseData.content.length) {
               foundContent = courseData.content[foundIndex];
@@ -121,14 +120,12 @@ function CourseContent({ 'data-testid': dataTestId }) {
           // Check enrollment
           let userIsEnrolled = false;
           if (Array.isArray(user.enrolledCourses)) {
-            userIsEnrolled = user.enrolledCourses.some((course) => {
-              if (typeof course === 'string') {
-                return course === id;
+            userIsEnrolled = user.enrolledCourses.some((enrolledCourse) => {
+              if (typeof enrolledCourse === 'string') {
+                return enrolledCourse === id;
               }
               return (
-                course?._id === id ||
-                course?.id === id ||
-                course?.courseId === id
+                enrolledCourse?.id === id || enrolledCourse?.courseId === id
               );
             });
           }
@@ -145,7 +142,7 @@ function CourseContent({ 'data-testid': dataTestId }) {
 
         setLoading(false);
       } catch (err) {
-        console.error('Error fetching course data:', err);
+        // Log error
         setError('Failed to load course content');
         setLoading(false);
       }
@@ -170,8 +167,8 @@ function CourseContent({ 'data-testid': dataTestId }) {
   const getNextContentId = () => {
     if (
       contentIndex === null ||
-      contentIndex >= course?.content?.length - 1 ||
-      !course?.content
+      !course?.content ||
+      contentIndex >= (course?.content?.length ?? 0) - 1
     ) {
       return null;
     }
@@ -224,52 +221,87 @@ function CourseContent({ 'data-testid': dataTestId }) {
     );
   }
 
+  // The sidebar width we'll use for calculations
+  const sidebarWidth = 300;
+
   return (
-    <Container maxWidth='xl' sx={{ py: 4 }} data-testid={dataTestId}>
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
+        pt: '64px', // Account for navbar at the top
+      }}
+      data-testid={dataTestId}
+    >
       {course && content && (
-        <Grid container spacing={3}>
-          {/* Sidebar - Only visible on desktop */}
-          <Grid
-            item
-            xs={12}
-            md={3}
-            sx={{ display: { xs: 'none', md: 'block' } }}
+        <Box sx={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
+          {/* Sidebar - Fixed width on desktop, hidden on mobile */}
+          <Box
+            sx={{
+              width: { xs: 0, md: `${sidebarWidth}px` },
+              flexShrink: 0,
+              overflow: 'auto',
+              display: { xs: 'none', md: 'block' },
+            }}
           >
             <CourseSidebar course={course} progress={progress} courseId={id} />
-          </Grid>
+          </Box>
 
-          {/* Main Content Area */}
-          <Grid item xs={12} md={9}>
-            <Paper sx={{ p: 3 }}>
-              {/* Navigation Topbar */}
-              <ContentNavigation
-                courseId={id}
-                title={content.title}
-                previousContentId={getPreviousContentId()}
-                nextContentId={getNextContentId()}
-              />
-
-              {/* Content Renderer */}
-              <ContentRenderer
-                contentItem={content}
-                isCompleted={isContentCompleted()}
-                completing={completing}
-                onCompleted={markContentCompleted}
-              />
-            </Paper>
-          </Grid>
-
-          {/* Mobile Sidebar */}
-          <Grid
-            item
-            xs={12}
-            sx={{ display: { xs: 'block', md: 'none' }, mt: 2 }}
+          {/* Main content area with navigation and content */}
+          <Box
+            sx={{
+              flexGrow: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              position: 'relative',
+            }}
           >
-            <CourseSidebar course={course} progress={progress} courseId={id} />
-          </Grid>
-        </Grid>
+            {/* Content Navigation fixed at the top of the content area */}
+            <ContentNavigation
+              courseId={id}
+              title={content.title}
+              previousContentId={getPreviousContentId()}
+              nextContentId={getNextContentId()}
+            />
+
+            {/* Content scrollable area below the navigation */}
+            <Box
+              sx={{
+                p: 3,
+                pt: '60px', // Add padding to account for fixed navigation bar (48px height + some extra space)
+                overflow: 'auto',
+                flexGrow: 1,
+              }}
+            >
+              <Paper sx={{ p: 3, maxWidth: '900px', mx: 'auto' }}>
+                <ContentRenderer
+                  contentItem={content}
+                  isCompleted={isContentCompleted()}
+                  completing={completing}
+                  onCompleted={markContentCompleted}
+                />
+              </Paper>
+            </Box>
+          </Box>
+        </Box>
       )}
-    </Container>
+
+      {/* Mobile Sidebar - Only shown when mobile view is active */}
+      {isMobile && course && (
+        <Box
+          sx={{
+            width: '100%',
+            display: { xs: 'block', md: 'none' },
+            mt: 2,
+            p: 2,
+          }}
+        >
+          <CourseSidebar course={course} progress={progress} courseId={id} />
+        </Box>
+      )}
+    </Box>
   );
 }
 

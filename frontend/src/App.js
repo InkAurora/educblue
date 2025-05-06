@@ -19,13 +19,24 @@ function App() {
     <BrowserRouter>
       <Navbar />
       <Container>
-        <Box sx={{ my: 4 }}>
-          <Typography variant='h3' component='h1' sx={{ textAlign: 'center' }}>
-            Educ Blue
-          </Typography>
-        </Box>
         <Routes>
-          <Route path='/' element={<CourseList data-testid='course-list' />} />
+          <Route
+            path='/'
+            element={
+              <>
+                <Box sx={{ my: 4 }}>
+                  <Typography
+                    variant='h3'
+                    component='h1'
+                    sx={{ textAlign: 'center' }}
+                  >
+                    Educ Blue
+                  </Typography>
+                </Box>
+                <CourseList data-testid='course-list' />
+              </>
+            }
+          />
           <Route
             path='/courses/:id'
             element={<CourseDetails data-testid='course-details' />}

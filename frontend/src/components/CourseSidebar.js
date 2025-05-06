@@ -29,6 +29,7 @@ function CourseSidebar({ course, progress, courseId }) {
   const [open, setOpen] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const navbarHeight = 64; // Standard AppBar height in Material UI
 
   const toggleDrawer = () => {
     setOpen(!open);
@@ -46,12 +47,9 @@ function CourseSidebar({ course, progress, courseId }) {
     }
   };
 
-  const isContentCompleted = (contentId) => {
-    return (
-      Array.isArray(progress) &&
-      progress.some((p) => p.contentId === contentId && p.completed)
-    );
-  };
+  const isContentCompleted = (contentId) =>
+    Array.isArray(progress) &&
+    progress.some((p) => p.contentId === contentId && p.completed);
 
   const drawerWidth = 300;
 
@@ -70,6 +68,9 @@ function CourseSidebar({ course, progress, courseId }) {
         {course?.content?.map((item, index) => {
           const contentId = item.id || index.toString();
           const completed = isContentCompleted(contentId);
+          const isLastItem = Boolean(
+            course?.content && index < course.content.length - 1,
+          );
 
           return (
             <React.Fragment key={contentId}>
@@ -85,7 +86,7 @@ function CourseSidebar({ course, progress, courseId }) {
                   )}
                 </ListItemButton>
               </ListItem>
-              {index < course?.content?.length - 1 && <Divider />}
+              {isLastItem && <Divider />}
             </React.Fragment>
           );
         })}
@@ -117,6 +118,7 @@ function CourseSidebar({ course, progress, courseId }) {
               '& .MuiDrawer-paper': {
                 width: drawerWidth,
                 boxSizing: 'border-box',
+                marginTop: `${navbarHeight}px`, // Add margin to position below navbar for mobile drawer
               },
             }}
             data-testid='course-sidebar-mobile'
@@ -126,7 +128,7 @@ function CourseSidebar({ course, progress, courseId }) {
         </>
       ) : (
         <Drawer
-          variant='persistent'
+          variant='permanent'
           open
           sx={{
             width: drawerWidth,
@@ -134,9 +136,11 @@ function CourseSidebar({ course, progress, courseId }) {
             '& .MuiDrawer-paper': {
               width: drawerWidth,
               boxSizing: 'border-box',
-              position: 'relative',
-              height: '100%',
+              position: 'fixed',
+              height: `calc(100vh - ${navbarHeight}px)`, // Adjust height to account for navbar
+              top: `${navbarHeight}px`, // Start the sidebar below the navbar
               overflowY: 'auto',
+              zIndex: 900, // Lower z-index than typical AppBar (which is 1100)
             },
           }}
           data-testid='course-sidebar-desktop'
