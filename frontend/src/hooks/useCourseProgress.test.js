@@ -68,7 +68,9 @@ describe('useCourseProgress Hook', () => {
   it('should mark an item as completed', async () => {
     // Set up mocks
     axiosInstance.get.mockResolvedValueOnce({ data: mockProgress });
-    axiosInstance.post.mockResolvedValueOnce({});
+    axiosInstance.post.mockResolvedValueOnce({
+      data: { contentId: mockContentId, completed: true },
+    });
 
     // Render the hook with both courseId and contentId
     const { result } = renderHook(() =>

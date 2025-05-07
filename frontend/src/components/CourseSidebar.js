@@ -31,6 +31,30 @@ function CourseSidebar({ course, progress, courseId }) {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navbarHeight = 64; // Standard AppBar height in Material UI
 
+  // Helper function to generate or ensure valid contentIds for MongoDB
+  const getValidContentId = (item, index) => {
+    // If the item already has a valid MongoDB ObjectID format id, use it
+    if (item.id && /^[0-9a-fA-F]{24}$/.test(item.id)) {
+      return item.id;
+    }
+    // If the item has any id property, use that
+    if (item.id) {
+      return item.id;
+    }
+    // If item has _id property (MongoDB default), use that
+    if (item._id) {
+      return item._id;
+    }
+    // If we have an item object but no id, use the item's title
+    // to create a consistent identifier (as a fallback)
+    if (item.title) {
+      // Create a hash from the title + index to use as a more consistent ID
+      return `${item.title.replace(/\s+/g, '-').toLowerCase()}-${index}`;
+    }
+    // Last resort, just use a placeholder with index
+    return `content-item-${index}`;
+  };
+
   const toggleDrawer = () => {
     setOpen(!open);
   };
@@ -66,7 +90,7 @@ function CourseSidebar({ course, progress, courseId }) {
       <Divider />
       <List>
         {course?.content?.map((item, index) => {
-          const contentId = item.id || index.toString();
+          const contentId = getValidContentId(item, index);
           const completed = isContentCompleted(contentId);
           const isLastItem = Boolean(
             course?.content && index < course.content.length - 1,

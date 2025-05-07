@@ -33,6 +33,30 @@ function CourseContent({ 'data-testid': dataTestId }) {
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [loadingUser, setLoadingUser] = useState(true);
 
+  // Helper function to generate or ensure valid contentIds for MongoDB
+  const getValidContentId = (item, index) => {
+    // If the item already has a valid MongoDB ObjectID format id, use it
+    if (item.id && /^[0-9a-fA-F]{24}$/.test(item.id)) {
+      return item.id;
+    }
+    // If the item has any id property, use that
+    if (item.id) {
+      return item.id;
+    }
+    // If item has _id property (MongoDB default), use that
+    if (item._id) {
+      return item._id;
+    }
+    // If we have an item object but no id, use the item's title
+    // to create a consistent identifier (as a fallback)
+    if (item.title) {
+      // Create a hash from the title + index to use as a more consistent ID
+      return `${item.title.replace(/\s+/g, '-').toLowerCase()}-${index}`;
+    }
+    // Last resort, just use a placeholder with index
+    return `content-item-${index}`;
+  };
+
   // Use our custom hook for progress tracking
   const { progress, completing, markContentCompleted, isContentCompleted } =
     useCourseProgress(id, contentId);
@@ -88,8 +112,9 @@ function CourseContent({ 'data-testid': dataTestId }) {
         if (Array.isArray(courseData.content)) {
           // First try to find by ID match
           foundIndex = courseData.content.findIndex(
-            (item) =>
-              item.id === contentId || item.id?.toString() === contentId,
+            (item, index) =>
+              getValidContentId(item, index) === contentId ||
+              getValidContentId(item, index)?.toString() === contentId,
           );
 
           // If not found by ID, try by index
@@ -160,7 +185,7 @@ function CourseContent({ 'data-testid': dataTestId }) {
     }
 
     const prevItem = course.content[contentIndex - 1];
-    return prevItem.id || (contentIndex - 1).toString();
+    return getValidContentId(prevItem, contentIndex - 1);
   };
 
   // Get next content ID (for navigation)
@@ -174,7 +199,7 @@ function CourseContent({ 'data-testid': dataTestId }) {
     }
 
     const nextItem = course.content[contentIndex + 1];
-    return nextItem.id || (contentIndex + 1).toString();
+    return getValidContentId(nextItem, contentIndex + 1);
   };
 
   // Handle loading state
@@ -281,6 +306,9 @@ function CourseContent({ 'data-testid': dataTestId }) {
                   isCompleted={isContentCompleted()}
                   completing={completing}
                   onCompleted={markContentCompleted}
+                  error={error}
+                  progress={progress}
+                  courseId={id}
                 />
               </Paper>
             </Box>

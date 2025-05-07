@@ -22,6 +22,10 @@ const progressSchema = new mongoose.Schema({
   completedAt: {
     type: Date,
   },
+  answer: {
+    type: String,
+    maxlength: 500, // Maximum length of 500 characters
+  },
 });
 
 // Create a unique compound index to prevent duplicate progress entries

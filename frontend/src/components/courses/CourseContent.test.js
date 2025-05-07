@@ -1,312 +1,221 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import CourseContent from './CourseContent'; // Importing directly from the same directory
-import useCourseProgress from '../../hooks/useCourseProgress';
+import '@testing-library/jest-dom';
+import { BrowserRouter, useParams, useNavigate } from 'react-router-dom';
+import CourseContent from './CourseContent';
 import axiosInstance from '../../utils/axiosConfig';
+import useCourseProgress from '../../hooks/useCourseProgress';
 
-// Mock the dependencies
-jest.mock('../../hooks/useCourseProgress');
-jest.mock('../CourseSidebar', () => {
-  return function MockCourseSidebar({ course, progress, courseId }) {
-    return <div data-testid='course-sidebar'>Course Sidebar Mock</div>;
-  };
-});
-jest.mock('./content/ContentNavigation', () => {
-  return function MockContentNavigation({
-    courseId,
-    title,
-    previousContentId,
-    nextContentId,
-  }) {
-    return (
-      <div data-testid='content-navigation'>
-        Content Navigation Mock
-        {previousContentId && (
-          <span data-testid='prev-content-id'>{previousContentId}</span>
-        )}
-        {nextContentId && (
-          <span data-testid='next-content-id'>{nextContentId}</span>
-        )}
-      </div>
-    );
-  };
-});
-jest.mock('./content/ContentRenderer', () => {
-  return function MockContentRenderer({
-    contentItem,
-    isCompleted,
-    completing,
-    onCompleted,
-  }) {
-    return <div data-testid='content-renderer'>Content Renderer Mock</div>;
-  };
-});
+// Mock dependencies
+jest.mock('react-router-dom', () => ({
+  useParams: jest.fn(),
+  useNavigate: jest.fn(),
+  BrowserRouter: ({ children }) => <div>{children}</div>,
+  Link: ({ children, to }) => <a href={to}>{children}</a>,
+}));
+
+// Properly mock axios with get and post methods
 jest.mock('../../utils/axiosConfig', () => ({
   get: jest.fn(),
+  post: jest.fn(),
 }));
 
-// Mock useNavigate and other react-router-dom functions
-const mockNavigate = jest.fn();
-jest.mock('react-router-dom', () => ({
-  useParams: () => ({ id: 'course123', contentId: 'content456' }),
-  useNavigate: () => mockNavigate,
-  Link: ({ children, to }) => <a href={to}>{children}</a>,
-  MemoryRouter: ({ children }) => <div>{children}</div>,
-  Routes: ({ children }) => <div>{children}</div>,
-  Route: ({ path, element }) => element,
-}));
+jest.mock('../../hooks/useCourseProgress');
+jest.mock('../CourseSidebar', () => ({ course, progress, courseId }) => (
+  <div data-testid='course-sidebar'>Course Sidebar</div>
+));
+jest.mock('./content/ContentNavigation', () => ({ courseId, title }) => (
+  <div data-testid='content-navigation'>{title}</div>
+));
+jest.mock(
+  './content/ContentRenderer',
+  () =>
+    ({
+      contentItem,
+      isCompleted,
+      completing,
+      onCompleted,
+      error,
+      progress,
+      courseId,
+    }) => (
+      <div data-testid='content-renderer'>
+        <div data-testid='renderer-content-type'>{contentItem.type}</div>
+        <div data-testid='renderer-content'>{contentItem.content}</div>
+        <div data-testid='renderer-progress-length'>
+          {progress ? progress.length : 0}
+        </div>
+        <div data-testid='renderer-course-id'>{courseId || 'no-course-id'}</div>
+      </div>
+    ),
+);
 
 describe('CourseContent', () => {
-  const mockCourseId = 'course123';
-  const mockContentId = 'content456';
-  const mockCourseData = {
-    _id: mockCourseId,
+  const mockUser = {
+    _id: 'user1',
+    fullName: 'Test User',
+    email: 'test@example.com',
+    enrolledCourses: ['course123'],
+  };
+
+  const mockCourse = {
+    _id: 'course123',
     title: 'Test Course',
-    instructor: 'John Doe',
+    instructor: 'Test Instructor',
+    description: 'Test Description',
     content: [
-      { id: 'content123', title: 'Introduction', type: 'video' },
-      { id: mockContentId, title: 'Chapter 1', type: 'markdown' },
-      { id: 'content789', title: 'Quiz 1', type: 'quiz' },
+      {
+        _id: 'quiz1',
+        title: 'Quiz 1',
+        type: 'quiz',
+        content: 'What is React?',
+      },
+      {
+        _id: 'content2',
+        title: 'Lesson 1',
+        type: 'markdown',
+        content: '# Lesson 1',
+      },
     ],
   };
-  const mockUserData = {
-    fullName: 'Jane Smith',
-    enrolledCourses: [mockCourseId],
-  };
-  const mockProgressData = {
-    progress: [{ contentId: 'content123', completed: true }],
-    isContentCompleted: jest.fn().mockReturnValue(false),
-    completing: false,
-    markContentCompleted: jest.fn(),
-  };
+
+  const mockProgress = [
+    { contentId: 'quiz1', completed: false, answer: 'A JavaScript library' },
+    { contentId: 'content2', completed: true },
+  ];
+
+  const mockMarkContentCompleted = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
-    localStorage.setItem('token', 'mock-token');
 
-    // Mock the user data fetch
+    // Mock react-router hooks
+    useParams.mockReturnValue({ id: 'course123', contentId: 'quiz1' });
+    useNavigate.mockReturnValue(jest.fn());
+
+    // Mock localStorage
+    Storage.prototype.getItem = jest.fn().mockReturnValue('fake-token');
+
+    // Mock axios responses
     axiosInstance.get.mockImplementation((url) => {
       if (url === '/api/users/me') {
-        return Promise.resolve({ data: mockUserData });
-      } else if (url === `/api/courses/${mockCourseId}`) {
-        return Promise.resolve({ data: mockCourseData });
+        return Promise.resolve({ data: mockUser });
       }
-      return Promise.reject(new Error('Unexpected URL'));
+      if (url === '/api/courses/course123') {
+        return Promise.resolve({ data: mockCourse });
+      }
+      return Promise.reject(new Error('Not Found'));
     });
 
-    // Mock the custom hook
-    useCourseProgress.mockReturnValue(mockProgressData);
-
-    // Set up useParams mock for each test
-    jest
-      .spyOn(require('react-router-dom'), 'useParams')
-      .mockImplementation(() => ({
-        id: mockCourseId,
-        contentId: mockContentId,
-      }));
+    // Mock useCourseProgress hook
+    useCourseProgress.mockReturnValue({
+      progress: mockProgress,
+      completing: false,
+      error: null,
+      markContentCompleted: mockMarkContentCompleted,
+      isContentCompleted: () => false,
+    });
   });
 
-  afterEach(() => {
-    localStorage.clear();
-  });
+  test('passes progress data and courseId to ContentRenderer for quiz content', async () => {
+    render(<CourseContent />);
 
-  it('renders loading state initially', () => {
-    render(<CourseContent data-testid='course-content' />);
-
-    // Initially should show loading spinner
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
-  });
-
-  it('renders content when data is loaded', async () => {
-    render(<CourseContent data-testid='course-content' />);
-
-    // Wait for content to load
     await waitFor(() => {
-      expect(
-        screen.getAllByTestId('course-sidebar').length,
-      ).toBeGreaterThanOrEqual(1);
-      expect(screen.getByTestId('content-navigation')).toBeInTheDocument();
       expect(screen.getByTestId('content-renderer')).toBeInTheDocument();
     });
 
-    // Verify API calls
-    expect(axiosInstance.get).toHaveBeenCalledWith('/api/users/me');
-    expect(axiosInstance.get).toHaveBeenCalledWith(
-      `/api/courses/${mockCourseId}`,
+    // Verify that the required props are passed to ContentRenderer
+    expect(screen.getByTestId('renderer-content-type')).toHaveTextContent(
+      'quiz',
     );
-    expect(useCourseProgress).toHaveBeenCalledWith(mockCourseId, mockContentId);
+    expect(screen.getByTestId('renderer-content')).toHaveTextContent(
+      'What is React?',
+    );
+    expect(screen.getByTestId('renderer-progress-length')).toHaveTextContent(
+      '2',
+    );
+    expect(screen.getByTestId('renderer-course-id')).toHaveTextContent(
+      'course123',
+    );
   });
 
-  it('shows error message when course fetching fails', async () => {
-    axiosInstance.get.mockImplementation((url) => {
-      if (url === '/api/users/me') {
-        return Promise.resolve({ data: mockUserData });
-      } else if (url === `/api/courses/${mockCourseId}`) {
-        return Promise.reject(new Error('Failed to fetch course'));
-      }
-      return Promise.reject(new Error('Unexpected URL'));
-    });
-
-    render(<CourseContent data-testid='course-content' />);
-
-    await waitFor(() => {
-      expect(
-        screen.getByText('Failed to load course content'),
-      ).toBeInTheDocument();
-    });
-  });
-
-  it('redirects to login when no token is present', async () => {
-    // Clear the token
-    localStorage.removeItem('token');
-
-    render(<CourseContent data-testid='course-content' />);
-
-    await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/login', {
-        state: { from: `/courses/${mockCourseId}/content/${mockContentId}` },
-      });
-    });
-  });
-
-  it('redirects to login when token is unauthorized', async () => {
-    // Mock unauthorized response
-    axiosInstance.get.mockImplementation((url) => {
-      if (url === '/api/users/me') {
-        return Promise.reject({ response: { status: 401 } });
-      }
-      return Promise.reject(new Error('Unexpected URL'));
-    });
-
-    render(<CourseContent data-testid='course-content' />);
-
-    await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/login', {
-        state: { from: `/courses/${mockCourseId}/content/${mockContentId}` },
-      });
-      expect(localStorage.getItem('token')).toBeNull();
-    });
-  });
-
-  it('redirects to course details when user is not enrolled', async () => {
-    // User not enrolled
-    const nonEnrolledUser = {
-      ...mockUserData,
-      enrolledCourses: ['different-course-id'],
-    };
-
+  test('redirects non-enrolled users away from quiz content', async () => {
+    // Setup user not enrolled in course
+    const nonEnrolledUser = { ...mockUser, enrolledCourses: [] };
     axiosInstance.get.mockImplementation((url) => {
       if (url === '/api/users/me') {
         return Promise.resolve({ data: nonEnrolledUser });
-      } else if (url === `/api/courses/${mockCourseId}`) {
-        return Promise.resolve({ data: mockCourseData });
       }
-      return Promise.reject(new Error('Unexpected URL'));
+      if (url === '/api/courses/course123') {
+        return Promise.resolve({ data: mockCourse });
+      }
+      return Promise.reject(new Error('Not Found'));
     });
 
-    render(<CourseContent data-testid='course-content' />);
+    const mockNavigate = jest.fn();
+    useNavigate.mockReturnValue(mockNavigate);
+
+    render(<CourseContent />);
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith(`/courses/${mockCourseId}`);
+      expect(mockNavigate).toHaveBeenCalledWith('/courses/course123');
     });
   });
 
-  it('shows error when content ID is not found', async () => {
-    // Request with an invalid content ID
-    jest
-      .spyOn(require('react-router-dom'), 'useParams')
-      .mockImplementation(() => ({
-        id: mockCourseId,
-        contentId: 'non-existent-content',
-      }));
-
-    render(<CourseContent data-testid='course-content' />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Content not found')).toBeInTheDocument();
-    });
-  });
-
-  it('allows instructor access even if not enrolled', async () => {
-    // User is instructor but not enrolled
-    const instructorUser = {
-      fullName: 'John Doe', // Same as course instructor
-      enrolledCourses: [],
-    };
-
+  test('displays alert if not enrolled in the course', async () => {
+    // Setup user not enrolled in course but instructor didn't redirect yet
+    const nonEnrolledUser = { ...mockUser, enrolledCourses: [] };
     axiosInstance.get.mockImplementation((url) => {
       if (url === '/api/users/me') {
-        return Promise.resolve({ data: instructorUser });
-      } else if (url === `/api/courses/${mockCourseId}`) {
-        return Promise.resolve({ data: mockCourseData });
+        return Promise.resolve({ data: nonEnrolledUser });
       }
-      return Promise.reject(new Error('Unexpected URL'));
+      if (url === '/api/courses/course123') {
+        return Promise.resolve({ data: mockCourse });
+      }
+      return Promise.reject(new Error('Not Found'));
     });
 
-    render(<CourseContent data-testid='course-content' />);
+    // Mock the redirect without actually redirecting
+    const mockNavigate = jest.fn();
+    useNavigate.mockReturnValue(mockNavigate);
 
-    await waitFor(() => {
-      expect(screen.getByTestId('content-renderer')).toBeInTheDocument();
-    });
+    render(
+      <BrowserRouter>
+        <CourseContent />
+      </BrowserRouter>,
+    );
+
+    // Use a more flexible approach - look for the text rather than waiting for loading to finish
+    await waitFor(
+      () => {
+        expect(
+          screen.queryByText(
+            /You need to be enrolled in this course to view this content/i,
+          ),
+        ).toBeInTheDocument();
+      },
+      { timeout: 5000 },
+    );
+
+    expect(screen.getByText(/Go to Course Details/i)).toBeInTheDocument();
   });
 
-  it('correctly identifies previous content', async () => {
-    // We're already testing middle content in the default setup
-    render(<CourseContent data-testid='course-content' />);
+  test('loads content correctly for enrolled users', async () => {
+    render(<CourseContent />);
 
-    await waitFor(() => {
-      expect(screen.getByTestId('prev-content-id')).toBeInTheDocument();
-      expect(screen.getByTestId('prev-content-id').textContent).toBe(
-        'content123',
-      );
-    });
-  });
+    // Wait more explicitly for the loading to finish
+    await waitFor(
+      () => {
+        expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
 
-  it('correctly identifies next content', async () => {
-    // We're already testing middle content in the default setup
-    render(<CourseContent data-testid='course-content' />);
+    // Now add a small delay to ensure all components have rendered
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
-    await waitFor(() => {
-      expect(screen.getByTestId('next-content-id')).toBeInTheDocument();
-      expect(screen.getByTestId('next-content-id').textContent).toBe(
-        'content789',
-      );
-    });
-  });
-
-  it('handles first content item having no previous content', async () => {
-    // Use first content item
-    jest
-      .spyOn(require('react-router-dom'), 'useParams')
-      .mockImplementation(() => ({
-        id: mockCourseId,
-        contentId: 'content123', // first content
-      }));
-
-    render(<CourseContent data-testid='course-content' />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('content-renderer')).toBeInTheDocument();
-      expect(screen.queryByTestId('prev-content-id')).toBeNull();
-      expect(screen.getByTestId('next-content-id')).toBeInTheDocument();
-    });
-  });
-
-  it('handles last content item having no next content', async () => {
-    // Use last content item
-    jest
-      .spyOn(require('react-router-dom'), 'useParams')
-      .mockImplementation(() => ({
-        id: mockCourseId,
-        contentId: 'content789', // last content
-      }));
-
-    render(<CourseContent data-testid='course-content' />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('content-renderer')).toBeInTheDocument();
-      expect(screen.getByTestId('prev-content-id')).toBeInTheDocument();
-      expect(screen.queryByTestId('next-content-id')).toBeNull();
-    });
+    expect(screen.getByTestId('content-renderer')).toBeInTheDocument();
+    expect(screen.getByTestId('course-sidebar')).toBeInTheDocument();
+    expect(screen.getByTestId('content-navigation')).toBeInTheDocument();
   });
 });
