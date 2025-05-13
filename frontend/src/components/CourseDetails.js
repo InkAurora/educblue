@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import DOMPurify from 'dompurify';
 import {
@@ -11,7 +11,15 @@ import {
   Button,
   Grid,
   Paper,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
 } from '@mui/material';
+import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
+import DescriptionIcon from '@mui/icons-material/Description';
+import QuizIcon from '@mui/icons-material/Quiz';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import axiosInstance from '../utils/axiosConfig';
 import CourseSidebar from './CourseSidebar';
 
@@ -19,6 +27,43 @@ import CourseSidebar from './CourseSidebar';
 const sanitizeMarkdown = (content) => {
   if (!content) return '';
   return DOMPurify.sanitize(content);
+};
+
+// Helper function to get the appropriate icon based on content type
+const getContentTypeIcon = (type) => {
+  switch (type) {
+    case 'video':
+      return <PlayCircleOutlineIcon />;
+    case 'quiz':
+      return <QuizIcon />;
+    case 'markdown':
+    default:
+      return <DescriptionIcon />;
+  }
+};
+
+// Helper function to generate or ensure valid contentIds for MongoDB
+const getValidContentId = (item, index) => {
+  // If the item already has a valid MongoDB ObjectID format id, use it
+  if (item.id && /^[0-9a-fA-F]{24}$/.test(item.id)) {
+    return item.id;
+  }
+  // If the item has any id property, use that
+  if (item.id) {
+    return item.id;
+  }
+  // If item has _id property (MongoDB default), use that
+  if (item._id) {
+    return item._id;
+  }
+  // If we have an item object but no id, use the item's title
+  // to create a consistent identifier (as a fallback)
+  if (item.title) {
+    // Create a hash from the title + index to use as a more consistent ID
+    return `${item.title.replace(/\s+/g, '-').toLowerCase()}-${index}`;
+  }
+  // Last resort, just use a placeholder with index
+  return `content-item-${index}`;
 };
 
 function CourseDetails({ 'data-testid': dataTestId, testId = null }) {
@@ -199,132 +244,229 @@ function CourseDetails({ 'data-testid': dataTestId, testId = null }) {
   }
 
   return (
-    <Container maxWidth='xl' sx={{ py: 4 }} data-testid={dataTestId}>
+    <Box
+      sx={{
+        width: '100%',
+        boxSizing: 'border-box',
+        display: 'flex',
+      }}
+    >
       {course && (
-        <Grid container spacing={3}>
-          {/* Course Sidebar - Only shown for enrolled users or instructors */}
+        <>
+          {/* Desktop sidebar - Only shown for enrolled users or instructors */}
           {(isEnrolled || isInstructor) && (
-            <Grid
-              item
-              xs={12}
-              md={3}
-              sx={{ display: { xs: 'none', md: 'block' } }}
-            >
+            <Box sx={{ display: { xs: 'none', md: 'block' }, flexShrink: 0 }}>
               <CourseSidebar
                 course={course}
                 progress={progress}
                 courseId={id}
               />
-            </Grid>
+            </Box>
           )}
 
           {/* Main Content Area */}
-          <Grid item xs={12} md={isEnrolled || isInstructor ? 9 : 12}>
+          <Box
+            sx={{
+              width: '100%',
+              maxWidth: '100%',
+              pb: 3,
+              boxSizing: 'border-box',
+              flex: '1 1 auto',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+            }}
+          >
             {/* Course Header - visible to all users */}
-            <Typography variant='h4' component='h1' gutterBottom>
-              {course.title}
-            </Typography>
+            <Box sx={{ p: 3, width: '100%', maxWidth: '900px' }}>
+              <Typography variant='h4' component='h1' gutterBottom>
+                {course.title}
+              </Typography>
 
-            <Box sx={{ mb: 3 }}>
               <Typography variant='body1' color='text.secondary' gutterBottom>
                 Instructor: {course.instructor}
               </Typography>
               <Typography variant='body1' paragraph>
                 {course.description}
               </Typography>
-            </Box>
 
-            {/* Course price and enrollment/payment buttons - only for non-enrolled users */}
-            {!isEnrolled && !isInstructor && (
-              <Box
-                sx={{
-                  mb: 4,
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
-                <Typography variant='h5' color='primary'>
-                  ${course.price}
-                </Typography>
+              {/* Course price and enrollment/payment buttons - only for non-enrolled users */}
+              {!isEnrolled && !isInstructor && (
+                <Box
+                  sx={{
+                    mb: 4,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Typography variant='h5' color='primary'>
+                    ${course.price}
+                  </Typography>
 
-                {course.price > 0 ? (
-                  <Button
-                    variant='contained'
-                    color='primary'
-                    onClick={handlePayment}
-                    disabled={processing}
-                  >
-                    {processing ? 'Processing...' : 'Pay Now'}
-                  </Button>
-                ) : (
-                  <Button
-                    variant='contained'
-                    color='primary'
-                    onClick={handleEnrollFree}
-                    disabled={processing}
-                  >
-                    {processing ? 'Processing...' : 'Enroll for Free'}
-                  </Button>
-                )}
-              </Box>
-            )}
+                  {course.price > 0 ? (
+                    <Button
+                      variant='contained'
+                      color='primary'
+                      onClick={handlePayment}
+                      disabled={processing}
+                    >
+                      {processing ? 'Processing...' : 'Pay Now'}
+                    </Button>
+                  ) : (
+                    <Button
+                      variant='contained'
+                      color='primary'
+                      onClick={handleEnrollFree}
+                      disabled={processing}
+                    >
+                      {processing ? 'Processing...' : 'Enroll for Free'}
+                    </Button>
+                  )}
+                </Box>
+              )}
 
-            {/* Payment status messages */}
-            {paymentStatus && (
-              <Box sx={{ mb: 3 }}>
-                <Alert severity={paymentStatus.type}>
-                  {paymentStatus.message}
+              {/* Payment status messages */}
+              {paymentStatus && (
+                <Box sx={{ mb: 3 }}>
+                  <Alert severity={paymentStatus.type}>
+                    {paymentStatus.message}
+                  </Alert>
+                </Box>
+              )}
+
+              {/* Access restriction alert for non-enrolled users */}
+              {!isEnrolled && !isInstructor && (
+                <Alert severity='info' sx={{ mb: 3 }}>
+                  Please enroll to access course content
                 </Alert>
-              </Box>
-            )}
-
-            {/* Access restriction alert for non-enrolled users */}
-            {!isEnrolled && !isInstructor && (
-              <Alert severity='info' sx={{ mb: 3 }}>
-                Please enroll to access course content
-              </Alert>
-            )}
+              )}
+            </Box>
 
             {/* Course Description in Markdown */}
             {course.markdownDescription && (
-              <Paper variant='outlined' sx={{ p: 3, mb: 4 }}>
-                <Typography variant='h6' gutterBottom>
-                  About this course
-                </Typography>
+              <Box
+                sx={{
+                  px: 3,
+                  mb: 2,
+                  boxSizing: 'border-box',
+                  width: '100%',
+                  maxWidth: '900px',
+                }}
+              >
                 <Box
                   sx={{
-                    '& p': { mb: 2 },
-                    '& h1, & h2, & h3, & h4, & h5, & h6': { mt: 3, mb: 2 },
-                    '& ul, & ol': { pl: 4, mb: 2 },
-                    '& code': {
-                      p: 0.5,
-                      backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                      borderRadius: 1,
-                    },
+                    bgcolor: 'white',
+                    border: '1px solid #e0e0e0',
+                    p: 3,
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    overflowX: 'hidden',
+                    textAlign: 'left',
                   }}
                 >
-                  <ReactMarkdown>
-                    {sanitizeMarkdown(course.markdownDescription)}
-                  </ReactMarkdown>
+                  <Typography variant='h6' gutterBottom fontWeight='bold'>
+                    About this course
+                  </Typography>
+                  <Box
+                    sx={{
+                      '& p': { mb: 2 },
+                      '& h1, & h2, & h3, & h4, & h5, & h6': { mt: 3, mb: 2 },
+                      '& ul, & ol': { pl: 4, mb: 2 },
+                      '& code': {
+                        p: 0.5,
+                        backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                        borderRadius: 1,
+                      },
+                    }}
+                  >
+                    <ReactMarkdown>
+                      {sanitizeMarkdown(course.markdownDescription)}
+                    </ReactMarkdown>
+                  </Box>
                 </Box>
-              </Paper>
-            )}
-
-            {/* Only show mobile version of sidebar toggle for enrolled users on small screens */}
-            {(isEnrolled || isInstructor) && (
-              <Box sx={{ display: { xs: 'block', md: 'none' }, mb: 2 }}>
-                <CourseSidebar
-                  course={course}
-                  progress={progress}
-                  courseId={id}
-                />
               </Box>
             )}
-          </Grid>
-        </Grid>
+
+            {/* Only show mobile version of course contents for enrolled users */}
+            {(isEnrolled || isInstructor) && (
+              <Box
+                sx={{
+                  display: { xs: 'block', md: 'none' },
+                  px: 3,
+                  mb: 3,
+                  width: '100%',
+                  maxWidth: '900px',
+                  boxSizing: 'border-box',
+                }}
+              >
+                <Box
+                  sx={{
+                    bgcolor: 'white',
+                    border: '1px solid #e0e0e0',
+                    p: 3,
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    overflowX: 'hidden',
+                  }}
+                >
+                  <Typography variant='h6' gutterBottom fontWeight='bold'>
+                    Course Contents
+                  </Typography>
+                  <List sx={{ p: 0, width: '100%' }}>
+                    {course?.content?.map((item, index) => {
+                      const contentId = getValidContentId(item, index);
+                      const completed =
+                        Array.isArray(progress) &&
+                        progress.some(
+                          (p) => p.contentId === contentId && p.completed,
+                        );
+
+                      return (
+                        <ListItem
+                          key={contentId}
+                          component={Link}
+                          to={`/courses/${id}/content/${contentId}`}
+                          sx={{
+                            borderBottom:
+                              index < course.content.length - 1
+                                ? '1px solid #eee'
+                                : 'none',
+                            py: 1.5,
+                            px: 0,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            textDecoration: 'none',
+                            color: 'inherit',
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              flex: 1,
+                            }}
+                          >
+                            {getContentTypeIcon(item.type)}
+                            <Typography sx={{ ml: 2, fontWeight: 500 }}>
+                              {item.title}
+                            </Typography>
+                          </Box>
+                          {completed && (
+                            <CheckCircleIcon color='success' fontSize='small' />
+                          )}
+                        </ListItem>
+                      );
+                    })}
+                  </List>
+                </Box>
+              </Box>
+            )}
+          </Box>
+        </>
       )}
-    </Container>
+    </Box>
   );
 }
 

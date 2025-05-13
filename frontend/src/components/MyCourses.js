@@ -99,7 +99,7 @@ function MyCourses() {
   }
 
   return (
-    <Container sx={{ py: 4 }}>
+    <Container sx={{ py: 4, px: { xs: 1, sm: 2, md: 3 } }}>
       <Typography variant='h4' component='h1' gutterBottom>
         My Courses
       </Typography>
@@ -116,14 +116,24 @@ function MyCourses() {
           Course&quot; to get started.
         </Alert>
       ) : (
-        <Grid container spacing={4}>
+        <Grid container spacing={{ xs: 2, sm: 3, md: 4 }}>
           {courses.map((course) => (
-            <Grid item key={course._id} xs={12} sm={6} md={4}>
+            <Grid
+              item
+              key={course._id}
+              xs={12}
+              sm={6}
+              md={4}
+              sx={{ width: '100%' }}
+            >
               <Card
                 sx={{
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
+                  width: '100%',
+                  maxWidth: '100%',
+                  boxShadow: { xs: 3, sm: 2 }, // Stronger shadow on mobile for emphasis
                 }}
               >
                 <CardContent sx={{ flexGrow: 1 }}>
