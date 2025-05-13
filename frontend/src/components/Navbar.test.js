@@ -30,6 +30,7 @@ jest.mock('react-router-dom', () => ({
   // Don't use requireActual which causes the error
   Link: ({ children, to }) => <a href={to}>{children}</a>,
   useNavigate: () => mockedUsedNavigate,
+  useLocation: () => ({ pathname: '/' }),
 }));
 
 // Mock localStorage

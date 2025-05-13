@@ -1,11 +1,19 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import axiosInstance from '../utils/axiosConfig';
 import Success from './Success';
 
-// Mock the required modules
-jest.mock('../utils/axiosConfig');
+// Mock the axios instance properly
+jest.mock('../utils/axiosConfig', () => ({
+  __esModule: true,
+  default: {
+    get: jest.fn(),
+    post: jest.fn(),
+  },
+}));
+import axiosInstance from '../utils/axiosConfig';
+
+// Mock react-router-dom
 jest.mock('react-router-dom', () => ({
   useNavigate: () => jest.fn(),
   useLocation: () => ({

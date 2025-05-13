@@ -32,6 +32,11 @@ const theme = createTheme();
 
 // Helper function to render with necessary providers
 const renderWithProviders = (component) => {
+  // Create the sidebar toggle container that the component expects
+  const sidebarContainer = document.createElement('div');
+  sidebarContainer.id = 'course-sidebar-container';
+  document.body.appendChild(sidebarContainer);
+
   return render(
     <MemoryRouter>
       <ThemeProvider theme={theme}>{component}</ThemeProvider>
@@ -40,6 +45,14 @@ const renderWithProviders = (component) => {
 };
 
 describe('CourseSidebar', () => {
+  // Clean up after each test
+  afterEach(() => {
+    const container = document.getElementById('course-sidebar-container');
+    if (container) {
+      document.body.removeChild(container);
+    }
+  });
+
   // Test 1: Course title and instructor display
   test('renders course title and instructor correctly', () => {
     // Mock desktop view
