@@ -2,9 +2,9 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-// Mock axios before importing components that use it
-jest.mock('axios');
-import axios from 'axios';
+// Mock axiosInstance before importing components that use it
+jest.mock('../utils/axiosConfig');
+import axiosInstance from '../utils/axiosConfig';
 
 import CourseList from './CourseList';
 
@@ -53,13 +53,13 @@ describe('CourseList', () => {
   });
 
   test('displays loading state initially', () => {
-    axios.get.mockImplementation(() => new Promise(() => {}));
+    axiosInstance.get.mockImplementation(() => new Promise(() => {}));
     render(<CourseList />);
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 
   test('displays error message when API call fails', async () => {
-    axios.get.mockRejectedValueOnce(new Error('API Error'));
+    axiosInstance.get.mockRejectedValueOnce(new Error('API Error'));
     render(<CourseList />);
 
     await waitFor(() => {
@@ -68,7 +68,7 @@ describe('CourseList', () => {
   });
 
   test('displays courses when API call succeeds', async () => {
-    axios.get.mockResolvedValueOnce({ data: mockCourses });
+    axiosInstance.get.mockResolvedValueOnce({ data: mockCourses });
     render(<CourseList />);
 
     await waitFor(() => {
@@ -89,7 +89,7 @@ describe('CourseList', () => {
   });
 
   test('displays message when no courses are available', async () => {
-    axios.get.mockResolvedValueOnce({ data: [] });
+    axiosInstance.get.mockResolvedValueOnce({ data: [] });
     render(<CourseList />);
 
     await waitFor(() => {
@@ -100,7 +100,7 @@ describe('CourseList', () => {
   });
 
   test('navigates to course details when View Details button is clicked', async () => {
-    axios.get.mockResolvedValueOnce({ data: mockCourses });
+    axiosInstance.get.mockResolvedValueOnce({ data: mockCourses });
     render(<CourseList />);
 
     await waitFor(() => {
@@ -118,7 +118,7 @@ describe('CourseList', () => {
   test('displays a CORS error message when appropriate', async () => {
     const corsError = new Error('Network Error');
     corsError.message = 'CORS error: No access-control-allow-origin header';
-    axios.get.mockRejectedValueOnce(corsError);
+    axiosInstance.get.mockRejectedValueOnce(corsError);
 
     render(<CourseList />);
 
@@ -128,7 +128,7 @@ describe('CourseList', () => {
   });
 
   test('accepts and uses data-testid prop', async () => {
-    axios.get.mockResolvedValueOnce({ data: mockCourses });
+    axiosInstance.get.mockResolvedValueOnce({ data: mockCourses });
     render(<CourseList data-testid='custom-test-id' />);
 
     await waitFor(() => {

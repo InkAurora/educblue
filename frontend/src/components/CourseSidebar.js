@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
 import {
@@ -30,6 +31,13 @@ function CourseSidebar({ course, progress, courseId }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navbarHeight = 64; // Standard AppBar height in Material UI
+  const [sidebarToggleContainer, setSidebarToggleContainer] = useState(null);
+
+  useEffect(() => {
+    // Find the container element in the navbar where we'll render the toggle button
+    const container = document.getElementById('course-sidebar-container');
+    setSidebarToggleContainer(container);
+  }, []);
 
   // Helper function to generate or ensure valid contentIds for MongoDB
   const getValidContentId = (item, index) => {
@@ -118,38 +126,65 @@ function CourseSidebar({ course, progress, courseId }) {
     </>
   );
 
+  // Create the toggle button that will be rendered in the navbar
+  const renderToggleButton = () => {
+    if (!isMobile || !sidebarToggleContainer) return null;
+
+    return ReactDOM.createPortal(
+      <IconButton
+        color='inherit'
+        aria-label='open course sidebar'
+        edge='start'
+        onClick={toggleDrawer}
+        data-testid='course-sidebar-toggle'
+      >
+        <MenuIcon />
+      </IconButton>,
+      sidebarToggleContainer,
+    );
+  };
+
   return (
     <>
+      {/* Render the toggle button in the navbar for mobile view */}
+      {renderToggleButton()}
+
       {isMobile ? (
-        <>
-          <IconButton
-            color='inherit'
-            aria-label='open course sidebar'
-            edge='start'
-            onClick={toggleDrawer}
-            sx={{ mr: 2 }}
-            data-testid='course-sidebar-toggle'
-          >
-            <MenuIcon />
-          </IconButton>
-          <Drawer
-            anchor='left'
-            open={open}
-            onClose={toggleDrawer}
-            sx={{
+        <Drawer
+          anchor='left'
+          open={open}
+          onClose={toggleDrawer}
+          sx={{
+            width: drawerWidth,
+            flexShrink: 0,
+            '& .MuiDrawer-paper': {
               width: drawerWidth,
-              flexShrink: 0,
-              '& .MuiDrawer-paper': {
-                width: drawerWidth,
-                boxSizing: 'border-box',
-                marginTop: `${navbarHeight}px`, // Add margin to position below navbar for mobile drawer
-              },
+              boxSizing: 'border-box',
+              marginTop: 0, // Remove margin so drawer goes to the top
+              top: 0, // Start from the very top of the screen
+              height: '100%',
+              zIndex: 1300, // Higher z-index to appear above navbar
+            },
+          }}
+          data-testid='course-sidebar-mobile'
+        >
+          {/* Add a colored header to match the navbar */}
+          <Box
+            sx={{
+              height: navbarHeight,
+              bgcolor: 'primary.main',
+              display: 'flex',
+              alignItems: 'center',
+              px: 2,
+              color: 'white',
             }}
-            data-testid='course-sidebar-mobile'
           >
-            {drawerContent}
-          </Drawer>
-        </>
+            <Typography variant='h6' component='div'>
+              Course Content
+            </Typography>
+          </Box>
+          {drawerContent}
+        </Drawer>
       ) : (
         <Drawer
           variant='permanent'

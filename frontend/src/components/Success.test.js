@@ -1,11 +1,11 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import axios from 'axios';
+import axiosInstance from '../utils/axiosConfig';
 import Success from './Success';
 
 // Mock the required modules
-jest.mock('axios');
+jest.mock('../utils/axiosConfig');
 jest.mock('react-router-dom', () => ({
   useNavigate: () => jest.fn(),
   useLocation: () => ({
@@ -35,8 +35,8 @@ describe('Success Component', () => {
       search: '?session_id=test_session_123',
     });
 
-    // Mock axios to return a pending promise that never resolves during this test
-    axios.post.mockImplementation(() => new Promise(() => {}));
+    // Mock axiosInstance to return a pending promise that never resolves during this test
+    axiosInstance.post.mockImplementation(() => new Promise(() => {}));
 
     // Mock localStorage token
     localStorage.getItem.mockReturnValue('valid-token');
@@ -59,7 +59,7 @@ describe('Success Component', () => {
     localStorage.getItem.mockReturnValue('valid-token');
 
     // Mock successful API response
-    axios.post.mockResolvedValueOnce({});
+    axiosInstance.post.mockResolvedValueOnce({});
 
     render(<Success />);
 
@@ -70,18 +70,10 @@ describe('Success Component', () => {
     });
 
     // Verify axios was called with the right parameters
-    expect(axios.post).toHaveBeenCalledWith(
-      'http://localhost:5000/api/enroll',
-      {
-        sessionId: 'test_session_123',
-        courseId: 'course123',
-      },
-      {
-        headers: {
-          Authorization: 'Bearer valid-token',
-        },
-      },
-    );
+    expect(axiosInstance.post).toHaveBeenCalledWith('/api/enroll', {
+      sessionId: 'test_session_123',
+      courseId: 'course123',
+    });
   });
 
   test('shows error when session_id is missing', async () => {
@@ -131,7 +123,7 @@ describe('Success Component', () => {
     localStorage.getItem.mockReturnValue('valid-token');
 
     // Mock API error with message
-    axios.post.mockRejectedValueOnce({
+    axiosInstance.post.mockRejectedValueOnce({
       response: {
         data: {
           message: 'Course already enrolled',
@@ -158,7 +150,7 @@ describe('Success Component', () => {
     localStorage.getItem.mockReturnValue('valid-token');
 
     // Mock API error without specific message
-    axios.post.mockRejectedValueOnce({
+    axiosInstance.post.mockRejectedValueOnce({
       response: {},
     });
 
@@ -185,7 +177,7 @@ describe('Success Component', () => {
     localStorage.getItem.mockReturnValue('valid-token');
 
     // Mock successful API response
-    axios.post.mockResolvedValueOnce({});
+    axiosInstance.post.mockResolvedValueOnce({});
 
     // Mock navigate function
     const mockNavigate = jest.fn();
@@ -247,7 +239,7 @@ describe('Success Component', () => {
     });
 
     // Mock successful API response
-    axios.post.mockResolvedValueOnce({});
+    axiosInstance.post.mockResolvedValueOnce({});
 
     render(<Success />);
 
@@ -257,18 +249,10 @@ describe('Success Component', () => {
     });
 
     // Verify axios was called with the right parameters including course ID from localStorage
-    expect(axios.post).toHaveBeenCalledWith(
-      'http://localhost:5000/api/enroll',
-      {
-        sessionId: 'test_session_123',
-        courseId: 'localStorage-course-123',
-      },
-      {
-        headers: {
-          Authorization: 'Bearer valid-token',
-        },
-      },
-    );
+    expect(axiosInstance.post).toHaveBeenCalledWith('/api/enroll', {
+      sessionId: 'test_session_123',
+      courseId: 'localStorage-course-123',
+    });
 
     // Verify localStorage.removeItem was called to clean up
     expect(localStorage.removeItem).toHaveBeenCalledWith('enrollingCourseId');

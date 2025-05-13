@@ -17,51 +17,135 @@ import PersonalInformation from './components/PersonalInformation';
 function App() {
   return (
     <BrowserRouter>
-      <Navbar />
-      <Container>
-        <Routes>
-          <Route
-            path='/'
-            element={
-              <>
-                <Box sx={{ my: 4 }}>
-                  <Typography
-                    variant='h3'
-                    component='h1'
-                    sx={{ textAlign: 'center' }}
-                  >
-                    Educ Blue
-                  </Typography>
-                </Box>
-                <CourseList data-testid='course-list' />
-              </>
-            }
-          />
-          <Route
-            path='/courses/:id'
-            element={<CourseDetails data-testid='course-details' />}
-          />
-          <Route
-            path='/courses/:id/content/:contentId'
-            element={<CourseContent data-testid='course-content' />}
-          />
-          <Route path='/login' element={<Login />} />
-          <Route path='/register' element={<Register />} />
-          <Route path='/success' element={<Success />} />
-          <Route path='/dashboard' element={<UserDashboard />} />
-          <Route path='/create-course' element={<CreateCourse />} />
-          <Route
-            path='/create-course/:id/content'
-            element={<CourseContentEditor />}
-          />
-          <Route path='/my-courses' element={<MyCourses />} />
-          <Route path='/profile' element={<PersonalInformation />} />
-          <Route
-            path='/personal-information'
-            element={<PersonalInformation />}
-          />
-        </Routes>
-      </Container>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100vh',
+        }}
+      >
+        {/* Navbar block - full width at the top */}
+        <Box sx={{ flexShrink: 0 }}>
+          <Navbar />
+        </Box>
+
+        {/* Content area - takes remaining height */}
+        <Box
+          sx={{
+            flexGrow: 1,
+            overflow: 'auto',
+          }}
+        >
+          <Routes>
+            {/* For course content, use full width without container padding */}
+            <Route
+              path='/courses/:id/content/:contentId'
+              element={<CourseContent data-testid='course-content' />}
+            />
+
+            {/* For all other routes, use container with padding */}
+            <Route
+              path='/'
+              element={
+                <Container sx={{ py: 2 }}>
+                  <Box sx={{ my: 4 }}>
+                    <Typography
+                      variant='h3'
+                      component='h1'
+                      sx={{ textAlign: 'center' }}
+                    >
+                      Educ Blue
+                    </Typography>
+                  </Box>
+                  <CourseList data-testid='course-list' />
+                </Container>
+              }
+            />
+
+            {/* Other routes with Container */}
+            <Route
+              path='/courses/:id'
+              element={
+                <Container sx={{ py: 2 }}>
+                  <CourseDetails data-testid='course-details' />
+                </Container>
+              }
+            />
+            <Route
+              path='/login'
+              element={
+                <Container sx={{ py: 2 }}>
+                  <Login />
+                </Container>
+              }
+            />
+            <Route
+              path='/register'
+              element={
+                <Container sx={{ py: 2 }}>
+                  <Register />
+                </Container>
+              }
+            />
+            <Route
+              path='/success'
+              element={
+                <Container sx={{ py: 2 }}>
+                  <Success />
+                </Container>
+              }
+            />
+            <Route
+              path='/dashboard'
+              element={
+                <Container sx={{ py: 2 }}>
+                  <UserDashboard />
+                </Container>
+              }
+            />
+            <Route
+              path='/create-course'
+              element={
+                <Container sx={{ py: 2 }}>
+                  <CreateCourse />
+                </Container>
+              }
+            />
+            <Route
+              path='/create-course/:id/content'
+              element={
+                <Container sx={{ py: 2 }}>
+                  <CourseContentEditor />
+                </Container>
+              }
+            />
+            <Route
+              path='/my-courses'
+              element={
+                <Container sx={{ py: 2 }}>
+                  <MyCourses />
+                </Container>
+              }
+            />
+            <Route
+              path='/profile'
+              element={
+                <Container sx={{ py: 2 }}>
+                  <PersonalInformation />
+                </Container>
+              }
+            />
+            <Route
+              path='/personal-information'
+              element={
+                <Container sx={{ py: 2 }}>
+                  <PersonalInformation />
+                </Container>
+              }
+            />
+          </Routes>
+        </Box>
+      </Box>
     </BrowserRouter>
   );
 }

@@ -2,9 +2,9 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-// Mock axios before importing components that use it
-jest.mock('axios');
-import axios from 'axios';
+// Mock axiosInstance before importing components that use it
+jest.mock('../utils/axiosConfig');
+import axiosInstance from '../utils/axiosConfig';
 
 import UserDashboard from './UserDashboard';
 
@@ -72,8 +72,8 @@ describe('UserDashboard Component', () => {
     // Mock a token in localStorage
     window.localStorage.getItem.mockReturnValueOnce('fake-token');
 
-    // Make axios.get hang (never resolve)
-    axios.get.mockImplementation(() => new Promise(() => {}));
+    // Make axiosInstance.get hang (never resolve)
+    axiosInstance.get.mockImplementation(() => new Promise(() => {}));
 
     render(<UserDashboard />);
 
@@ -87,7 +87,7 @@ describe('UserDashboard Component', () => {
 
     // Mock API error
     const errorMessage = 'API Error';
-    axios.get.mockRejectedValueOnce(new Error(errorMessage));
+    axiosInstance.get.mockRejectedValueOnce(new Error(errorMessage));
 
     render(<UserDashboard />);
 
@@ -104,7 +104,7 @@ describe('UserDashboard Component', () => {
     window.localStorage.getItem.mockReturnValueOnce('fake-token');
 
     // Mock successful API response
-    axios.get.mockResolvedValueOnce({ data: mockUserData });
+    axiosInstance.get.mockResolvedValueOnce({ data: mockUserData });
 
     render(<UserDashboard />);
 
@@ -139,7 +139,7 @@ describe('UserDashboard Component', () => {
 
     // Mock API response with no enrolled courses
     const userWithNoCourses = { ...mockUserData, enrolledCourses: [] };
-    axios.get.mockResolvedValueOnce({ data: userWithNoCourses });
+    axiosInstance.get.mockResolvedValueOnce({ data: userWithNoCourses });
 
     render(<UserDashboard />);
 
@@ -156,7 +156,7 @@ describe('UserDashboard Component', () => {
     window.localStorage.getItem.mockReturnValueOnce('fake-token');
 
     // Mock successful API response
-    axios.get.mockResolvedValueOnce({ data: mockUserData });
+    axiosInstance.get.mockResolvedValueOnce({ data: mockUserData });
 
     render(<UserDashboard />);
 
@@ -181,20 +181,13 @@ describe('UserDashboard Component', () => {
     window.localStorage.getItem.mockReturnValueOnce(token);
 
     // Mock successful API response
-    axios.get.mockResolvedValueOnce({ data: mockUserData });
+    axiosInstance.get.mockResolvedValueOnce({ data: mockUserData });
 
     render(<UserDashboard />);
 
-    // Check if axios.get was called with correct URL and headers
+    // Check if axiosInstance.get was called with correct URL
     await waitFor(() => {
-      expect(axios.get).toHaveBeenCalledWith(
-        'http://localhost:5000/api/users/me',
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
+      expect(axiosInstance.get).toHaveBeenCalledWith('/api/users/me');
     });
   });
 
@@ -206,7 +199,7 @@ describe('UserDashboard Component', () => {
     const userWithoutCourses = { ...mockUserData };
     delete userWithoutCourses.enrolledCourses;
 
-    axios.get.mockResolvedValueOnce({ data: userWithoutCourses });
+    axiosInstance.get.mockResolvedValueOnce({ data: userWithoutCourses });
 
     render(<UserDashboard />);
 
@@ -240,7 +233,9 @@ describe('UserDashboard Component', () => {
       ],
     };
 
-    axios.get.mockResolvedValueOnce({ data: userWithAlternateCourseIds });
+    axiosInstance.get.mockResolvedValueOnce({
+      data: userWithAlternateCourseIds,
+    });
 
     render(<UserDashboard />);
 
@@ -276,7 +271,7 @@ describe('UserDashboard Component', () => {
       ],
     };
 
-    axios.get.mockResolvedValueOnce({ data: userWithUnderscoreIds });
+    axiosInstance.get.mockResolvedValueOnce({ data: userWithUnderscoreIds });
 
     render(<UserDashboard />);
 
@@ -312,7 +307,7 @@ describe('UserDashboard Component', () => {
       ],
     };
 
-    axios.get.mockResolvedValueOnce({ data: userWithInvalidCourse });
+    axiosInstance.get.mockResolvedValueOnce({ data: userWithInvalidCourse });
 
     render(<UserDashboard />);
 
@@ -346,7 +341,7 @@ describe('UserDashboard Component', () => {
       fullName: 'John Doe User',
     };
 
-    axios.get.mockResolvedValueOnce({ data: userWithFullName });
+    axiosInstance.get.mockResolvedValueOnce({ data: userWithFullName });
 
     render(<UserDashboard />);
 

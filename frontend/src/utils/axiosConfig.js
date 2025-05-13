@@ -1,9 +1,12 @@
 import axios from 'axios';
 import jwtDecode from 'jwt-decode';
 
+// Get API host from environment variables
+const API_HOST = process.env.REACT_APP_API_HOST || 'http://localhost:5000';
+
 // Create an axios instance with a base URL
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:5000',
+  baseURL: API_HOST,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -32,10 +35,9 @@ const refreshAccessToken = async () => {
   }
 
   try {
-    const response = await axios.post(
-      'http://localhost:5000/api/auth/refresh',
-      { refreshToken },
-    );
+    const response = await axios.post(`${API_HOST}/api/auth/refresh`, {
+      refreshToken,
+    });
 
     // Store the new access token
     const { token } = response.data;

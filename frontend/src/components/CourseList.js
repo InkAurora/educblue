@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import {
   Grid,
   Card,
@@ -12,6 +11,7 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
+import axiosInstance from '../utils/axiosConfig';
 
 function CourseList(props) {
   const navigate = useNavigate();
@@ -23,7 +23,7 @@ function CourseList(props) {
     const fetchCourses = async () => {
       try {
         console.log('Attempting to fetch courses from API...');
-        const response = await axios.get('http://localhost:5000/api/courses');
+        const response = await axiosInstance.get('/api/courses');
         console.log('Courses loaded successfully:', response.data);
         setCourses(response.data);
         setLoading(false);

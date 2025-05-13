@@ -239,7 +239,9 @@ function ContentRenderer({
   };
 
   return (
-    <Box sx={{ mt: 3 }}>
+    <Box sx={{ mt: 3, position: 'relative', pb: 4 }}>
+      {' '}
+      {/* Reduced bottom padding from 10 to 4 */}
       <Typography
         variant='body2'
         color='text.secondary'
@@ -248,7 +250,6 @@ function ContentRenderer({
       >
         {type?.charAt(0).toUpperCase() + type?.slice(1)}
       </Typography>
-
       {type === 'video' && videoUrl && (
         <Box sx={{ mb: 4 }} data-testid='video-content'>
           {isYoutubeVideo && youtubeVideoId ? (
@@ -326,13 +327,11 @@ function ContentRenderer({
             )}
         </Box>
       )}
-
       {type === 'markdown' && content && (
         <Box sx={getMarkdownStyles()} data-testid='markdown-content'>
           <ReactMarkdown>{sanitizeMarkdown(content)}</ReactMarkdown>
         </Box>
       )}
-
       {type === 'quiz' && content && (
         <Box sx={{ mb: 4 }} data-testid='quiz-content'>
           <Typography variant='body1' paragraph>
@@ -365,16 +364,30 @@ function ContentRenderer({
           </Box>
         </Box>
       )}
-
       {type !== 'video' && (
-        <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
+        <Box
+          sx={{
+            mt: 4,
+            mb: 4 /* Added bottom margin */,
+            display: 'flex',
+            justifyContent:
+              'center' /* Changed to center for better visibility */,
+            position: 'relative' /* Changed from sticky to relative */,
+            py: { xs: 1, sm: 2 },
+          }}
+        >
           <Button
-            variant='outlined'
+            variant='contained' /* Changed from outlined to contained for better visibility */
             color='primary'
+            size='large' /* Increased button size */
             onClick={handleCompletionClick}
             disabled={isCompleted || completing}
             startIcon={isCompleted ? <CheckCircleIcon /> : null}
             data-testid='complete-button'
+            sx={{
+              minWidth: '200px' /* Set minimum width */,
+              boxShadow: 3 /* Add shadow for better visibility */,
+            }}
           >
             {isCompleted
               ? 'Completed'
@@ -384,7 +397,6 @@ function ContentRenderer({
           </Button>
         </Box>
       )}
-
       <Snackbar
         open={showFeedback}
         autoHideDuration={6000}

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
 import {
   Container,
   Box,
@@ -10,6 +9,7 @@ import {
   Paper,
   CircularProgress,
 } from '@mui/material';
+import axiosInstance from '../utils/axiosConfig';
 
 function Success() {
   const navigate = useNavigate();
@@ -47,18 +47,10 @@ function Success() {
         }
 
         // Send enrollment request to the backend
-        await axios.post(
-          'http://localhost:5000/api/enroll',
-          {
-            sessionId, // Using shorthand property
-            courseId: courseToPurchase, // Use courseId from query or localStorage backup
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        );
+        await axiosInstance.post('/api/enroll', {
+          sessionId, // Using shorthand property
+          courseId: courseToPurchase, // Use courseId from query or localStorage backup
+        });
 
         // Clear any saved course ID after successful enrollment
         localStorage.removeItem('enrollingCourseId');

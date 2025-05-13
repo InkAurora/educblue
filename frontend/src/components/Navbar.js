@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import {
   AppBar,
@@ -9,15 +9,50 @@ import {
   Container,
   Box,
   Stack,
+  IconButton,
+  Menu,
+  MenuItem,
+  Avatar,
+  Tooltip,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import axiosInstance from '../utils/axiosConfig';
 
 function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [anchorEl, setAnchorEl] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [userRole, setUserRole] = useState('');
   const [userFullName, setUserFullName] = useState('');
+  const [showSidebarToggle, setShowSidebarToggle] = useState(false);
+
+  useEffect(() => {
+    const isCourseContentPage =
+      location.pathname.includes('/courses/') &&
+      location.pathname.includes('/content/');
+    setShowSidebarToggle(isCourseContentPage);
+  }, [location.pathname]);
+
+  const handleMenuOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleNavigation = (path) => {
+    handleMenuClose();
+    navigate(path);
+  };
+
+  const open = Boolean(anchorEl);
 
   const fetchUserData = async (token) => {
     try {
@@ -40,11 +75,9 @@ function Navbar() {
       const token = localStorage.getItem('token');
 
       if (token) {
-        // Decode the token to extract user information
         const decodedToken = jwtDecode(token);
         console.log('Decoded token:', decodedToken);
 
-        // Extract user information from the flattened token structure
         const email = decodedToken.email || '';
         const role = decodedToken.role || '';
 
@@ -55,7 +88,6 @@ function Navbar() {
         setUserRole(role);
         setIsLoggedIn(true);
 
-        // Fetch additional user data including fullName
         fetchUserData(token);
       } else {
         setIsLoggedIn(false);
@@ -64,7 +96,6 @@ function Navbar() {
         setUserFullName('');
       }
     } catch (error) {
-      // If token is invalid, clear it and reset state
       console.error('Error decoding token:', error);
       localStorage.removeItem('token');
       setIsLoggedIn(false);
@@ -75,17 +106,14 @@ function Navbar() {
   };
 
   useEffect(() => {
-    // Check initial login status
     checkLoginStatus();
 
-    // Listen for authentication events
     window.addEventListener('storage', (event) => {
       if (event.key === 'token') {
         checkLoginStatus();
       }
     });
 
-    // Custom event listener for auth changes
     const handleAuthChange = () => checkLoginStatus();
     window.addEventListener('authChange', handleAuthChange);
 
@@ -100,111 +128,226 @@ function Navbar() {
       const refreshToken = localStorage.getItem('refreshToken');
 
       if (refreshToken) {
-        // Send logout request to the server
         await axiosInstance.post('/api/auth/logout', { refreshToken });
       }
     } catch (error) {
       console.error('Error during logout:', error);
-      // Continue with cleanup even if the API call fails
     } finally {
-      // Remove both tokens from localStorage
       localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');
 
-      // Update state
       setIsLoggedIn(false);
       setUserEmail('');
       setUserRole('');
       setUserFullName('');
 
-      // Dispatch auth change event
       window.dispatchEvent(new Event('authChange'));
 
-      // Redirect to home page
       navigate('/');
     }
   };
 
   return (
-    <AppBar position='static'>
-      <Container maxWidth='xl'>
-        <Toolbar disableGutters>
-          <Typography
-            variant='h6'
-            noWrap
-            component={RouterLink}
-            to='/'
-            sx={{
-              mr: 2,
-              display: 'flex',
-              fontWeight: 700,
-              color: 'inherit',
-              textDecoration: 'none',
-              flexGrow: 1,
-            }}
+    <AppBar
+      position='static'
+      sx={{
+        zIndex: 1200,
+        boxShadow: 2, // Use a slightly stronger shadow
+        margin: 0,
+        padding: 0,
+      }}
+    >
+      <Container
+        maxWidth='xl'
+        disableGutters // Remove container gutters
+        sx={{ margin: 0, padding: 0 }}
+      >
+        <Toolbar
+          disableGutters
+          sx={{ display: 'flex', justifyContent: 'space-between' }}
+        >
+          {/* Left section - Course sidebar toggle (if on course content page) */}
+          <Box
+            sx={{ display: 'flex', flex: '1', justifyContent: 'flex-start' }}
           >
-            Educ Blue
-          </Typography>
+            {showSidebarToggle && (
+              <Box
+                sx={{ display: 'flex', alignItems: 'center' }}
+                id='course-sidebar-container'
+              >
+                {/* This div will be used as a container for the course sidebar toggle */}
+              </Box>
+            )}
+          </Box>
 
-          <Box>
-            {isLoggedIn ? (
-              <Stack direction='row' spacing={2} alignItems='center'>
-                <Typography
-                  variant='body1'
-                  sx={{
-                    display: { xs: 'none', sm: 'block' },
-                    color: 'inherit',
+          {/* Center section - Site title */}
+          <Box sx={{ display: 'flex', flex: '1', justifyContent: 'center' }}>
+            <Typography
+              variant='h6'
+              noWrap
+              component={RouterLink}
+              to='/'
+              sx={{
+                fontWeight: 700,
+                color: 'inherit',
+                textDecoration: 'none',
+                textAlign: 'center',
+              }}
+            >
+              Educ Blue
+            </Typography>
+          </Box>
+
+          {/* Right section - User menu or navigation links */}
+          <Box sx={{ display: 'flex', flex: '1', justifyContent: 'flex-end' }}>
+            {isMobile ? (
+              <>
+                <Tooltip title='User menu'>
+                  <IconButton
+                    size='large'
+                    color='inherit'
+                    aria-label='user menu'
+                    onClick={handleMenuOpen}
+                  >
+                    <AccountCircleIcon />
+                  </IconButton>
+                </Tooltip>
+                <Menu
+                  anchorEl={anchorEl}
+                  open={open}
+                  onClose={handleMenuClose}
+                  anchorOrigin={{
+                    vertical: 'top',
+                    horizontal: 'right',
+                  }}
+                  transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'right',
+                  }}
+                  PaperProps={{
+                    elevation: 3,
+                    sx: {
+                      minWidth: '200px',
+                      mt: 1,
+                    },
                   }}
                 >
-                  Hello, {userFullName || userEmail || 'User'}
-                </Typography>
-                {/* Check for 'instructor' role */}
-                {userRole === 'instructor' && (
+                  {isLoggedIn && (
+                    <MenuItem
+                      sx={{ justifyContent: 'center', fontWeight: 'bold' }}
+                    >
+                      {userFullName || userEmail || 'User'}
+                    </MenuItem>
+                  )}
+                  {isLoggedIn ? (
+                    <>
+                      <MenuItem
+                        onClick={() =>
+                          handleNavigation('/personal-information')
+                        }
+                      >
+                        Profile
+                      </MenuItem>
+                      <MenuItem onClick={() => handleNavigation('/dashboard')}>
+                        Dashboard
+                      </MenuItem>
+                      {userRole === 'instructor' && (
+                        <>
+                          <MenuItem
+                            onClick={() => handleNavigation('/create-course')}
+                          >
+                            Create Course
+                          </MenuItem>
+                          <MenuItem
+                            onClick={() => handleNavigation('/my-courses')}
+                          >
+                            My Courses
+                          </MenuItem>
+                        </>
+                      )}
+                      <MenuItem onClick={handleLogout}>Logout</MenuItem>
+                    </>
+                  ) : (
+                    <>
+                      <MenuItem onClick={() => handleNavigation('/login')}>
+                        Login
+                      </MenuItem>
+                      <MenuItem onClick={() => handleNavigation('/register')}>
+                        Register
+                      </MenuItem>
+                    </>
+                  )}
+                </Menu>
+              </>
+            ) : (
+              <Stack direction='row' spacing={2} alignItems='center'>
+                {isLoggedIn ? (
+                  <>
+                    <Typography
+                      variant='body1'
+                      sx={{
+                        display: { xs: 'none', sm: 'block' },
+                        color: 'inherit',
+                      }}
+                    >
+                      Hello, {userFullName || userEmail || 'User'}
+                    </Typography>
+                    {userRole === 'instructor' && (
+                      <>
+                        <Button
+                          color='inherit'
+                          component={RouterLink}
+                          to='/create-course'
+                        >
+                          Create Course
+                        </Button>
+                        <Button
+                          color='inherit'
+                          component={RouterLink}
+                          to='/my-courses'
+                        >
+                          My Courses
+                        </Button>
+                      </>
+                    )}
+                    <Button
+                      color='inherit'
+                      component={RouterLink}
+                      to='/personal-information'
+                    >
+                      Profile
+                    </Button>
+                    <Button
+                      color='inherit'
+                      component={RouterLink}
+                      to='/dashboard'
+                    >
+                      Dashboard
+                    </Button>
+                    <Button color='inherit' onClick={handleLogout}>
+                      Logout
+                    </Button>
+                  </>
+                ) : (
                   <>
                     <Button
                       color='inherit'
                       component={RouterLink}
-                      to='/create-course'
+                      to='/login'
+                      sx={{ mr: 1 }}
                     >
-                      Create Course
+                      Login
                     </Button>
                     <Button
                       color='inherit'
                       component={RouterLink}
-                      to='/my-courses'
+                      to='/register'
                     >
-                      My Courses
+                      Register
                     </Button>
                   </>
                 )}
-                <Button
-                  color='inherit'
-                  component={RouterLink}
-                  to='/personal-information'
-                >
-                  Profile
-                </Button>
-                <Button color='inherit' component={RouterLink} to='/dashboard'>
-                  Dashboard
-                </Button>
-                <Button color='inherit' onClick={handleLogout}>
-                  Logout
-                </Button>
               </Stack>
-            ) : (
-              <>
-                <Button
-                  color='inherit'
-                  component={RouterLink}
-                  to='/login'
-                  sx={{ mr: 1 }}
-                >
-                  Login
-                </Button>
-                <Button color='inherit' component={RouterLink} to='/register'>
-                  Register
-                </Button>
-              </>
             )}
           </Box>
         </Toolbar>

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import {
   Container,
   Typography,
@@ -12,6 +11,7 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
+import axiosInstance from '../utils/axiosConfig';
 
 function UserDashboard() {
   const navigate = useNavigate();
@@ -31,12 +31,7 @@ function UserDashboard() {
       }
 
       try {
-        const response = await axios.get('http://localhost:5000/api/users/me', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
+        const response = await axiosInstance.get('/api/users/me');
         setUserData(response.data);
 
         // Assuming enrolled courses are included in the user data response

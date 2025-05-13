@@ -14,7 +14,7 @@ import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 
 /**
  * Component for navigating between course content items
- * Fixed position at the top of the content area, just under the navbar
+ * Static position at the top of the content area, just under the navbar
  */
 function ContentNavigation({
   courseId,
@@ -23,58 +23,62 @@ function ContentNavigation({
   nextContentId,
 }) {
   const theme = useTheme();
-  const navbarHeight = 64; // Standard AppBar height in Material UI
 
   return (
     <Box
       sx={{
-        position: 'fixed',
-        top: navbarHeight,
-        left: { xs: 0, md: '300px' }, // Account for sidebar on desktop
-        right: 0,
-        zIndex: 1000,
-        height: '48px',
-        boxSizing: 'border-box',
+        height: '100%',
+        width: '100%',
       }}
     >
       <Paper
-        elevation={2}
+        elevation={1}
         sx={{
           width: '100%',
           height: '100%',
-          borderRadius: 0, // Remove rounded corners for full-width appearance
+          borderRadius: 0,
+          boxShadow: 0,
         }}
       >
         <Toolbar
           sx={{
-            px: { xs: 1, sm: 2 },
             display: 'flex',
             justifyContent: 'space-between',
+            alignItems: 'center',
             bgcolor: 'background.paper',
             width: '100%',
             minHeight: '48px',
             height: '48px',
+            p: 0, // Remove default padding
           }}
           disableGutters
           variant='dense'
         >
-          {/* Previous Button */}
-          <Button
-            startIcon={<NavigateBeforeIcon />}
-            component={Link}
-            to={
-              previousContentId
-                ? `/courses/${courseId}/content/${previousContentId}`
-                : '#'
-            }
-            disabled={!previousContentId}
-            data-testid='prev-button'
-            size='small'
+          {/* Previous Button - Left aligned with consistent width */}
+          <Box
+            sx={{ width: '48px', display: 'flex', justifyContent: 'center' }}
           >
-            Previous
-          </Button>
+            <Button
+              component={Link}
+              to={
+                previousContentId
+                  ? `/courses/${courseId}/content/${previousContentId}`
+                  : '#'
+              }
+              disabled={!previousContentId}
+              data-testid='prev-button'
+              sx={{
+                minWidth: 'unset',
+                p: 1,
+                display: 'flex',
+                justifyContent: 'center',
+              }}
+            >
+              <NavigateBeforeIcon />
+            </Button>
+          </Box>
 
-          {/* Content Title */}
+          {/* Content Title - Centered with proper spacing */}
           <Typography
             variant='h6'
             component='div'
@@ -91,21 +95,29 @@ function ContentNavigation({
             {title}
           </Typography>
 
-          {/* Next Button */}
-          <Button
-            endIcon={<NavigateNextIcon />}
-            component={Link}
-            to={
-              nextContentId
-                ? `/courses/${courseId}/content/${nextContentId}`
-                : '#'
-            }
-            disabled={!nextContentId}
-            data-testid='next-button'
-            size='small'
+          {/* Next Button - Right aligned with consistent width */}
+          <Box
+            sx={{ width: '48px', display: 'flex', justifyContent: 'center' }}
           >
-            Next
-          </Button>
+            <Button
+              component={Link}
+              to={
+                nextContentId
+                  ? `/courses/${courseId}/content/${nextContentId}`
+                  : '#'
+              }
+              disabled={!nextContentId}
+              data-testid='next-button'
+              sx={{
+                minWidth: 'unset',
+                p: 1,
+                display: 'flex',
+                justifyContent: 'center',
+              }}
+            >
+              <NavigateNextIcon />
+            </Button>
+          </Box>
         </Toolbar>
       </Paper>
     </Box>

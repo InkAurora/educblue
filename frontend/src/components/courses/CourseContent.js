@@ -246,91 +246,105 @@ function CourseContent({ 'data-testid': dataTestId }) {
     );
   }
 
-  // The sidebar width we'll use for calculations
+  // Constants for layout calculations
   const sidebarWidth = 300;
+  const navbarHeight = 64; // Standard AppBar height
+  const contentNavHeight = 48; // Content navigation height
 
-  return (
+  // Return the main component structure with proper block divisions
+  return course && content ? (
     <Box
       sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100vh',
-        pt: '64px', // Account for navbar at the top
+        display: 'grid',
+        height: '100%', // Changed from 100vh to 100% to fit within parent container
+        width: '100%',
+        // Desktop: 4-block layout with sidebar
+        // Mobile: 2-block layout (nav+topbar and content)
+        gridTemplateColumns: { xs: '1fr', md: `${sidebarWidth}px 1fr` },
+        gridTemplateRows: {
+          xs: `${contentNavHeight}px 1fr`,
+          md: `${contentNavHeight}px 1fr`,
+        },
+        gridTemplateAreas: {
+          xs: `
+            "topnav"
+            "content"
+          `,
+          md: `
+            "sidebar topnav"
+            "sidebar content"
+          `,
+        },
+        overflow: 'hidden', // Prevent overall container scrolling
       }}
       data-testid={dataTestId}
     >
-      {course && content && (
-        <Box sx={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
-          {/* Sidebar - Fixed width on desktop, hidden on mobile */}
-          <Box
-            sx={{
-              width: { xs: 0, md: `${sidebarWidth}px` },
-              flexShrink: 0,
-              overflow: 'auto',
-              display: { xs: 'none', md: 'block' },
-            }}
-          >
-            <CourseSidebar course={course} progress={progress} courseId={id} />
-          </Box>
+      {/* Sidebar - Desktop only, left side from below navbar to bottom */}
+      <Box
+        sx={{
+          gridArea: 'sidebar',
+          display: { xs: 'none', md: 'block' },
+          overflow: 'auto',
+          borderRight: 1,
+          borderColor: 'divider',
+          height: '100%',
+        }}
+      >
+        <CourseSidebar course={course} progress={progress} courseId={id} />
+      </Box>
 
-          {/* Main content area with navigation and content */}
-          <Box
-            sx={{
-              flexGrow: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
-              position: 'relative',
-            }}
-          >
-            {/* Content Navigation fixed at the top of the content area */}
-            <ContentNavigation
+      {/* Content Navigation Topbar - Top right in desktop, top in mobile */}
+      <Box
+        sx={{
+          gridArea: 'topnav',
+          borderBottom: 1,
+          borderColor: 'divider',
+        }}
+      >
+        <ContentNavigation
+          courseId={id}
+          title={content.title}
+          previousContentId={getPreviousContentId()}
+          nextContentId={getNextContentId()}
+        />
+      </Box>
+
+      {/* Content Area - Only this block scrolls */}
+      <Box
+        sx={{
+          gridArea: 'content',
+          overflow: 'auto', // This is the only scrollable area
+          p: { xs: 1, sm: 2, md: 3 },
+        }}
+      >
+        {isMobile ? (
+          // On mobile, render content without the Paper wrapper
+          <ContentRenderer
+            contentItem={content}
+            isCompleted={isContentCompleted()}
+            completing={completing}
+            onCompleted={markContentCompleted}
+            error={error}
+            progress={progress}
+            courseId={id}
+          />
+        ) : (
+          // On desktop, keep the Paper wrapper
+          <Paper sx={{ p: 3, maxWidth: '900px', mx: 'auto' }}>
+            <ContentRenderer
+              contentItem={content}
+              isCompleted={isContentCompleted()}
+              completing={completing}
+              onCompleted={markContentCompleted}
+              error={error}
+              progress={progress}
               courseId={id}
-              title={content.title}
-              previousContentId={getPreviousContentId()}
-              nextContentId={getNextContentId()}
             />
-
-            {/* Content scrollable area below the navigation */}
-            <Box
-              sx={{
-                p: 3,
-                pt: '60px', // Add padding to account for fixed navigation bar (48px height + some extra space)
-                overflow: 'auto',
-                flexGrow: 1,
-              }}
-            >
-              <Paper sx={{ p: 3, maxWidth: '900px', mx: 'auto' }}>
-                <ContentRenderer
-                  contentItem={content}
-                  isCompleted={isContentCompleted()}
-                  completing={completing}
-                  onCompleted={markContentCompleted}
-                  error={error}
-                  progress={progress}
-                  courseId={id}
-                />
-              </Paper>
-            </Box>
-          </Box>
-        </Box>
-      )}
-
-      {/* Mobile Sidebar - Only shown when mobile view is active */}
-      {isMobile && course && (
-        <Box
-          sx={{
-            width: '100%',
-            display: { xs: 'block', md: 'none' },
-            mt: 2,
-            p: 2,
-          }}
-        >
-          <CourseSidebar course={course} progress={progress} courseId={id} />
-        </Box>
-      )}
+          </Paper>
+        )}
+      </Box>
     </Box>
-  );
+  ) : null;
 }
 
 export default CourseContent;
