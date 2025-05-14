@@ -10,6 +10,7 @@ import Success from './components/Success';
 import UserDashboard from './components/UserDashboard';
 import CreateCourse from './components/CreateCourse';
 import CourseContentEditor from './components/courses/editor/CourseContentEditor';
+import InstructorAnalytics from './components/instructor/InstructorAnalytics';
 import MyCourses from './components/MyCourses';
 import Navbar from './components/Navbar';
 import PersonalInformation from './components/PersonalInformation';
@@ -59,6 +60,14 @@ function App() {
                   </Box>
                   <CourseList data-testid='course-list' />
                 </Container>
+              }
+            />
+
+            {/* Instructor Analytics Route */}
+            <Route
+              path='/courses/:id/analytics'
+              element={
+                <InstructorAnalytics data-testid='instructor-analytics' />
               }
             />
 

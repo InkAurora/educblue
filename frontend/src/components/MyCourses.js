@@ -12,7 +12,9 @@ import {
   CircularProgress,
   Alert,
   Chip,
+  Stack,
 } from '@mui/material';
+import BarChartIcon from '@mui/icons-material/BarChart';
 import axiosInstance from '../utils/axiosConfig';
 
 function MyCourses() {
@@ -159,13 +161,12 @@ function MyCourses() {
                     Duration: {course.duration} hours
                   </Typography>
 
-                  <Box
+                  <Stack
                     sx={{
                       mt: 2,
-                      display: 'flex',
-                      flexDirection: 'column',
                       gap: 1,
                     }}
+                    spacing={1}
                   >
                     <Button
                       variant='contained'
@@ -178,6 +179,17 @@ function MyCourses() {
                       Edit Content
                     </Button>
                     <Button
+                      variant='contained'
+                      color='secondary'
+                      fullWidth
+                      startIcon={<BarChartIcon />}
+                      onClick={() =>
+                        navigate(`/courses/${course._id}/analytics`)
+                      }
+                    >
+                      View Analytics
+                    </Button>
+                    <Button
                       variant='outlined'
                       color='primary'
                       fullWidth
@@ -185,7 +197,7 @@ function MyCourses() {
                     >
                       View Course
                     </Button>
-                  </Box>
+                  </Stack>
                 </CardContent>
               </Card>
             </Grid>
