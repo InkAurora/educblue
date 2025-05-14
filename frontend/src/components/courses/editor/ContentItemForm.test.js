@@ -107,21 +107,31 @@ describe('ContentItemForm', () => {
     expect(screen.getByTestId('content-dialog-title')).toHaveTextContent(
       'Add Content Item',
     );
-    expect(screen.getByLabelText('Content Title')).toHaveValue('Test Multiple Choice Quiz');
-    
+    expect(screen.getByLabelText('Content Title')).toHaveValue(
+      'Test Multiple Choice Quiz',
+    );
+
     // Check that question field is rendered
     expect(screen.getByTestId('multiple-choice-question')).toHaveValue(
-      'What is the capital of France?'
+      'What is the capital of France?',
     );
-    
+
     // Check that all 4 options are rendered
-    expect(screen.getByTestId('multiple-choice-option-0')).toHaveValue('London');
+    expect(screen.getByTestId('multiple-choice-option-0')).toHaveValue(
+      'London',
+    );
     expect(screen.getByTestId('multiple-choice-option-1')).toHaveValue('Paris');
-    expect(screen.getByTestId('multiple-choice-option-2')).toHaveValue('Berlin');
-    expect(screen.getByTestId('multiple-choice-option-3')).toHaveValue('Madrid');
-    
+    expect(screen.getByTestId('multiple-choice-option-2')).toHaveValue(
+      'Berlin',
+    );
+    expect(screen.getByTestId('multiple-choice-option-3')).toHaveValue(
+      'Madrid',
+    );
+
     // Check that correct option selector is rendered
-    expect(screen.getByTestId('multiple-choice-correct-option')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('multiple-choice-correct-option'),
+    ).toBeInTheDocument();
   });
 
   it('displays error message when provided', () => {
@@ -212,7 +222,7 @@ describe('ContentItemForm', () => {
         onSave={mockOnSave}
         error=''
         isEditing={false}
-      />
+      />,
     );
 
     // Update one of the options
@@ -242,12 +252,12 @@ describe('ContentItemForm', () => {
         onSave={mockOnSave}
         error=''
         isEditing={false}
-      />
+      />,
     );
 
     // Check that Save button is disabled
     expect(screen.getByText('Save')).toBeDisabled();
-    
+
     // Check that error message is shown
     expect(screen.getByText('All 4 options are required')).toBeInTheDocument();
   });

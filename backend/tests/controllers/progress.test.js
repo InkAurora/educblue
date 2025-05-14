@@ -46,6 +46,11 @@ describe('Progress Controller', () => {
         options: ['Mercury', 'Venus', 'Earth', 'Mars'],
         correctOption: 0,
       },
+      {
+        title: 'Document',
+        type: 'document',
+        content: 'This is a document',
+      },
     ],
   };
 
@@ -87,6 +92,108 @@ describe('Progress Controller', () => {
     // Enroll the user in the course
     await User.findByIdAndUpdate(userId, {
       $push: { enrolledCourses: courseId },
+    });
+  });
+
+  // Tests for the progress percentage calculation
+  describe('GET /api/progress/:courseId - Progress Percentage', () => {
+    it('should calculate correct progressPercentage (50%) when half of content items are completed', async () => {
+      // Create progress records for 2 of the 4 content items
+      await Progress.create({
+        userId,
+        courseId,
+        contentId,
+        completed: true,
+        completedAt: new Date(),
+      });
+
+      await Progress.create({
+        userId,
+        courseId,
+        contentId: quizContentId,
+        completed: true,
+        completedAt: new Date(),
+        answer: 'Test answer',
+      });
+
+      const res = await request(app)
+        .get(`/api/progress/${courseId}`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('progressPercentage', 50);
+      expect(res.body).toHaveProperty('progressRecords');
+      expect(res.body.progressRecords.length).toBe(2);
+    });
+
+    it('should return 0% for a course with no progress', async () => {
+      const res = await request(app)
+        .get(`/api/progress/${courseId}`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('progressPercentage', 0);
+      expect(res.body).toHaveProperty('progressRecords');
+      expect(res.body.progressRecords.length).toBe(0);
+    });
+
+    it('should return 0% for a course with no content items', async () => {
+      // Create an empty course
+      const emptyCourse = await Course.create({
+        title: 'Empty Course',
+        description: 'This course has no content',
+        price: 29.99,
+        instructor: 'Test Instructor',
+        duration: 1,
+        content: [],
+      });
+
+      // Enroll the user in the empty course
+      await User.findByIdAndUpdate(userId, {
+        $push: { enrolledCourses: emptyCourse._id },
+      });
+
+      const res = await request(app)
+        .get(`/api/progress/${emptyCourse._id}`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('progressPercentage', 0);
+    });
+
+    it('should return 404 for a non-existent course', async () => {
+      const nonExistentCourseId = new mongoose.Types.ObjectId();
+
+      const res = await request(app)
+        .get(`/api/progress/${nonExistentCourseId}`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(res.status).toBe(404);
+      expect(res.body.message).toBe('Course not found');
+    });
+
+    it('should return 403 for non-enrolled users', async () => {
+      // Create a new user that isn't enrolled in the course
+      const nonEnrolledUser = {
+        email: 'nonenrolled@test.com',
+        password: 'password123',
+        role: 'student',
+        fullName: 'Non Enrolled Student',
+      };
+
+      const registerRes = await request(app)
+        .post('/api/auth/register')
+        .send(nonEnrolledUser);
+
+      const nonEnrolledToken =
+        registerRes.body.token || registerRes.body.accessToken;
+
+      const res = await request(app)
+        .get(`/api/progress/${courseId}`)
+        .set('Authorization', `Bearer ${nonEnrolledToken}`);
+
+      expect(res.status).toBe(403);
+      expect(res.body.message).toContain('Access denied');
     });
   });
 
@@ -221,10 +328,12 @@ describe('Progress Controller', () => {
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.status).toBe(200);
-      expect(Array.isArray(res.body)).toBe(true);
-      expect(res.body.length).toBe(1);
-      expect(res.body[0]).toHaveProperty('answer', '0');
-      expect(res.body[0]).toHaveProperty('score', 1);
+      expect(res.body).toHaveProperty('progressRecords');
+      expect(Array.isArray(res.body.progressRecords)).toBe(true);
+      expect(res.body.progressRecords.length).toBe(1);
+      expect(res.body.progressRecords[0]).toHaveProperty('answer', '0');
+      expect(res.body.progressRecords[0]).toHaveProperty('score', 1);
+      expect(res.body).toHaveProperty('progressPercentage', 25); // 1 out of 4 items completed (25%)
     });
   });
 

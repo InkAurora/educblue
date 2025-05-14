@@ -22,6 +22,7 @@ import QuizIcon from '@mui/icons-material/Quiz';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import axiosInstance from '../utils/axiosConfig';
 import CourseSidebar from './CourseSidebar';
+import ProgressBar from './courses/ProgressBar';
 
 // Helper function to sanitize markdown content
 const sanitizeMarkdown = (content) => {
@@ -72,6 +73,7 @@ function CourseDetails({ 'data-testid': dataTestId, testId = null }) {
   const navigate = useNavigate();
   const [course, setCourse] = useState(null);
   const [progress, setProgress] = useState([]);
+  const [progressPercentage, setProgressPercentage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [processing, setProcessing] = useState(false);
@@ -145,9 +147,39 @@ function CourseDetails({ 'data-testid': dataTestId, testId = null }) {
               const progressResponse = await axiosInstance.get(
                 `/api/progress/${id}`,
               );
-              setProgress(progressResponse.data || []);
+
+              // Handle new API response format with progressPercentage
+              const responseData = progressResponse.data;
+
+              if (
+                responseData &&
+                typeof responseData.progressPercentage === 'number'
+              ) {
+                // New API format
+                setProgress(responseData.progressRecords || []);
+                setProgressPercentage(responseData.progressPercentage);
+              } else {
+                // Old API format - just an array of progress records
+                setProgress(responseData || []);
+                // Calculate percentage based on the number of completed items
+                if (
+                  Array.isArray(responseData) &&
+                  Array.isArray(courseResponse.data.content)
+                ) {
+                  const completedCount = responseData.filter(
+                    (item) => item.completed,
+                  ).length;
+                  const totalCount = courseResponse.data.content.length;
+                  const calculatedPercentage =
+                    totalCount > 0
+                      ? Math.round((completedCount / totalCount) * 100)
+                      : 0;
+                  setProgressPercentage(calculatedPercentage);
+                }
+              }
             } catch (progressErr) {
               console.error('Error fetching progress:', progressErr);
+              setProgressPercentage(0);
             }
           }
         }
@@ -259,6 +291,7 @@ function CourseDetails({ 'data-testid': dataTestId, testId = null }) {
               <CourseSidebar
                 course={course}
                 progress={progress}
+                progressPercentage={progressPercentage}
                 courseId={id}
               />
             </Box>
@@ -289,6 +322,13 @@ function CourseDetails({ 'data-testid': dataTestId, testId = null }) {
               <Typography variant='body1' paragraph>
                 {course.description}
               </Typography>
+
+              {/* Progress Bar - only for enrolled users or instructors */}
+              {(isEnrolled || isInstructor) && (
+                <Box sx={{ my: 2, width: '100%' }}>
+                  <ProgressBar percentage={progressPercentage} />
+                </Box>
+              )}
 
               {/* Course price and enrollment/payment buttons - only for non-enrolled users */}
               {!isEnrolled && !isInstructor && (

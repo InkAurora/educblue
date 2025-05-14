@@ -134,12 +134,15 @@ function ContentRenderer({
   // Pre-fill quiz answers and score from progress data
   useEffect(() => {
     if (progress && progress.length > 0 && contentId) {
-      const contentProgress = progress.find(p => p.contentId === contentId);
-      
+      const contentProgress = progress.find((p) => p.contentId === contentId);
+
       if (contentProgress) {
         if (type === 'quiz' && contentProgress.answer) {
           setQuizAnswer(contentProgress.answer || '');
-        } else if (type === 'multipleChoice' && contentProgress.answer !== undefined) {
+        } else if (
+          type === 'multipleChoice' &&
+          contentProgress.answer !== undefined
+        ) {
           setSelectedOption(contentProgress.answer.toString());
           if (contentProgress.score !== undefined) {
             setQuizScore(contentProgress.score);
@@ -260,7 +263,7 @@ function ContentRenderer({
 
       // Convert the selected option to a number for the API
       const optionNumber = parseInt(selectedOption, 10);
-      
+
       const response = await axiosInstance.post(
         `/api/progress/${courseId}/${contentId}`,
         {
@@ -281,7 +284,7 @@ function ContentRenderer({
         setFeedbackMessage('Incorrect. Try again!');
         setFeedbackType('error');
       }
-      
+
       setShowFeedback(true);
       setSubmittingAnswer(false);
 
@@ -324,7 +327,7 @@ function ContentRenderer({
       >
         {type?.charAt(0).toUpperCase() + type?.slice(1)}
       </Typography>
-      
+
       {/* Video content rendering */}
       {type === 'video' && videoUrl && (
         <Box sx={{ mb: 4 }} data-testid='video-content'>
@@ -403,14 +406,14 @@ function ContentRenderer({
             )}
         </Box>
       )}
-      
+
       {/* Markdown content rendering */}
       {type === 'markdown' && content && (
         <Box sx={getMarkdownStyles()} data-testid='markdown-content'>
           <ReactMarkdown>{sanitizeMarkdown(content)}</ReactMarkdown>
         </Box>
       )}
-      
+
       {/* Text-based quiz content rendering */}
       {type === 'quiz' && content && (
         <Box sx={{ mb: 4 }} data-testid='quiz-content'>
@@ -436,7 +439,11 @@ function ContentRenderer({
               color='primary'
               endIcon={<SendIcon />}
               onClick={handleQuizAnswerSubmit}
-              disabled={submittingAnswer || !quizAnswer.trim() || (isCompleted && !isInstructor)}
+              disabled={
+                submittingAnswer ||
+                !quizAnswer.trim() ||
+                (isCompleted && !isInstructor)
+              }
               data-testid='submit-answer-button'
               sx={{ mr: 2 }}
             >
@@ -445,39 +452,42 @@ function ContentRenderer({
           </Box>
         </Box>
       )}
-      
+
       {/* Multiple-choice quiz content rendering */}
       {type === 'multipleChoice' && (
         <Box sx={{ mb: 4 }} data-testid='multiple-choice-content'>
           <Typography variant='body1' paragraph>
             {/* Handle both flat and nested content structures */}
-            {typeof content === 'object' && content?.question 
-              ? content.question 
+            {typeof content === 'object' && content?.question
+              ? content.question
               : question || content}
           </Typography>
-          
+
           {/* Display score and feedback for answered multiple choice questions */}
           {quizScore !== null && (
-            <Alert 
+            <Alert
               severity={quizScore === 1 ? 'success' : 'error'}
               sx={{ mb: 2 }}
               data-testid='quiz-score-feedback'
             >
-              {quizScore === 1 
-                ? 'Correct! Score: 1' 
-                : 'Incorrect. Try again!'}
+              {quizScore === 1 ? 'Correct! Score: 1' : 'Incorrect. Try again!'}
             </Alert>
           )}
-          
-          <FormControl component="fieldset" sx={{ width: '100%', mt: 2 }}>
-            <FormLabel component="legend" sx={{ mb: 1 }}>Select your answer:</FormLabel>
+
+          <FormControl component='fieldset' sx={{ width: '100%', mt: 2 }}>
+            <FormLabel component='legend' sx={{ mb: 1 }}>
+              Select your answer:
+            </FormLabel>
             <RadioGroup
               value={selectedOption}
               onChange={handleOptionChange}
               data-testid='multiple-choice-options'
             >
               {/* Use options from either the object content or top-level options */}
-              {(typeof content === 'object' && Array.isArray(content.options) ? content.options : options || []).map((option, index) => (
+              {(typeof content === 'object' && Array.isArray(content.options)
+                ? content.options
+                : options || []
+              ).map((option, index) => (
                 <FormControlLabel
                   key={index}
                   value={index.toString()}
@@ -503,7 +513,7 @@ function ContentRenderer({
           </Box>
         </Box>
       )}
-      
+
       {/* Completion button for non-video content */}
       {type !== 'video' && (
         <Box
@@ -537,7 +547,7 @@ function ContentRenderer({
           </Button>
         </Box>
       )}
-      
+
       {/* Feedback snackbar */}
       <Snackbar
         open={showFeedback}

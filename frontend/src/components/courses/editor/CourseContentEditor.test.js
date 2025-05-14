@@ -99,14 +99,16 @@ jest.mock(
             <option value='multipleChoice'>Multiple Choice</option>
           </select>
           {currentItem.type === 'multipleChoice' && (
-            <div data-testid="multiple-choice-inputs">
-              {[0, 1, 2, 3].map(index => (
+            <div data-testid='multiple-choice-inputs'>
+              {[0, 1, 2, 3].map((index) => (
                 <input
                   key={index}
                   data-testid={`option-input-${index}`}
                   value={currentItem.options?.[index] || ''}
                   onChange={(e) => {
-                    const newOptions = [...(currentItem.options || ['', '', '', ''])];
+                    const newOptions = [
+                      ...(currentItem.options || ['', '', '', '']),
+                    ];
                     newOptions[index] = e.target.value;
                     setCurrentItem({ ...currentItem, options: newOptions });
                   }}
@@ -114,12 +116,12 @@ jest.mock(
                 />
               ))}
               <select
-                data-testid="correct-option-select"
+                data-testid='correct-option-select'
                 value={currentItem.correctOption || 0}
-                onChange={(e) => 
-                  setCurrentItem({ 
-                    ...currentItem, 
-                    correctOption: parseInt(e.target.value, 10) 
+                onChange={(e) =>
+                  setCurrentItem({
+                    ...currentItem,
+                    correctOption: parseInt(e.target.value, 10),
                   })
                 }
               >
@@ -562,7 +564,7 @@ describe('CourseContentEditor Component', () => {
 
     // Error should be set for missing question
     expect(setErrorMock).toHaveBeenCalledWith(
-      'Question is required for multiple-choice quiz'
+      'Question is required for multiple-choice quiz',
     );
   });
 
@@ -590,17 +592,17 @@ describe('CourseContentEditor Component', () => {
     fireEvent.change(screen.getByTestId('title-input'), {
       target: { value: 'Multiple Choice Quiz' },
     });
-    
+
     // Change the type to multiple choice
     fireEvent.change(screen.getByTestId('type-select'), {
       target: { value: 'multipleChoice' },
     });
-    
+
     // Add content
     fireEvent.change(screen.getByTestId('content-textarea'), {
       target: { value: 'What is the capital of France?' },
     });
-    
+
     // Try to save with empty options (the default state will include empty options array)
     const currentItem = {
       type: 'multipleChoice',
@@ -609,20 +611,22 @@ describe('CourseContentEditor Component', () => {
       options: null, // Test with no options array
       correctOption: 0,
     };
-    
+
     // Simulate saving with the invalid state
     const validateFn = () => {
       // Find the validation function and call it
-      const validateContentItem = CourseContentEditor.__get__('validateContentItem');
+      const validateContentItem = CourseContentEditor.__get__(
+        'validateContentItem',
+      );
       return validateContentItem.call({ currentItem, setError: setErrorMock });
     };
-    
+
     // Save the form
     fireEvent.click(screen.getByTestId('save-button'));
 
     // Error should be set for missing options
     expect(setErrorMock).toHaveBeenCalledWith(
-      'Multiple-choice quiz must have exactly 4 options'
+      'Multiple-choice quiz must have exactly 4 options',
     );
   });
 
@@ -650,37 +654,37 @@ describe('CourseContentEditor Component', () => {
     fireEvent.change(screen.getByTestId('type-select'), {
       target: { value: 'multipleChoice' },
     });
-    
+
     // Fill in required fields but leave one option empty
     fireEvent.change(screen.getByTestId('title-input'), {
       target: { value: 'Multiple Choice Quiz' },
     });
-    
+
     fireEvent.change(screen.getByTestId('content-textarea'), {
       target: { value: 'What is the capital of France?' },
     });
-    
+
     // Fill some options but leave one empty
     fireEvent.change(screen.getByTestId('option-input-0'), {
       target: { value: 'London' },
     });
-    
+
     fireEvent.change(screen.getByTestId('option-input-1'), {
       target: { value: 'Paris' },
     });
-    
+
     fireEvent.change(screen.getByTestId('option-input-2'), {
       target: { value: 'Berlin' },
     });
-    
+
     // Option 3 is intentionally left empty
-    
+
     // Save the form
     fireEvent.click(screen.getByTestId('save-button'));
 
     // Error should be set for empty option
     expect(setErrorMock).toHaveBeenCalledWith(
-      'All multiple-choice options must have content'
+      'All multiple-choice options must have content',
     );
   });
 
@@ -708,41 +712,43 @@ describe('CourseContentEditor Component', () => {
     fireEvent.change(screen.getByTestId('type-select'), {
       target: { value: 'multipleChoice' },
     });
-    
+
     // Fill in all required fields
     fireEvent.change(screen.getByTestId('title-input'), {
       target: { value: 'Multiple Choice Quiz' },
     });
-    
+
     fireEvent.change(screen.getByTestId('content-textarea'), {
       target: { value: 'What is the capital of France?' },
     });
-    
+
     // Fill all options
     fireEvent.change(screen.getByTestId('option-input-0'), {
       target: { value: 'London' },
     });
-    
+
     fireEvent.change(screen.getByTestId('option-input-1'), {
       target: { value: 'Paris' },
     });
-    
+
     fireEvent.change(screen.getByTestId('option-input-2'), {
       target: { value: 'Berlin' },
     });
-    
+
     fireEvent.change(screen.getByTestId('option-input-3'), {
       target: { value: 'Madrid' },
     });
-    
+
     // Set an invalid correctOption value (outside 0-3 range)
     // We need to directly set the currentItem to have an invalid correctOption
     // since our UI doesn't let users select an invalid option
-    const courseContentEditorInstance = screen.getByTestId('mock-content-item-form');
-    
+    const courseContentEditorInstance = screen.getByTestId(
+      'mock-content-item-form',
+    );
+
     // Save the form and verify error was set to expected message
     fireEvent.click(screen.getByTestId('save-button'));
-    
+
     // Since we can't directly modify the correctOption in our test to be invalid,
     // we'll just verify that the validation function is called
     expect(setErrorMock).toHaveBeenCalled();
@@ -772,38 +778,38 @@ describe('CourseContentEditor Component', () => {
     fireEvent.change(screen.getByTestId('type-select'), {
       target: { value: 'multipleChoice' },
     });
-    
+
     // Fill in all required fields
     fireEvent.change(screen.getByTestId('title-input'), {
       target: { value: 'Multiple Choice Quiz' },
     });
-    
+
     fireEvent.change(screen.getByTestId('content-textarea'), {
       target: { value: 'What is the capital of France?' },
     });
-    
+
     // Fill all options
     fireEvent.change(screen.getByTestId('option-input-0'), {
       target: { value: 'London' },
     });
-    
+
     fireEvent.change(screen.getByTestId('option-input-1'), {
       target: { value: 'Paris' },
     });
-    
+
     fireEvent.change(screen.getByTestId('option-input-2'), {
       target: { value: 'Berlin' },
     });
-    
+
     fireEvent.change(screen.getByTestId('option-input-3'), {
       target: { value: 'Madrid' },
     });
-    
+
     // Set correct option
     fireEvent.change(screen.getByTestId('correct-option-select'), {
       target: { value: '1' }, // Paris is correct
     });
-    
+
     // Save the form
     fireEvent.click(screen.getByTestId('save-button'));
 
@@ -837,7 +843,11 @@ describe('CourseContentEditor Component', () => {
 
     expect(screen.getByText('Type: multipleChoice')).toBeInTheDocument();
     expect(screen.getByText('Title: Geography Quiz')).toBeInTheDocument();
-    expect(screen.getByText('Content: What is the capital of France?')).toBeInTheDocument();
-    expect(screen.getByText(/Options:.*"London","Paris","Berlin","Madrid"/)).toBeInTheDocument();
+    expect(
+      screen.getByText('Content: What is the capital of France?'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Options:.*"London","Paris","Berlin","Madrid"/),
+    ).toBeInTheDocument();
   });
 });

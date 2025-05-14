@@ -82,14 +82,14 @@ const useCourseContent = (courseId) => {
       setSavingContent(true);
 
       // Ensure all content items have a consistent structure with all required fields
-      const contentToSave = content.map(item => {
+      const contentToSave = content.map((item) => {
         // Base content item structure (same for all types)
         const standardizedItem = {
           title: item.title || '',
           type: item.type,
           videoUrl: item.videoUrl || '',
         };
-        
+
         // Add _id if it exists or generate a temporary one
         if (item._id) {
           standardizedItem._id = item._id;
@@ -101,8 +101,11 @@ const useCourseContent = (courseId) => {
         if (item.type === 'multipleChoice') {
           // For multiple-choice quizzes, include question, options, and correctOption fields
           standardizedItem.question = item.question || item.content || '';
-          standardizedItem.options = Array.isArray(item.options) ? [...item.options] : [];
-          standardizedItem.correctOption = typeof item.correctOption === 'number' ? item.correctOption : 0;
+          standardizedItem.options = Array.isArray(item.options)
+            ? [...item.options]
+            : [];
+          standardizedItem.correctOption =
+            typeof item.correctOption === 'number' ? item.correctOption : 0;
         } else {
           // For other types, only include the content field (no options array)
           standardizedItem.content = item.content || '';
@@ -114,7 +117,9 @@ const useCourseContent = (courseId) => {
       console.log('Saving content:', JSON.stringify(contentToSave, null, 2));
 
       // Using axiosInstance - no need to manually include the token
-      await axiosInstance.put(`/api/courses/${courseId}/content`, { content: contentToSave });
+      await axiosInstance.put(`/api/courses/${courseId}/content`, {
+        content: contentToSave,
+      });
 
       // Update local content with the newly generated IDs
       setContent(contentToSave);
@@ -126,12 +131,21 @@ const useCourseContent = (courseId) => {
     } catch (err) {
       console.error('Error saving course content:', err);
       console.error('Request data:', JSON.stringify({ content }, null, 2));
-      
+
       if (err.response) {
-        console.error('Response error:', err.response.status, err.response.data);
+        console.error(
+          'Response error:',
+          err.response.status,
+          err.response.data,
+        );
         // Display the detailed error message from the backend if available
-        if (err.response.data && (err.response.data.error || err.response.data.message)) {
-          setError(`Failed to save: ${err.response.data.error || err.response.data.message}`);
+        if (
+          err.response.data &&
+          (err.response.data.error || err.response.data.message)
+        ) {
+          setError(
+            `Failed to save: ${err.response.data.error || err.response.data.message}`,
+          );
           return false;
         }
       }
@@ -139,7 +153,9 @@ const useCourseContent = (courseId) => {
       if (err.response?.status === 403) {
         setError('Access denied. Only instructors can edit courses.');
       } else {
-        setError(`Failed to save course content: ${err.message || 'Please try again.'}`);
+        setError(
+          `Failed to save course content: ${err.message || 'Please try again.'}`,
+        );
       }
 
       setSavingContent(false);
@@ -164,14 +180,14 @@ const useCourseContent = (courseId) => {
       setPublishing(true);
 
       // Ensure all content items have a consistent structure with all required fields
-      const contentToSave = content.map(item => {
+      const contentToSave = content.map((item) => {
         // Base content item structure (same for all types)
         const standardizedItem = {
           title: item.title || '',
           type: item.type,
           videoUrl: item.videoUrl || '',
         };
-        
+
         // Add _id if it exists or generate a temporary one
         if (item._id) {
           standardizedItem._id = item._id;
@@ -183,8 +199,11 @@ const useCourseContent = (courseId) => {
         if (item.type === 'multipleChoice') {
           // For multiple-choice quizzes, include question, options, and correctOption fields
           standardizedItem.question = item.question || item.content || '';
-          standardizedItem.options = Array.isArray(item.options) ? [...item.options] : [];
-          standardizedItem.correctOption = typeof item.correctOption === 'number' ? item.correctOption : 0;
+          standardizedItem.options = Array.isArray(item.options)
+            ? [...item.options]
+            : [];
+          standardizedItem.correctOption =
+            typeof item.correctOption === 'number' ? item.correctOption : 0;
         } else {
           // For other types, only include the content field (no options array)
           standardizedItem.content = item.content || '';
@@ -197,7 +216,9 @@ const useCourseContent = (courseId) => {
       setContent(contentToSave);
 
       // First, save the latest content to ensure everything is up to date
-      await axiosInstance.put(`/api/courses/${courseId}/content`, { content: contentToSave });
+      await axiosInstance.put(`/api/courses/${courseId}/content`, {
+        content: contentToSave,
+      });
 
       // Then, publish the course with the required data
       await axiosInstance.patch(`/api/courses/${courseId}/publish`, {

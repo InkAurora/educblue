@@ -21,12 +21,13 @@ import MenuIcon from '@mui/icons-material/Menu';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import DescriptionIcon from '@mui/icons-material/Description';
 import QuizIcon from '@mui/icons-material/Quiz';
+import ProgressBar from './courses/ProgressBar';
 
 /**
  * CourseSidebar component displays a persistent sidebar showing course content navigation.
  * It collapses to a toggle button on mobile devices.
  */
-function CourseSidebar({ course, progress, courseId }) {
+function CourseSidebar({ course, progress, progressPercentage, courseId }) {
   const [open, setOpen] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -86,44 +87,51 @@ function CourseSidebar({ course, progress, courseId }) {
   const drawerWidth = 300;
 
   const drawerContent = (
-    <>
-      <Box sx={{ p: 2 }}>
-        <Typography variant='h6' noWrap component='div'>
-          {course?.title}
-        </Typography>
-        <Typography variant='body2' color='text.secondary'>
-          Instructor: {course?.instructor}
-        </Typography>
-      </Box>
-      <Divider />
-      <List>
-        {course?.content?.map((item, index) => {
-          const contentId = getValidContentId(item, index);
-          const completed = isContentCompleted(contentId);
-          const isLastItem = Boolean(
-            course?.content && index < course.content.length - 1,
-          );
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <Box>
+        <Box sx={{ p: 2 }}>
+          <Typography variant='h6' noWrap component='div'>
+            {course?.title}
+          </Typography>
+          <Typography variant='body2' color='text.secondary'>
+            Instructor: {course?.instructor}
+          </Typography>
+        </Box>
+        <Divider />
+        <List sx={{ flexGrow: 1, overflow: 'auto' }}>
+          {course?.content?.map((item, index) => {
+            const contentId = getValidContentId(item, index);
+            const completed = isContentCompleted(contentId);
+            const isLastItem = Boolean(
+              course?.content && index < course.content.length - 1,
+            );
 
-          return (
-            <React.Fragment key={contentId}>
-              <ListItem disablePadding>
-                <ListItemButton
-                  component={Link}
-                  to={`/courses/${courseId}/content/${contentId}`}
-                >
-                  <ListItemIcon>{getContentTypeIcon(item.type)}</ListItemIcon>
-                  <ListItemText primary={item.title} secondary={item.type} />
-                  {completed && (
-                    <CheckCircleIcon color='success' fontSize='small' />
-                  )}
-                </ListItemButton>
-              </ListItem>
-              {isLastItem && <Divider />}
-            </React.Fragment>
-          );
-        })}
-      </List>
-    </>
+            return (
+              <React.Fragment key={contentId}>
+                <ListItem disablePadding>
+                  <ListItemButton
+                    component={Link}
+                    to={`/courses/${courseId}/content/${contentId}`}
+                  >
+                    <ListItemIcon>{getContentTypeIcon(item.type)}</ListItemIcon>
+                    <ListItemText primary={item.title} secondary={item.type} />
+                    {completed && (
+                      <CheckCircleIcon color='success' fontSize='small' />
+                    )}
+                  </ListItemButton>
+                </ListItem>
+                {isLastItem && <Divider />}
+              </React.Fragment>
+            );
+          })}
+        </List>
+      </Box>
+      
+      {/* Progress bar fixed at the bottom of sidebar */}
+      <Box sx={{ mt: 'auto', p: 2, borderTop: 1, borderColor: 'divider' }}>
+        <ProgressBar percentage={progressPercentage || 0} />
+      </Box>
+    </Box>
   );
 
   // Create the toggle button that will be rendered in the navbar
@@ -198,7 +206,9 @@ function CourseSidebar({ course, progress, courseId }) {
               position: 'fixed',
               height: `calc(100vh - ${navbarHeight}px)`, // Adjust height to account for navbar
               top: `${navbarHeight}px`, // Start the sidebar below the navbar
-              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              overflowY: 'hidden', // Hide overflow for the drawer itself
               zIndex: 900, // Lower z-index than typical AppBar (which is 1100)
             },
           }}
@@ -229,11 +239,13 @@ CourseSidebar.propTypes = {
       completed: PropTypes.bool.isRequired,
     }),
   ),
+  progressPercentage: PropTypes.number,
   courseId: PropTypes.string.isRequired,
 };
 
 CourseSidebar.defaultProps = {
   progress: [],
+  progressPercentage: 0,
 };
 
 export default CourseSidebar;

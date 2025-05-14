@@ -66,19 +66,19 @@ function CourseContentEditor() {
         setError('Question is required for multiple-choice quiz');
         return false;
       }
-      
+
       // Check that we have exactly 4 options
       if (!currentItem.options || currentItem.options.length !== 4) {
         setError('Multiple-choice quiz must have exactly 4 options');
         return false;
       }
-      
+
       // Check that all options have content
-      if (currentItem.options.some(option => !option.trim())) {
+      if (currentItem.options.some((option) => !option.trim())) {
         setError('All multiple-choice options must have content');
         return false;
       }
-      
+
       // Check that correctOption is within valid range
       if (currentItem.correctOption < 0 || currentItem.correctOption > 3) {
         setError('Correct option must be between 1 and 4');
@@ -93,12 +93,12 @@ function CourseContentEditor() {
     if (index >= 0) {
       // Edit existing item
       const itemToEdit = content[index];
-      
+
       // If it's a multiple-choice quiz, map 'question' to 'content' for the form
       if (itemToEdit.type === 'multipleChoice' && itemToEdit.question) {
         setCurrentItem({
           ...itemToEdit,
-          content: itemToEdit.question // Map question field to content for editing
+          content: itemToEdit.question, // Map question field to content for editing
         });
       } else {
         setCurrentItem(itemToEdit);
@@ -135,23 +135,30 @@ function CourseContentEditor() {
         setError('Multiple-choice question text must be at least 3 characters');
         return;
       }
-      
+
       // Verify we have exactly 4 options
-      if (!Array.isArray(currentItem.options) || currentItem.options.length !== 4) {
+      if (
+        !Array.isArray(currentItem.options) ||
+        currentItem.options.length !== 4
+      ) {
         setError('Multiple-choice quiz must have exactly 4 options');
         return;
       }
-      
+
       // Verify all options have content
-      if (currentItem.options.some(option => !option || option.trim() === '')) {
+      if (
+        currentItem.options.some((option) => !option || option.trim() === '')
+      ) {
         setError('All multiple-choice options must have content');
         return;
       }
-      
+
       // Verify correctOption is valid
-      if (typeof currentItem.correctOption !== 'number' || 
-          currentItem.correctOption < 0 || 
-          currentItem.correctOption > 3) {
+      if (
+        typeof currentItem.correctOption !== 'number' ||
+        currentItem.correctOption < 0 ||
+        currentItem.correctOption > 3
+      ) {
         setError('Correct option must be between 0 and 3');
         return;
       }
@@ -159,16 +166,16 @@ function CourseContentEditor() {
 
     // Create a standardized content item based on the type
     let standardizedItem;
-    
+
     if (currentItem.type === 'multipleChoice') {
       // For multiple-choice quizzes, structure exactly as backend expects
       standardizedItem = {
         type: currentItem.type,
         title: currentItem.title,
-        videoUrl: '',  // Empty for multiple-choice quizzes
-        question: currentItem.content,  // Use content as the question
-        options: currentItem.options,   // Include all 4 options
-        correctOption: currentItem.correctOption
+        videoUrl: '', // Empty for multiple-choice quizzes
+        question: currentItem.content, // Use content as the question
+        options: currentItem.options, // Include all 4 options
+        correctOption: currentItem.correctOption,
       };
     } else {
       // For all other types
@@ -176,7 +183,7 @@ function CourseContentEditor() {
         type: currentItem.type,
         title: currentItem.title,
         videoUrl: currentItem.type === 'video' ? currentItem.videoUrl : '',
-        content: currentItem.type === 'video' ? '' : currentItem.content
+        content: currentItem.type === 'video' ? '' : currentItem.content,
       };
     }
 

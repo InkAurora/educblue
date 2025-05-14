@@ -57,9 +57,25 @@ function CourseContent({ 'data-testid': dataTestId }) {
     return `content-item-${index}`;
   };
 
-  // Use our custom hook for progress tracking
-  const { progress, completing, markContentCompleted, isContentCompleted } =
-    useCourseProgress(id, contentId);
+  // Use our custom hook for progress tracking - now with enhanced function and state
+  const { 
+    progress, 
+    progressPercentage,
+    completing, 
+    markContentCompleted, 
+    isContentCompleted,
+    refreshProgress,
+  } = useCourseProgress(id, contentId);
+
+  // Handler for content completion that also updates the progress bar
+  const handleContentCompleted = async () => {
+    const success = await markContentCompleted();
+    if (success) {
+      // Refresh progress to update the progress bar
+      await refreshProgress();
+    }
+    return success;
+  };
 
   // Fetch user data with JWT token
   useEffect(() => {
@@ -256,10 +272,10 @@ function CourseContent({ 'data-testid': dataTestId }) {
     <Box
       sx={{
         display: 'grid',
-        height: '100%', // Changed from 100vh to 100% to fit within parent container
+        height: '100%',
         width: '100%',
-        // Desktop: 4-block layout with sidebar
-        // Mobile: 2-block layout (nav+topbar and content)
+        // Desktop: 3-block layout with sidebar (removed progress area)
+        // Mobile: 2-block layout (nav and content)
         gridTemplateColumns: { xs: '1fr', md: `${sidebarWidth}px 1fr` },
         gridTemplateRows: {
           xs: `${contentNavHeight}px 1fr`,
@@ -290,7 +306,12 @@ function CourseContent({ 'data-testid': dataTestId }) {
           height: '100%',
         }}
       >
-        <CourseSidebar course={course} progress={progress} courseId={id} />
+        <CourseSidebar 
+          course={course} 
+          progress={progress} 
+          progressPercentage={progressPercentage}
+          courseId={id} 
+        />
       </Box>
 
       {/* Content Navigation Topbar - Top right in desktop, top in mobile */}
@@ -323,7 +344,7 @@ function CourseContent({ 'data-testid': dataTestId }) {
             contentItem={content}
             isCompleted={isContentCompleted()}
             completing={completing}
-            onCompleted={markContentCompleted}
+            onCompleted={handleContentCompleted}
             error={error}
             progress={progress}
             courseId={id}
@@ -336,7 +357,7 @@ function CourseContent({ 'data-testid': dataTestId }) {
               contentItem={content}
               isCompleted={isContentCompleted()}
               completing={completing}
-              onCompleted={markContentCompleted}
+              onCompleted={handleContentCompleted}
               error={error}
               progress={progress}
               courseId={id}

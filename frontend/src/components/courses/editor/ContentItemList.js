@@ -81,7 +81,7 @@ ContentItemList.propTypes = {
       title: PropTypes.string.isRequired,
       videoUrl: PropTypes.string,
       content: PropTypes.string,
-      question: PropTypes.string,  // Added for multiple-choice quizzes
+      question: PropTypes.string, // Added for multiple-choice quizzes
       options: PropTypes.arrayOf(PropTypes.string),
       correctOption: PropTypes.number,
     }),

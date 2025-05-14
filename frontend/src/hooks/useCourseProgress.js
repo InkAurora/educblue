@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import axiosInstance from '../utils/axiosConfig';
 
 /**
@@ -9,9 +9,63 @@ import axiosInstance from '../utils/axiosConfig';
  */
 const useCourseProgress = (courseId, contentId) => {
   const [progress, setProgress] = useState([]);
+  const [progressPercentage, setProgressPercentage] = useState(0);
   const [completing, setCompleting] = useState(false);
   const [error, setError] = useState(null);
   const [actualContentId, setActualContentId] = useState(null);
+  const isMountedRef = useRef(true);
+  const initialFetchDoneRef = useRef(false);
+
+  // Create a memoized function to fetch progress data
+  const fetchProgressData = useCallback(async () => {
+    if (!courseId || !isMountedRef.current) return { records: [], percentage: 0 };
+
+    try {
+      const progressResponse = await axiosInstance.get(
+        `/api/progress/${courseId}`,
+      );
+      
+      // Ensure component is still mounted before updating state
+      if (!isMountedRef.current) return { records: [], percentage: 0 };
+      
+      // Handle the new response format with progressRecords and progressPercentage
+      const responseData = progressResponse.data;
+      
+      // Extract progress records array and percentage
+      const progressRecords = Array.isArray(responseData.progressRecords) 
+        ? responseData.progressRecords 
+        : Array.isArray(responseData) ? responseData : [];
+      
+      const percentage = typeof responseData.progressPercentage === 'number'
+        ? responseData.progressPercentage
+        : 0;
+      
+      // Update state with the extracted values
+      setProgress(progressRecords);
+      setProgressPercentage(percentage);
+      setError(null);
+      
+      return { 
+        records: progressRecords, 
+        percentage: percentage 
+      };
+    } catch (progressErr) {
+      if (!isMountedRef.current) return { records: [], percentage: 0 };
+      
+      console.error('Error fetching progress data:', progressErr);
+      if (progressErr.response?.status === 404) {
+        // No progress found is not an error state, just means no progress yet
+        setProgress([]);
+        setProgressPercentage(0);
+        setError(null);
+      } else {
+        setError('Failed to load progress data');
+        setProgress([]); // Ensure we still have an empty array in case of error
+        setProgressPercentage(0);
+      }
+      return { records: [], percentage: 0 };
+    }
+  }, [courseId]);
 
   // Validate and potentially transform contentId to ensure it's compatible with the backend
   useEffect(() => {
@@ -62,91 +116,114 @@ const useCourseProgress = (courseId, contentId) => {
     }
   }, [courseId, contentId]);
 
-  // Fetch progress data when courseId changes
+  // Do a single fetch when component mounts - no polling
   useEffect(() => {
-    const fetchProgressData = async () => {
-      if (!courseId) return;
-
-      try {
-        const progressResponse = await axiosInstance.get(
-          `/api/progress/${courseId}`,
-        );
-        setProgress(progressResponse.data || []);
-        setError(null);
-      } catch (progressErr) {
-        console.error('Error fetching progress data:', progressErr);
-        if (progressErr.response?.status === 404) {
-          // No progress found is not an error state, just means no progress yet
-          setProgress([]);
-          setError(null);
-        } else {
-          setError('Failed to load progress data');
-        }
-      }
+    isMountedRef.current = true;
+    
+    // Only fetch once on component mount
+    if (!initialFetchDoneRef.current) {
+      fetchProgressData();
+      initialFetchDoneRef.current = true;
+    }
+    
+    return () => {
+      isMountedRef.current = false;
     };
-
-    fetchProgressData();
-  }, [courseId]);
+  }, [fetchProgressData]);
 
   /**
    * Mark content as completed
    * @returns {Promise<boolean>} Whether the operation was successful
    */
   const markContentCompleted = async () => {
-    if (!courseId || !actualContentId) return false;
+    if (!courseId || !actualContentId) {
+      console.error('Cannot mark content completed: Missing courseId or contentId', {
+        courseId,
+        actualContentId
+      });
+      return false;
+    }
 
     try {
       setCompleting(true);
 
-      // Make API call to mark content as completed - include completed: true in the body
+      // Make API call to mark content as completed
       const response = await axiosInstance.post(
         `/api/progress/${courseId}/${actualContentId}`,
         { completed: true },
       );
+      
+      // Handle response which might have the new format or be a single progress record
+      if (isMountedRef.current) {
+        const responseData = response.data;
+        
+        // Check if response has the new API format
+        if (responseData && responseData.progressRecords) {
+          setProgress(responseData.progressRecords);
+          setProgressPercentage(responseData.progressPercentage || 0);
+        } else if (responseData) {
+          // If it's a single progress record being returned, update the array
+          setProgress((prevProgress) => {
+            // Ensure prevProgress is an array
+            const progressArray = Array.isArray(prevProgress) ? prevProgress : [];
+            
+            const existingProgressIndex = progressArray.findIndex(
+              (p) => p.contentId === actualContentId,
+            );
 
-      // Update progress state with the returned progress record
-      setProgress((prevProgress) => {
-        const existingProgressIndex = prevProgress.findIndex(
-          (p) => p.contentId === actualContentId,
-        );
+            if (existingProgressIndex >= 0) {
+              // Update existing progress entry
+              const newProgress = [...progressArray];
+              newProgress[existingProgressIndex] = responseData;
+              return newProgress;
+            }
 
-        if (existingProgressIndex >= 0) {
-          // Update existing progress entry
-          const newProgress = [...prevProgress];
-          newProgress[existingProgressIndex] = response.data;
-          return newProgress;
+            // Add new progress entry
+            return [...progressArray, responseData];
+          });
         }
-
-        // Add new progress entry
-        return [...prevProgress, response.data];
-      });
-
-      setCompleting(false);
+      
+        setCompleting(false);
+      }
+      
+      // Refresh progress data to get updated percentage
+      await fetchProgressData();
+      
       return true;
     } catch (err) {
       console.error('Error marking content as completed:', err);
 
-      // Provide better error messages based on API documentation
-      if (err.response?.status === 400) {
-        if (err.response.data.message === 'Invalid content ID format') {
-          setError(
-            'The system could not process this content for progress tracking. Please try a different section or contact support.',
-          );
-        } else if (err.response.data.message === 'Content ID is required') {
-          setError(
-            'Content identifier is missing. Please try refreshing the page.',
-          );
+      if (isMountedRef.current) {
+        // Provide better error messages based on API documentation
+        if (err.response?.status === 400) {
+          if (err.response.data.message === 'Invalid content ID format') {
+            setError(
+              'The system could not process this content for progress tracking.'
+            );
+          } else if (err.response.data.message === 'Content ID is required') {
+            setError(
+              'Content identifier is missing. Please try refreshing the page.'
+            );
+          } else {
+            setError(
+              err.response.data.message || 'Failed to mark content as completed'
+            );
+          }
         } else {
-          setError(
-            err.response.data.message || 'Failed to mark content as completed',
-          );
+          setError('Failed to mark content as completed');
         }
-      } else {
-        setError('Failed to mark content as completed');
+        setCompleting(false);
       }
-      setCompleting(false);
       return false;
     }
+  };
+
+  /**
+   * Force refresh of progress data
+   * @returns {Promise<Object>} The latest progress data with records and percentage
+   */
+  const refreshProgress = async () => {
+    return await fetchProgressData();
   };
 
   /**
@@ -155,6 +232,11 @@ const useCourseProgress = (courseId, contentId) => {
    */
   const isContentCompleted = () => {
     if (!actualContentId) return false;
+    
+    // Add an explicit check to ensure progress is an array before calling .some()
+    if (!Array.isArray(progress)) {
+      return false;
+    }
 
     return progress.some(
       (p) =>
@@ -165,10 +247,12 @@ const useCourseProgress = (courseId, contentId) => {
 
   return {
     progress,
+    progressPercentage,
     completing,
     error,
     markContentCompleted,
     isContentCompleted,
+    refreshProgress,
   };
 };
 

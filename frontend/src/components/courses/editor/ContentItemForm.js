@@ -38,10 +38,7 @@ function ContentItemForm({
         options: [],
         correctOption: 0,
       }));
-    } else if (
-      currentItem.type === 'markdown' || 
-      currentItem.type === 'quiz'
-    ) {
+    } else if (currentItem.type === 'markdown' || currentItem.type === 'quiz') {
       setCurrentItem((prev) => ({
         ...prev,
         videoUrl: '',
@@ -104,12 +101,13 @@ function ContentItemForm({
   // Check if all multiple choice options are filled
   const areOptionsFilled = () => {
     if (currentItem.type !== 'multipleChoice') return true;
-    
+
     return (
       currentItem.options &&
       currentItem.options.length === 4 &&
       currentItem.options.every((option) => option.trim() !== '') &&
-      currentItem.content && currentItem.content.trim().length >= 2 // Ensure question has sufficient content
+      currentItem.content &&
+      currentItem.content.trim().length >= 2 // Ensure question has sufficient content
     );
   };
 
@@ -148,7 +146,10 @@ function ContentItemForm({
             <MenuItem value='quiz' data-testid='quiz-option'>
               Quiz
             </MenuItem>
-            <MenuItem value='multipleChoice' data-testid='multiple-choice-option'>
+            <MenuItem
+              value='multipleChoice'
+              data-testid='multiple-choice-option'
+            >
               Multiple Choice Quiz
             </MenuItem>
           </Select>
@@ -235,40 +236,41 @@ function ContentItemForm({
                 'data-testid': 'multiple-choice-question',
               }}
             />
-            
+
             <Typography variant='subtitle1' sx={{ mt: 2, mb: 1 }}>
               Options (exactly 4 required)
             </Typography>
-            
-            {currentItem.options && currentItem.options.map((option, index) => (
-              <TextField
-                key={index}
-                margin='normal'
-                required
-                fullWidth
-                id={`option-${index}`}
-                label={`Option ${index + 1}`}
-                value={option}
-                onChange={(e) => handleOptionChange(index, e.target.value)}
-                placeholder={`Enter option ${index + 1}`}
-                inputProps={{
-                  'aria-label': `Option ${index + 1}`,
-                  'data-testid': `multiple-choice-option-${index}`,
-                }}
-              />
-            ))}
-            
+
+            {currentItem.options &&
+              currentItem.options.map((option, index) => (
+                <TextField
+                  key={index}
+                  margin='normal'
+                  required
+                  fullWidth
+                  id={`option-${index}`}
+                  label={`Option ${index + 1}`}
+                  value={option}
+                  onChange={(e) => handleOptionChange(index, e.target.value)}
+                  placeholder={`Enter option ${index + 1}`}
+                  inputProps={{
+                    'aria-label': `Option ${index + 1}`,
+                    'data-testid': `multiple-choice-option-${index}`,
+                  }}
+                />
+              ))}
+
             {!areOptionsFilled() && (
-              <FormHelperText error>
-                All 4 options are required
-              </FormHelperText>
+              <FormHelperText error>All 4 options are required</FormHelperText>
             )}
-            
+
             <FormControl
               fullWidth
               margin='normal'
               required
-              error={currentItem.correctOption < 0 || currentItem.correctOption > 3}
+              error={
+                currentItem.correctOption < 0 || currentItem.correctOption > 3
+              }
             >
               <InputLabel id='correct-option-label'>Correct Option</InputLabel>
               <Select
@@ -297,11 +299,13 @@ function ContentItemForm({
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button 
-          onClick={onSave} 
-          variant='contained' 
+        <Button
+          onClick={onSave}
+          variant='contained'
           color='primary'
-          disabled={currentItem.type === 'multipleChoice' && !areOptionsFilled()}
+          disabled={
+            currentItem.type === 'multipleChoice' && !areOptionsFilled()
+          }
         >
           Save
         </Button>
