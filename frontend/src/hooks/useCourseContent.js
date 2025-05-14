@@ -81,8 +81,43 @@ const useCourseContent = (courseId) => {
     try {
       setSavingContent(true);
 
+      // Ensure all content items have a consistent structure with all required fields
+      const contentToSave = content.map(item => {
+        // Base content item structure (same for all types)
+        const standardizedItem = {
+          title: item.title || '',
+          type: item.type,
+          videoUrl: item.videoUrl || '',
+        };
+        
+        // Add _id if it exists or generate a temporary one
+        if (item._id) {
+          standardizedItem._id = item._id;
+        } else {
+          standardizedItem._id = `temp_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+        }
+
+        // Handle different content types
+        if (item.type === 'multipleChoice') {
+          // For multiple-choice quizzes, include question, options, and correctOption fields
+          standardizedItem.question = item.question || item.content || '';
+          standardizedItem.options = Array.isArray(item.options) ? [...item.options] : [];
+          standardizedItem.correctOption = typeof item.correctOption === 'number' ? item.correctOption : 0;
+        } else {
+          // For other types, only include the content field (no options array)
+          standardizedItem.content = item.content || '';
+        }
+
+        return standardizedItem;
+      });
+
+      console.log('Saving content:', JSON.stringify(contentToSave, null, 2));
+
       // Using axiosInstance - no need to manually include the token
-      await axiosInstance.put(`/api/courses/${courseId}/content`, { content });
+      await axiosInstance.put(`/api/courses/${courseId}/content`, { content: contentToSave });
+
+      // Update local content with the newly generated IDs
+      setContent(contentToSave);
 
       setSavingContent(false);
       setError('');
@@ -90,11 +125,21 @@ const useCourseContent = (courseId) => {
       return true;
     } catch (err) {
       console.error('Error saving course content:', err);
+      console.error('Request data:', JSON.stringify({ content }, null, 2));
+      
+      if (err.response) {
+        console.error('Response error:', err.response.status, err.response.data);
+        // Display the detailed error message from the backend if available
+        if (err.response.data && (err.response.data.error || err.response.data.message)) {
+          setError(`Failed to save: ${err.response.data.error || err.response.data.message}`);
+          return false;
+        }
+      }
 
       if (err.response?.status === 403) {
         setError('Access denied. Only instructors can edit courses.');
       } else {
-        setError('Failed to save course content. Please try again.');
+        setError(`Failed to save course content: ${err.message || 'Please try again.'}`);
       }
 
       setSavingContent(false);
@@ -118,13 +163,46 @@ const useCourseContent = (courseId) => {
     try {
       setPublishing(true);
 
+      // Ensure all content items have a consistent structure with all required fields
+      const contentToSave = content.map(item => {
+        // Base content item structure (same for all types)
+        const standardizedItem = {
+          title: item.title || '',
+          type: item.type,
+          videoUrl: item.videoUrl || '',
+        };
+        
+        // Add _id if it exists or generate a temporary one
+        if (item._id) {
+          standardizedItem._id = item._id;
+        } else {
+          standardizedItem._id = `temp_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+        }
+
+        // Handle different content types
+        if (item.type === 'multipleChoice') {
+          // For multiple-choice quizzes, include question, options, and correctOption fields
+          standardizedItem.question = item.question || item.content || '';
+          standardizedItem.options = Array.isArray(item.options) ? [...item.options] : [];
+          standardizedItem.correctOption = typeof item.correctOption === 'number' ? item.correctOption : 0;
+        } else {
+          // For other types, only include the content field (no options array)
+          standardizedItem.content = item.content || '';
+        }
+
+        return standardizedItem;
+      });
+
+      // Update local content with the newly generated IDs
+      setContent(contentToSave);
+
       // First, save the latest content to ensure everything is up to date
-      await axiosInstance.put(`/api/courses/${courseId}/content`, { content });
+      await axiosInstance.put(`/api/courses/${courseId}/content`, { content: contentToSave });
 
       // Then, publish the course with the required data
       await axiosInstance.patch(`/api/courses/${courseId}/publish`, {
         status: 'published',
-        content: content,
+        content: contentToSave,
       });
 
       console.log('Course published successfully');

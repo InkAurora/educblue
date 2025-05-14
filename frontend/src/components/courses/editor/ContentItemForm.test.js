@@ -26,6 +26,10 @@ describe('ContentItemForm', () => {
   const mockOnClose = jest.fn();
   const mockOnSave = jest.fn();
 
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('renders correctly for video type', () => {
     render(
       <ContentItemForm
@@ -76,6 +80,48 @@ describe('ContentItemForm', () => {
     expect(screen.queryByLabelText('Video URL')).not.toBeInTheDocument();
     // Instead of testing for the markdown editor directly, look for the container
     expect(screen.getByText('Content (Markdown)')).toBeInTheDocument();
+  });
+
+  it('renders correctly for multiple-choice quiz type', () => {
+    const multipleChoiceItem = {
+      type: 'multipleChoice',
+      title: 'Test Multiple Choice Quiz',
+      videoUrl: '',
+      content: 'What is the capital of France?',
+      options: ['London', 'Paris', 'Berlin', 'Madrid'],
+      correctOption: 1,
+    };
+
+    render(
+      <ContentItemForm
+        open={true}
+        onClose={mockOnClose}
+        currentItem={multipleChoiceItem}
+        setCurrentItem={mockSetCurrentItem}
+        onSave={mockOnSave}
+        error=''
+        isEditing={false}
+      />,
+    );
+
+    expect(screen.getByTestId('content-dialog-title')).toHaveTextContent(
+      'Add Content Item',
+    );
+    expect(screen.getByLabelText('Content Title')).toHaveValue('Test Multiple Choice Quiz');
+    
+    // Check that question field is rendered
+    expect(screen.getByTestId('multiple-choice-question')).toHaveValue(
+      'What is the capital of France?'
+    );
+    
+    // Check that all 4 options are rendered
+    expect(screen.getByTestId('multiple-choice-option-0')).toHaveValue('London');
+    expect(screen.getByTestId('multiple-choice-option-1')).toHaveValue('Paris');
+    expect(screen.getByTestId('multiple-choice-option-2')).toHaveValue('Berlin');
+    expect(screen.getByTestId('multiple-choice-option-3')).toHaveValue('Madrid');
+    
+    // Check that correct option selector is rendered
+    expect(screen.getByTestId('multiple-choice-correct-option')).toBeInTheDocument();
   });
 
   it('displays error message when provided', () => {
@@ -146,5 +192,63 @@ describe('ContentItemForm', () => {
     });
 
     expect(mockSetCurrentItem).toHaveBeenCalled();
+  });
+
+  it('updates multiple choice option when changed', () => {
+    const multipleChoiceItem = {
+      type: 'multipleChoice',
+      title: 'Test Quiz',
+      content: 'Test question',
+      options: ['Option 1', 'Option 2', 'Option 3', 'Option 4'],
+      correctOption: 0,
+    };
+
+    render(
+      <ContentItemForm
+        open={true}
+        onClose={mockOnClose}
+        currentItem={multipleChoiceItem}
+        setCurrentItem={mockSetCurrentItem}
+        onSave={mockOnSave}
+        error=''
+        isEditing={false}
+      />
+    );
+
+    // Update one of the options
+    fireEvent.change(screen.getByTestId('multiple-choice-option-1'), {
+      target: { value: 'Updated Option 2' },
+    });
+
+    // Check that setCurrentItem was called with updated options
+    expect(mockSetCurrentItem).toHaveBeenCalled();
+  });
+
+  it('disables save button when multiple choice options are not all filled', () => {
+    const multipleChoiceItem = {
+      type: 'multipleChoice',
+      title: 'Test Quiz',
+      content: 'Test question',
+      options: ['Option 1', '', 'Option 3', 'Option 4'],
+      correctOption: 0,
+    };
+
+    render(
+      <ContentItemForm
+        open={true}
+        onClose={mockOnClose}
+        currentItem={multipleChoiceItem}
+        setCurrentItem={mockSetCurrentItem}
+        onSave={mockOnSave}
+        error=''
+        isEditing={false}
+      />
+    );
+
+    // Check that Save button is disabled
+    expect(screen.getByText('Save')).toBeDisabled();
+    
+    // Check that error message is shown
+    expect(screen.getByText('All 4 options are required')).toBeInTheDocument();
   });
 });

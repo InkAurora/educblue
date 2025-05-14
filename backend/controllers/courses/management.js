@@ -18,7 +18,13 @@ exports.createCourse = async (req, res) => {
 
   // Validate content array if provided
   if (content) {
-    const validContentTypes = ['video', 'quiz', 'document', 'markdown'];
+    const validContentTypes = [
+      'video',
+      'quiz',
+      'document',
+      'markdown',
+      'multipleChoice',
+    ];
 
     // Check if all content items have valid types
     const hasInvalidContent = content.some(
@@ -32,6 +38,21 @@ exports.createCourse = async (req, res) => {
         (!item.content || typeof item.content !== 'string')
     );
 
+    // Check if multipleChoice type items have required fields
+    const hasInvalidMultipleChoice = content.some(
+      (item) =>
+        item.type === 'multipleChoice' &&
+        (!item.question ||
+          typeof item.question !== 'string' ||
+          !item.options ||
+          !Array.isArray(item.options) ||
+          item.options.length !== 4 ||
+          typeof item.correctOption !== 'number' ||
+          item.correctOption < 0 ||
+          item.correctOption > 3 ||
+          !Number.isInteger(item.correctOption))
+    );
+
     if (hasInvalidContent) {
       return res.status(400).json({
         message: `Content items must have a valid type: ${validContentTypes.join(', ')}`,
@@ -42,6 +63,13 @@ exports.createCourse = async (req, res) => {
       return res.status(400).json({
         message:
           'Markdown content items must include a content field with string value',
+      });
+    }
+
+    if (hasInvalidMultipleChoice) {
+      return res.status(400).json({
+        message:
+          'Multiple choice questions must include a question (string), options (array of 4 strings), and correctOption (number 0-3)',
       });
     }
   }

@@ -327,6 +327,7 @@ function CourseContent({ 'data-testid': dataTestId }) {
             error={error}
             progress={progress}
             courseId={id}
+            isInstructor={isInstructor}
           />
         ) : (
           // On desktop, keep the Paper wrapper
@@ -339,6 +340,7 @@ function CourseContent({ 'data-testid': dataTestId }) {
               error={error}
               progress={progress}
               courseId={id}
+              isInstructor={isInstructor}
             />
           </Paper>
         )}

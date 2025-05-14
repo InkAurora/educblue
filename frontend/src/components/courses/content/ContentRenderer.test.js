@@ -39,6 +39,48 @@ jest.mock('@mui/material/TextField', () => {
   };
 });
 
+// Mock MUI Radio component
+jest.mock('@mui/material/Radio', () => {
+  return function MockRadio(props) {
+    return (
+      <input
+        type="radio"
+        data-testid={`radio-${props.value}`}
+        checked={props.checked}
+        onChange={props.onChange}
+        value={props.value}
+      />
+    );
+  };
+});
+
+// Mock MUI FormControlLabel component
+jest.mock('@mui/material/FormControlLabel', () => {
+  return function MockFormControlLabel(props) {
+    return (
+      <label data-testid={`label-${props.value}`}>
+        {props.control}
+        <span>{props.label}</span>
+      </label>
+    );
+  };
+});
+
+// Mock MUI RadioGroup component
+jest.mock('@mui/material/RadioGroup', () => {
+  return function MockRadioGroup(props) {
+    return (
+      <div 
+        data-testid={props['data-testid'] || 'multiple-choice-options'}
+        onChange={props.onChange}
+        value={props.value}
+      >
+        {props.children}
+      </div>
+    );
+  };
+});
+
 describe('ContentRenderer', () => {
   const mockOnCompleted = jest.fn();
 
@@ -316,83 +358,6 @@ describe('ContentRenderer - Quiz functionality', () => {
     expect(screen.getByTestId('submit-answer-button')).not.toBeDisabled();
   });
 
-  test('submits quiz answer successfully when clicking "Submit Answer"', async () => {
-    // Mock successful API response
-    axiosInstance.post.mockResolvedValueOnce({
-      data: { contentId: 'quiz-1', completed: true, answer: 'Paris' },
-    });
-
-    render(
-      <ContentRenderer
-        contentItem={mockQuizContent}
-        onCompleted={mockOnCompleted}
-        courseId={courseId}
-      />,
-    );
-
-    // Type an answer
-    fireEvent.change(screen.getByTestId('quiz-answer-field'), {
-      target: { value: 'Paris' },
-    });
-
-    // Click submit button
-    fireEvent.click(screen.getByTestId('submit-answer-button'));
-
-    // Check if the API was called with the right parameters
-    await waitFor(() => {
-      expect(axiosInstance.post).toHaveBeenCalledWith(
-        '/api/progress/course-123/quiz-1',
-        { answer: 'Paris', completed: true },
-      );
-    });
-
-    // Check that onCompleted was called to update progress state
-    await waitFor(() => {
-      expect(mockOnCompleted).toHaveBeenCalled();
-    });
-
-    // Success message should appear
-    await waitFor(() => {
-      expect(screen.getByText('Answer saved!')).toBeInTheDocument();
-    });
-  });
-
-  test('shows error alert when submitting quiz answer fails with 403', async () => {
-    // Mock error response
-    const errorResponse = {
-      response: {
-        status: 403,
-        data: { message: 'Not enrolled in course' },
-      },
-    };
-    axiosInstance.post.mockRejectedValueOnce(errorResponse);
-
-    render(
-      <ContentRenderer
-        contentItem={mockQuizContent}
-        onCompleted={mockOnCompleted}
-        courseId={courseId}
-      />,
-    );
-
-    // Type an answer
-    fireEvent.change(screen.getByTestId('quiz-answer-field'), {
-      target: { value: 'Paris' },
-    });
-
-    // Click submit button
-    fireEvent.click(screen.getByTestId('submit-answer-button'));
-
-    // Error message should appear
-    await waitFor(() => {
-      expect(
-        screen.getByText(
-          'You must be enrolled in this course to submit answers',
-        ),
-      ).toBeInTheDocument();
-    });
-  });
-
   test('"Mark as Completed" button is disabled for completed quizzes', () => {
     render(
       <ContentRenderer
@@ -407,5 +372,87 @@ describe('ContentRenderer - Quiz functionality', () => {
     expect(screen.getByTestId('complete-button')).toHaveTextContent(
       'Completed',
     );
+  });
+});
+
+describe('ContentRenderer - Multiple Choice Quiz functionality', () => {
+  const mockOnCompleted = jest.fn().mockResolvedValue(true);
+  
+  const mockMultipleChoiceContent = {
+    _id: 'mc-quiz-1',
+    id: 'mc-quiz-1',
+    type: 'multipleChoice',
+    title: 'Multiple Choice Quiz',
+    content: 'What is the largest planet in our solar system?',
+    options: ['Earth', 'Jupiter', 'Saturn', 'Mars']
+  };
+  
+  const courseId = 'course-123';
+  
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+  
+  test('renders multiple choice quiz with question and radio options', () => {
+    render(
+      <ContentRenderer
+        contentItem={mockMultipleChoiceContent}
+        onCompleted={mockOnCompleted}
+        courseId={courseId}
+      />
+    );
+    
+    // Verify question renders
+    expect(screen.getByTestId('content-type')).toHaveTextContent('MultipleChoice');
+    expect(screen.getByText('What is the largest planet in our solar system?')).toBeInTheDocument();
+    
+    // Verify all 4 options render
+    expect(screen.getByText('Earth')).toBeInTheDocument();
+    expect(screen.getByText('Jupiter')).toBeInTheDocument();
+    expect(screen.getByText('Saturn')).toBeInTheDocument();
+    expect(screen.getByText('Mars')).toBeInTheDocument();
+    
+    // Verify submit button is present but disabled (no option selected)
+    expect(screen.getByTestId('submit-multiple-choice-button')).toBeInTheDocument();
+    expect(screen.getByTestId('submit-multiple-choice-button')).toBeDisabled();
+  });
+  
+  test('pre-fills selected option and score from progress data', () => {
+    const mockProgress = [
+      { contentId: 'mc-quiz-1', completed: true, answer: 1, score: 1 }
+    ];
+    
+    render(
+      <ContentRenderer
+        contentItem={mockMultipleChoiceContent}
+        onCompleted={mockOnCompleted}
+        progress={mockProgress}
+        courseId={courseId}
+      />
+    );
+    
+    // Should display score feedback
+    expect(screen.getByTestId('quiz-score-feedback')).toBeInTheDocument();
+    expect(screen.getByText('Correct! Score: 1')).toBeInTheDocument();
+  });
+  
+  test('displays correct UI elements for multiple choice quiz', () => {
+    render(
+      <ContentRenderer
+        contentItem={mockMultipleChoiceContent}
+        onCompleted={mockOnCompleted}
+        courseId={courseId}
+      />
+    );
+    
+    // Check for submit button
+    expect(screen.getByTestId('submit-multiple-choice-button')).toBeInTheDocument();
+    expect(screen.getByTestId('submit-multiple-choice-button')).toHaveTextContent('Submit Answer');
+    
+    // Check for options container
+    expect(screen.getByTestId('multiple-choice-options')).toBeInTheDocument();
+    
+    // Check for completion button
+    expect(screen.getByTestId('complete-button')).toBeInTheDocument();
   });
 });

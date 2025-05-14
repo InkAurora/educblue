@@ -121,6 +121,27 @@ describe('Course Management Endpoints', () => {
     ],
   };
 
+  const sampleMultipleChoiceCourse = {
+    title: 'Multiple Choice Quiz Course',
+    description: 'Course with multiple choice quizzes',
+    price: 89.99,
+    duration: 12,
+    content: [
+      {
+        title: 'Introduction',
+        videoUrl: 'https://example.com/video1',
+        type: 'video',
+      },
+      {
+        title: 'Multiple Choice Quiz',
+        type: 'multipleChoice',
+        question: 'Which planet is closest to the sun?',
+        options: ['Mercury', 'Venus', 'Earth', 'Mars'],
+        correctOption: 0,
+      },
+    ],
+  };
+
   describe('POST /api/courses', () => {
     it('should create a new course successfully as instructor', async () => {
       const res = await request(app)
@@ -233,6 +254,103 @@ describe('Course Management Endpoints', () => {
 
       expect(res.status).toBe(403);
       expect(res.body.message).toContain('Access denied');
+    });
+  });
+
+  describe('POST /api/courses - Multiple Choice Quiz', () => {
+    it('should create a course with multiple choice quiz content', async () => {
+      const res = await request(app)
+        .post('/api/courses')
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send(sampleMultipleChoiceCourse);
+
+      expect(res.status).toBe(201);
+      expect(res.body).toHaveProperty('courseId');
+
+      // Check multiple choice quiz content
+      const quizContent = res.body.course.content.find(
+        (c) => c.type === 'multipleChoice'
+      );
+      expect(quizContent).toBeDefined();
+      expect(quizContent.question).toBe('Which planet is closest to the sun?');
+      expect(quizContent.options).toHaveLength(4);
+      expect(quizContent.options[0]).toBe('Mercury');
+      expect(quizContent.correctOption).toBe(0);
+    });
+
+    it('should reject multiple choice quiz with fewer than 4 options', async () => {
+      const invalidQuizCourse = {
+        ...sampleMultipleChoiceCourse,
+        content: [
+          {
+            title: 'Invalid Quiz',
+            type: 'multipleChoice',
+            question: 'Which planet is closest to the sun?',
+            options: ['Mercury', 'Venus', 'Earth'], // Only 3 options
+            correctOption: 0,
+          },
+        ],
+      };
+
+      const res = await request(app)
+        .post('/api/courses')
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send(invalidQuizCourse);
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain(
+        'Multiple choice questions must include'
+      );
+    });
+
+    it('should reject multiple choice quiz with invalid correctOption', async () => {
+      const invalidOptionCourse = {
+        ...sampleMultipleChoiceCourse,
+        content: [
+          {
+            title: 'Invalid Quiz',
+            type: 'multipleChoice',
+            question: 'Which planet is closest to the sun?',
+            options: ['Mercury', 'Venus', 'Earth', 'Mars'],
+            correctOption: 4, // Out of range (should be 0-3)
+          },
+        ],
+      };
+
+      const res = await request(app)
+        .post('/api/courses')
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send(invalidOptionCourse);
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain(
+        'Multiple choice questions must include'
+      );
+    });
+
+    it('should reject multiple choice quiz without a question', async () => {
+      const missingQuestionCourse = {
+        ...sampleMultipleChoiceCourse,
+        content: [
+          {
+            title: 'Invalid Quiz',
+            type: 'multipleChoice',
+            // Missing question field
+            options: ['Mercury', 'Venus', 'Earth', 'Mars'],
+            correctOption: 0,
+          },
+        ],
+      };
+
+      const res = await request(app)
+        .post('/api/courses')
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send(missingQuestionCourse);
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain(
+        'Multiple choice questions must include'
+      );
     });
   });
 

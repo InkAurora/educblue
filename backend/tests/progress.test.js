@@ -71,9 +71,9 @@ describe('Progress Endpoints', () => {
     const course = await Course.create(testCourse);
     courseId = course._id;
 
-    // Create content IDs
-    contentId = new mongoose.Types.ObjectId();
-    quizContentId = new mongoose.Types.ObjectId();
+    // Get actual content IDs from the created course
+    contentId = course.content[0]._id;
+    quizContentId = course.content[1]._id;
 
     // Enroll the user in the course
     await User.findByIdAndUpdate(userId, {
@@ -285,7 +285,6 @@ describe('Progress Endpoints', () => {
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.status).toBe(400);
-      // Updated to match the actual error message returned by the API
       expect(res.body.message).toBe('Invalid content ID format');
     });
 

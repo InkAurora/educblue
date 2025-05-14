@@ -34,6 +34,8 @@ describe('Progress Model', () => {
     expect(savedProgress.contentId.toString()).toBe(contentId.toString());
     expect(savedProgress.completed).toBe(true);
     expect(savedProgress.completedAt).toBeDefined();
+    // Default score should be 0
+    expect(savedProgress.score).toBe(0);
   });
 
   it('should allow optional answer field', async () => {
@@ -53,6 +55,64 @@ describe('Progress Model', () => {
 
     expect(savedProgress._id).toBeDefined();
     expect(savedProgress.answer).toBe(testAnswer);
+  });
+
+  it('should allow setting a score for quiz performance', async () => {
+    const progressWithScore = {
+      userId,
+      courseId,
+      contentId,
+      completed: true,
+      completedAt: new Date(),
+      answer: '2', // Answer for multiple choice quiz
+      score: 1, // Perfect score
+    };
+
+    const progress = new Progress(progressWithScore);
+    const savedProgress = await progress.save();
+
+    expect(savedProgress._id).toBeDefined();
+    expect(savedProgress.score).toBe(1);
+  });
+
+  it('should enforce score min and max constraints', async () => {
+    // Test score below minimum (0)
+    const belowMinProgress = {
+      userId,
+      courseId,
+      contentId,
+      score: -0.5,
+    };
+
+    const progress1 = new Progress(belowMinProgress);
+    try {
+      await progress1.save();
+      // If it doesn't throw, the test should fail
+      expect(true).toBe(false);
+    } catch (error) {
+      expect(error).toBeDefined();
+      expect(error.name).toBe('ValidationError');
+      expect(error.errors.score).toBeDefined();
+    }
+
+    // Test score above maximum (1)
+    const aboveMaxProgress = {
+      userId,
+      courseId,
+      contentId,
+      score: 1.5,
+    };
+
+    const progress2 = new Progress(aboveMaxProgress);
+    try {
+      await progress2.save();
+      // If it doesn't throw, the test should fail
+      expect(true).toBe(false);
+    } catch (error) {
+      expect(error).toBeDefined();
+      expect(error.name).toBe('ValidationError');
+      expect(error.errors.score).toBeDefined();
+    }
   });
 
   it('should enforce maximum length for answer field', async () => {
@@ -141,6 +201,39 @@ describe('Progress Model', () => {
     });
 
     expect(retrievedProgress.answer).toBe(testAnswer);
+  });
+
+  it('should allow updating an existing progress record with a score', async () => {
+    // First create a progress record without a score
+    const initialProgress = {
+      userId,
+      courseId,
+      contentId,
+      completed: true,
+      completedAt: new Date(),
+    };
+
+    const progress = new Progress(initialProgress);
+    await progress.save();
+
+    // Now update with a score
+    // Find and update the progress record
+    const updatedProgress = await Progress.findOneAndUpdate(
+      { userId, courseId, contentId },
+      { score: 1 }, // Perfect score
+      { new: true }
+    );
+
+    expect(updatedProgress.score).toBe(1);
+
+    // Double check by retrieving again
+    const retrievedProgress = await Progress.findOne({
+      userId,
+      courseId,
+      contentId,
+    });
+
+    expect(retrievedProgress.score).toBe(1);
   });
 
   it('should require userId, courseId and contentId fields', async () => {

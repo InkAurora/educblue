@@ -7,6 +7,11 @@ import {
   Button,
   Snackbar,
   Alert,
+  RadioGroup,
+  Radio,
+  FormControl,
+  FormControlLabel,
+  FormLabel,
 } from '@mui/material';
 import ReactMarkdown from 'react-markdown';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -39,8 +44,9 @@ function ContentRenderer({
   error,
   progress,
   courseId,
+  isInstructor,
 }) {
-  const { type, title, content, videoUrl } = contentItem;
+  const { type, title, content, videoUrl, options, question } = contentItem;
   const [videoEnded, setVideoEnded] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [showFeedback, setShowFeedback] = useState(false);
@@ -50,9 +56,11 @@ function ContentRenderer({
   const [youtubePlayer, setYoutubePlayer] = useState(null);
   const youtubeIframeRef = useRef(null);
 
-  // New state for quiz answers
+  // State for quiz answers
   const [quizAnswer, setQuizAnswer] = useState('');
+  const [selectedOption, setSelectedOption] = useState('');
   const [submittingAnswer, setSubmittingAnswer] = useState(false);
+  const [quizScore, setQuizScore] = useState(null);
   const contentId = contentItem._id || contentItem.id;
 
   // Check if the video URL is a YouTube URL
@@ -123,15 +131,20 @@ function ContentRenderer({
     }
   };
 
-  // Pre-fill quiz answer from progress data if available
+  // Pre-fill quiz answers and score from progress data
   useEffect(() => {
-    if (type === 'quiz' && progress && progress.length > 0) {
-      const quizProgress = progress.find(
-        (p) => p.contentId === contentId && p.answer,
-      );
-
-      if (quizProgress) {
-        setQuizAnswer(quizProgress.answer || '');
+    if (progress && progress.length > 0 && contentId) {
+      const contentProgress = progress.find(p => p.contentId === contentId);
+      
+      if (contentProgress) {
+        if (type === 'quiz' && contentProgress.answer) {
+          setQuizAnswer(contentProgress.answer || '');
+        } else if (type === 'multipleChoice' && contentProgress.answer !== undefined) {
+          setSelectedOption(contentProgress.answer.toString());
+          if (contentProgress.score !== undefined) {
+            setQuizScore(contentProgress.score);
+          }
+        }
       }
     }
   }, [type, progress, contentId]);
@@ -194,7 +207,7 @@ function ContentRenderer({
     setShowFeedback(false);
   };
 
-  // New function to handle quiz answer submission
+  // Handle quiz answer submission
   const handleQuizAnswerSubmit = async () => {
     if (!courseId || !contentId) return;
 
@@ -238,10 +251,71 @@ function ContentRenderer({
     }
   };
 
+  // Handle multiple-choice quiz answer submission
+  const handleMultipleChoiceSubmit = async () => {
+    if (!courseId || !contentId || selectedOption === '') return;
+
+    try {
+      setSubmittingAnswer(true);
+
+      // Convert the selected option to a number for the API
+      const optionNumber = parseInt(selectedOption, 10);
+      
+      const response = await axiosInstance.post(
+        `/api/progress/${courseId}/${contentId}`,
+        {
+          answer: optionNumber,
+          completed: true,
+        },
+      );
+
+      // Get the score from the response
+      const score = response.data.score !== undefined ? response.data.score : 0;
+      setQuizScore(score);
+
+      // Set appropriate feedback based on score
+      if (score === 1) {
+        setFeedbackMessage('Correct! Score: 1');
+        setFeedbackType('success');
+      } else {
+        setFeedbackMessage('Incorrect. Try again!');
+        setFeedbackType('error');
+      }
+      
+      setShowFeedback(true);
+      setSubmittingAnswer(false);
+
+      // Update progress after answer submission
+      if (typeof onCompleted === 'function') {
+        onCompleted();
+      }
+    } catch (err) {
+      console.error('Error submitting multiple choice answer:', err);
+
+      if (err.response?.status === 403) {
+        setFeedbackMessage(
+          'You must be enrolled in this course to submit answers',
+        );
+      } else {
+        setFeedbackMessage(
+          err.response?.data?.message ||
+            'Failed to save answer. Please try again.',
+        );
+      }
+
+      setFeedbackType('error');
+      setShowFeedback(true);
+      setSubmittingAnswer(false);
+    }
+  };
+
+  // Handle radio option change
+  const handleOptionChange = (event) => {
+    setSelectedOption(event.target.value);
+  };
+
   return (
     <Box sx={{ mt: 3, position: 'relative', pb: 4 }}>
-      {' '}
-      {/* Reduced bottom padding from 10 to 4 */}
       <Typography
         variant='body2'
         color='text.secondary'
@@ -250,6 +324,8 @@ function ContentRenderer({
       >
         {type?.charAt(0).toUpperCase() + type?.slice(1)}
       </Typography>
+      
+      {/* Video content rendering */}
       {type === 'video' && videoUrl && (
         <Box sx={{ mb: 4 }} data-testid='video-content'>
           {isYoutubeVideo && youtubeVideoId ? (
@@ -327,11 +403,15 @@ function ContentRenderer({
             )}
         </Box>
       )}
+      
+      {/* Markdown content rendering */}
       {type === 'markdown' && content && (
         <Box sx={getMarkdownStyles()} data-testid='markdown-content'>
           <ReactMarkdown>{sanitizeMarkdown(content)}</ReactMarkdown>
         </Box>
       )}
+      
+      {/* Text-based quiz content rendering */}
       {type === 'quiz' && content && (
         <Box sx={{ mb: 4 }} data-testid='quiz-content'>
           <Typography variant='body1' paragraph>
@@ -347,6 +427,7 @@ function ContentRenderer({
             value={quizAnswer}
             onChange={(e) => setQuizAnswer(e.target.value)}
             data-testid='quiz-answer-field'
+            disabled={isCompleted && !isInstructor}
           />
 
           <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-start' }}>
@@ -355,7 +436,7 @@ function ContentRenderer({
               color='primary'
               endIcon={<SendIcon />}
               onClick={handleQuizAnswerSubmit}
-              disabled={submittingAnswer || !quizAnswer.trim()}
+              disabled={submittingAnswer || !quizAnswer.trim() || (isCompleted && !isInstructor)}
               data-testid='submit-answer-button'
               sx={{ mr: 2 }}
             >
@@ -364,29 +445,88 @@ function ContentRenderer({
           </Box>
         </Box>
       )}
+      
+      {/* Multiple-choice quiz content rendering */}
+      {type === 'multipleChoice' && (
+        <Box sx={{ mb: 4 }} data-testid='multiple-choice-content'>
+          <Typography variant='body1' paragraph>
+            {/* Handle both flat and nested content structures */}
+            {typeof content === 'object' && content?.question 
+              ? content.question 
+              : question || content}
+          </Typography>
+          
+          {/* Display score and feedback for answered multiple choice questions */}
+          {quizScore !== null && (
+            <Alert 
+              severity={quizScore === 1 ? 'success' : 'error'}
+              sx={{ mb: 2 }}
+              data-testid='quiz-score-feedback'
+            >
+              {quizScore === 1 
+                ? 'Correct! Score: 1' 
+                : 'Incorrect. Try again!'}
+            </Alert>
+          )}
+          
+          <FormControl component="fieldset" sx={{ width: '100%', mt: 2 }}>
+            <FormLabel component="legend" sx={{ mb: 1 }}>Select your answer:</FormLabel>
+            <RadioGroup
+              value={selectedOption}
+              onChange={handleOptionChange}
+              data-testid='multiple-choice-options'
+            >
+              {/* Use options from either the object content or top-level options */}
+              {(typeof content === 'object' && Array.isArray(content.options) ? content.options : options || []).map((option, index) => (
+                <FormControlLabel
+                  key={index}
+                  value={index.toString()}
+                  control={<Radio />}
+                  label={option}
+                  disabled={submittingAnswer}
+                  data-testid={`option-${index}`}
+                />
+              ))}
+            </RadioGroup>
+          </FormControl>
+
+          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-start' }}>
+            <Button
+              variant='contained'
+              color='primary'
+              onClick={handleMultipleChoiceSubmit}
+              disabled={submittingAnswer || selectedOption === ''}
+              data-testid='submit-multiple-choice-button'
+            >
+              {submittingAnswer ? 'Submitting...' : 'Submit Answer'}
+            </Button>
+          </Box>
+        </Box>
+      )}
+      
+      {/* Completion button for non-video content */}
       {type !== 'video' && (
         <Box
           sx={{
             mt: 4,
-            mb: 4 /* Added bottom margin */,
+            mb: 4,
             display: 'flex',
-            justifyContent:
-              'center' /* Changed to center for better visibility */,
-            position: 'relative' /* Changed from sticky to relative */,
+            justifyContent: 'center',
+            position: 'relative',
             py: { xs: 1, sm: 2 },
           }}
         >
           <Button
-            variant='contained' /* Changed from outlined to contained for better visibility */
+            variant='contained'
             color='primary'
-            size='large' /* Increased button size */
+            size='large'
             onClick={handleCompletionClick}
             disabled={isCompleted || completing}
             startIcon={isCompleted ? <CheckCircleIcon /> : null}
             data-testid='complete-button'
             sx={{
-              minWidth: '200px' /* Set minimum width */,
-              boxShadow: 3 /* Add shadow for better visibility */,
+              minWidth: '200px',
+              boxShadow: 3,
             }}
           >
             {isCompleted
@@ -397,6 +537,8 @@ function ContentRenderer({
           </Button>
         </Box>
       )}
+      
+      {/* Feedback snackbar */}
       <Snackbar
         open={showFeedback}
         autoHideDuration={6000}
@@ -421,6 +563,8 @@ ContentRenderer.propTypes = {
     title: PropTypes.string.isRequired,
     content: PropTypes.string,
     videoUrl: PropTypes.string,
+    options: PropTypes.arrayOf(PropTypes.string),
+    question: PropTypes.string,
     _id: PropTypes.string,
     id: PropTypes.string,
   }).isRequired,
@@ -430,6 +574,7 @@ ContentRenderer.propTypes = {
   error: PropTypes.string,
   progress: PropTypes.array,
   courseId: PropTypes.string,
+  isInstructor: PropTypes.bool,
 };
 
 ContentRenderer.defaultProps = {
@@ -438,6 +583,7 @@ ContentRenderer.defaultProps = {
   error: '',
   progress: [],
   courseId: null,
+  isInstructor: false,
 };
 
 export default ContentRenderer;

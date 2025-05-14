@@ -85,21 +85,10 @@ exports.updateProgress = async (req, res) => {
       });
     }
 
-    // Validate answer if provided
-    if (answer !== undefined) {
-      if (typeof answer !== 'string') {
-        return res.status(400).json({ message: 'Answer must be a string' });
-      }
-
-      if (answer.trim() === '') {
-        return res.status(400).json({ message: 'Answer cannot be empty' });
-      }
-
-      if (answer.length > 500) {
-        return res.status(400).json({
-          message: 'Answer cannot exceed 500 characters',
-        });
-      }
+    // Find the specific content item in the course
+    const contentItem = course.content.id(contentId);
+    if (!contentItem) {
+      return res.status(404).json({ message: 'Content not found' });
     }
 
     // Create update object
@@ -111,9 +100,59 @@ exports.updateProgress = async (req, res) => {
       completedAt: new Date(),
     };
 
-    // Add answer to update data if provided
+    let score = 0;
+
+    // Validate answer based on content type
     if (answer !== undefined) {
-      updateData.answer = answer;
+      // For multipleChoice type
+      if (contentItem.type === 'multipleChoice') {
+        // Ensure answer is a number or can be converted to a number
+        const answerNum = Number(answer);
+
+        // Validate the answer format
+        if (
+          isNaN(answerNum) ||
+          answerNum < 0 ||
+          answerNum > 3 ||
+          !Number.isInteger(answerNum)
+        ) {
+          return res.status(400).json({
+            message:
+              'For multiple choice questions, answer must be a number between 0 and 3',
+          });
+        }
+
+        // Calculate score - 1 if correct, 0 if incorrect
+        score = answerNum === contentItem.correctOption ? 1 : 0;
+
+        // Convert to string for storage to maintain consistent types in database
+        updateData.answer = String(answer);
+        updateData.score = score;
+      }
+      // For regular quiz type
+      else if (contentItem.type === 'quiz') {
+        if (typeof answer !== 'string') {
+          return res.status(400).json({ message: 'Answer must be a string' });
+        }
+
+        if (answer.trim() === '') {
+          return res.status(400).json({ message: 'Answer cannot be empty' });
+        }
+
+        if (answer.length > 500) {
+          return res.status(400).json({
+            message: 'Answer cannot exceed 500 characters',
+          });
+        }
+
+        updateData.answer = answer;
+        // Keep default score of 0 for text-based quizzes
+      }
+      // For other content types, just mark as completed
+      else {
+        updateData.answer =
+          typeof answer === 'string' ? answer : String(answer);
+      }
     }
 
     // Find and update or create new progress record
