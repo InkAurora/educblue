@@ -26,12 +26,12 @@ const getCourseAnalytics = async (req, res) => {
 
     // Get all progress records for this course
     const progressRecords = await Progress.find({ courseId: req.params.id });
-    
+
     // Get unique users who have at least one progress record for this course
     const uniqueUserIds = [
       ...new Set(progressRecords.map((record) => record.userId.toString())),
     ];
-    
+
     // Calculate completion rate - percentage of users with at least one completed item
     const usersWithCompletedItems = new Set();
     progressRecords.forEach((record) => {
@@ -39,7 +39,7 @@ const getCourseAnalytics = async (req, res) => {
         usersWithCompletedItems.add(record.userId.toString());
       }
     });
-    
+
     // Calculate completion rate (with 2 decimal precision)
     const completionRate = uniqueUserIds.length
       ? parseFloat(

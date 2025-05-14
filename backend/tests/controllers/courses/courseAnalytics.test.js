@@ -29,14 +29,14 @@ describe('Course Analytics Controller', () => {
     role: 'student',
     fullName: 'Student One',
   };
-  
+
   const student2 = {
     email: 'student2@test.com',
     password: 'password123',
     role: 'student',
     fullName: 'Student Two',
   };
-  
+
   const student3 = {
     email: 'student3@test.com',
     password: 'password123',
@@ -80,28 +80,29 @@ describe('Course Analytics Controller', () => {
     const instructorRes = await request(app)
       .post('/api/auth/register')
       .send(instructor);
-      
-    instructorToken = instructorRes.body.token || instructorRes.body.accessToken;
-    
+
+    instructorToken =
+      instructorRes.body.token || instructorRes.body.accessToken;
+
     // Create student users
     const student1Res = await request(app)
       .post('/api/auth/register')
       .send(student1);
-    
+
     studentToken = student1Res.body.token || student1Res.body.accessToken;
     studentId = student1Res.body.user?.id || student1Res.body.id;
-    
+
     // Create other student users
     const student2Res = await request(app)
       .post('/api/auth/register')
       .send(student2);
-      
+
     const student2Id = student2Res.body.user?.id || student2Res.body.id;
-    
+
     const student3Res = await request(app)
       .post('/api/auth/register')
       .send(student3);
-      
+
     const student3Id = student3Res.body.user?.id || student3Res.body.id;
 
     // Create test course with the instructor as the creator
@@ -118,11 +119,11 @@ describe('Course Analytics Controller', () => {
     await User.findByIdAndUpdate(studentId, {
       $push: { enrolledCourses: courseId },
     });
-    
+
     await User.findByIdAndUpdate(student2Id, {
       $push: { enrolledCourses: courseId },
     });
-    
+
     await User.findByIdAndUpdate(student3Id, {
       $push: { enrolledCourses: courseId },
     });
@@ -136,7 +137,7 @@ describe('Course Analytics Controller', () => {
       completed: true,
       completedAt: new Date(),
     });
-    
+
     await Progress.create({
       userId: studentId,
       courseId,
@@ -146,7 +147,7 @@ describe('Course Analytics Controller', () => {
       answer: 'Student 1 answer',
       score: 0.8,
     });
-    
+
     await Progress.create({
       userId: studentId,
       courseId,
@@ -165,7 +166,7 @@ describe('Course Analytics Controller', () => {
       completed: true,
       completedAt: new Date(),
     });
-    
+
     // Student 3: Attempted both quizzes but with lower scores
     await Progress.create({
       userId: student3Id,
@@ -176,7 +177,7 @@ describe('Course Analytics Controller', () => {
       answer: 'Student 3 answer',
       score: 0.5,
     });
-    
+
     await Progress.create({
       userId: student3Id,
       courseId,
@@ -197,23 +198,23 @@ describe('Course Analytics Controller', () => {
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty('completionRate');
       expect(res.body).toHaveProperty('quizStats');
-      
+
       // Three students with at least one completed record = 100% completion rate
       expect(res.body.completionRate).toBe(100);
-      
+
       // Check quiz stats
       expect(res.body.quizStats.length).toBe(2);
-      
+
       // Get quiz stats by title for easier testing
       const quizStats = res.body.quizStats.reduce((acc, stat) => {
         acc[stat.title] = stat;
         return acc;
       }, {});
-      
+
       // Quiz Question: average score should be 0.65 ((0.8 + 0.5) / 2)
       expect(quizStats['Quiz Question'].averageScore).toBeCloseTo(0.65, 2);
       expect(quizStats['Quiz Question'].submissionCount).toBe(2);
-      
+
       // Multiple Choice Question: average score should be 0.5 ((1.0 + 0.0) / 2)
       expect(quizStats['Multiple Choice Question'].averageScore).toBeCloseTo(
         0.5,
@@ -238,9 +239,9 @@ describe('Course Analytics Controller', () => {
           },
         ],
       };
-      
+
       const emptyCourse = await Course.create(newCourse);
-      
+
       const res = await request(app)
         .get(`/api/courses/${emptyCourse.id}/analytics`)
         .set('Authorization', `Bearer ${instructorToken}`);
@@ -273,9 +274,9 @@ describe('Course Analytics Controller', () => {
           },
         ],
       };
-      
+
       const course = await Course.create(videoCourse);
-      
+
       const res = await request(app)
         .get(`/api/courses/${course.id}/analytics`)
         .set('Authorization', `Bearer ${instructorToken}`);
@@ -287,7 +288,7 @@ describe('Course Analytics Controller', () => {
 
     it('should return 404 for a non-existent course', async () => {
       const nonExistentId = new mongoose.Types.ObjectId();
-      
+
       const res = await request(app)
         .get(`/api/courses/${nonExistentId}/analytics`)
         .set('Authorization', `Bearer ${instructorToken}`);
@@ -313,13 +314,14 @@ describe('Course Analytics Controller', () => {
         role: 'instructor',
         fullName: 'Other Instructor',
       };
-      
+
       const otherInstructorRes = await request(app)
         .post('/api/auth/register')
         .send(otherInstructor);
-        
-      const otherInstructorToken = otherInstructorRes.body.token || otherInstructorRes.body.accessToken;
-      
+
+      const otherInstructorToken =
+        otherInstructorRes.body.token || otherInstructorRes.body.accessToken;
+
       const res = await request(app)
         .get(`/api/courses/${courseId}/analytics`)
         .set('Authorization', `Bearer ${otherInstructorToken}`);
