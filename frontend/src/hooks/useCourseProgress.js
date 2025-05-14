@@ -18,40 +18,44 @@ const useCourseProgress = (courseId, contentId) => {
 
   // Create a memoized function to fetch progress data
   const fetchProgressData = useCallback(async () => {
-    if (!courseId || !isMountedRef.current) return { records: [], percentage: 0 };
+    if (!courseId || !isMountedRef.current)
+      return { records: [], percentage: 0 };
 
     try {
       const progressResponse = await axiosInstance.get(
         `/api/progress/${courseId}`,
       );
-      
+
       // Ensure component is still mounted before updating state
       if (!isMountedRef.current) return { records: [], percentage: 0 };
-      
+
       // Handle the new response format with progressRecords and progressPercentage
       const responseData = progressResponse.data;
-      
+
       // Extract progress records array and percentage
-      const progressRecords = Array.isArray(responseData.progressRecords) 
-        ? responseData.progressRecords 
-        : Array.isArray(responseData) ? responseData : [];
-      
-      const percentage = typeof responseData.progressPercentage === 'number'
-        ? responseData.progressPercentage
-        : 0;
-      
+      const progressRecords = Array.isArray(responseData.progressRecords)
+        ? responseData.progressRecords
+        : Array.isArray(responseData)
+          ? responseData
+          : [];
+
+      const percentage =
+        typeof responseData.progressPercentage === 'number'
+          ? responseData.progressPercentage
+          : 0;
+
       // Update state with the extracted values
       setProgress(progressRecords);
       setProgressPercentage(percentage);
       setError(null);
-      
-      return { 
-        records: progressRecords, 
-        percentage: percentage 
+
+      return {
+        records: progressRecords,
+        percentage: percentage,
       };
     } catch (progressErr) {
       if (!isMountedRef.current) return { records: [], percentage: 0 };
-      
+
       console.error('Error fetching progress data:', progressErr);
       if (progressErr.response?.status === 404) {
         // No progress found is not an error state, just means no progress yet
@@ -119,13 +123,13 @@ const useCourseProgress = (courseId, contentId) => {
   // Do a single fetch when component mounts - no polling
   useEffect(() => {
     isMountedRef.current = true;
-    
+
     // Only fetch once on component mount
     if (!initialFetchDoneRef.current) {
       fetchProgressData();
       initialFetchDoneRef.current = true;
     }
-    
+
     return () => {
       isMountedRef.current = false;
     };
@@ -137,10 +141,13 @@ const useCourseProgress = (courseId, contentId) => {
    */
   const markContentCompleted = async () => {
     if (!courseId || !actualContentId) {
-      console.error('Cannot mark content completed: Missing courseId or contentId', {
-        courseId,
-        actualContentId
-      });
+      console.error(
+        'Cannot mark content completed: Missing courseId or contentId',
+        {
+          courseId,
+          actualContentId,
+        },
+      );
       return false;
     }
 
@@ -152,11 +159,11 @@ const useCourseProgress = (courseId, contentId) => {
         `/api/progress/${courseId}/${actualContentId}`,
         { completed: true },
       );
-      
+
       // Handle response which might have the new format or be a single progress record
       if (isMountedRef.current) {
         const responseData = response.data;
-        
+
         // Check if response has the new API format
         if (responseData && responseData.progressRecords) {
           setProgress(responseData.progressRecords);
@@ -165,8 +172,10 @@ const useCourseProgress = (courseId, contentId) => {
           // If it's a single progress record being returned, update the array
           setProgress((prevProgress) => {
             // Ensure prevProgress is an array
-            const progressArray = Array.isArray(prevProgress) ? prevProgress : [];
-            
+            const progressArray = Array.isArray(prevProgress)
+              ? prevProgress
+              : [];
+
             const existingProgressIndex = progressArray.findIndex(
               (p) => p.contentId === actualContentId,
             );
@@ -182,13 +191,13 @@ const useCourseProgress = (courseId, contentId) => {
             return [...progressArray, responseData];
           });
         }
-      
+
         setCompleting(false);
       }
-      
+
       // Refresh progress data to get updated percentage
       await fetchProgressData();
-      
+
       return true;
     } catch (err) {
       console.error('Error marking content as completed:', err);
@@ -198,15 +207,16 @@ const useCourseProgress = (courseId, contentId) => {
         if (err.response?.status === 400) {
           if (err.response.data.message === 'Invalid content ID format') {
             setError(
-              'The system could not process this content for progress tracking.'
+              'The system could not process this content for progress tracking.',
             );
           } else if (err.response.data.message === 'Content ID is required') {
             setError(
-              'Content identifier is missing. Please try refreshing the page.'
+              'Content identifier is missing. Please try refreshing the page.',
             );
           } else {
             setError(
-              err.response.data.message || 'Failed to mark content as completed'
+              err.response.data.message ||
+                'Failed to mark content as completed',
             );
           }
         } else {
@@ -232,7 +242,7 @@ const useCourseProgress = (courseId, contentId) => {
    */
   const isContentCompleted = () => {
     if (!actualContentId) return false;
-    
+
     // Add an explicit check to ensure progress is an array before calling .some()
     if (!Array.isArray(progress)) {
       return false;

@@ -58,11 +58,11 @@ function CourseContent({ 'data-testid': dataTestId }) {
   };
 
   // Use our custom hook for progress tracking - now with enhanced function and state
-  const { 
-    progress, 
+  const {
+    progress,
     progressPercentage,
-    completing, 
-    markContentCompleted, 
+    completing,
+    markContentCompleted,
     isContentCompleted,
     refreshProgress,
   } = useCourseProgress(id, contentId);
@@ -306,11 +306,11 @@ function CourseContent({ 'data-testid': dataTestId }) {
           height: '100%',
         }}
       >
-        <CourseSidebar 
-          course={course} 
-          progress={progress} 
+        <CourseSidebar
+          course={course}
+          progress={progress}
           progressPercentage={progressPercentage}
-          courseId={id} 
+          courseId={id}
         />
       </Box>
 

@@ -49,15 +49,18 @@ exports.getProgress = async (req, res) => {
     }
 
     const progressRecords = await Progress.find({ userId, courseId });
-    
+
     // Calculate progress percentage
     const totalContentItems = course.content.length;
-    const completedItems = progressRecords.filter(record => record.completed).length;
-    
+    const completedItems = progressRecords.filter(
+      (record) => record.completed
+    ).length;
+
     // Calculate percentage and round to 2 decimal places
-    const progressPercentage = totalContentItems > 0
-      ? parseFloat(((completedItems / totalContentItems) * 100).toFixed(2))
-      : 0;
+    const progressPercentage =
+      totalContentItems > 0
+        ? parseFloat(((completedItems / totalContentItems) * 100).toFixed(2))
+        : 0;
 
     // Return 0% if no progress records found
     if (!progressRecords || progressRecords.length === 0) {

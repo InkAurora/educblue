@@ -126,7 +126,7 @@ function CourseSidebar({ course, progress, progressPercentage, courseId }) {
           })}
         </List>
       </Box>
-      
+
       {/* Progress bar fixed at the bottom of sidebar */}
       <Box sx={{ mt: 'auto', p: 2, borderTop: 1, borderColor: 'divider' }}>
         <ProgressBar percentage={progressPercentage || 0} />

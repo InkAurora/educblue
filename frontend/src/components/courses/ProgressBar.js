@@ -23,23 +23,23 @@ const ProgressBar = ({ percentage }) => {
     <Box sx={{ width: '100%', mb: 2 }}>
       {/* Linear Progress Bar */}
       <Box sx={{ width: '100%' }}>
-        <LinearProgress 
-          variant="determinate" 
-          value={validPercentage} 
-          sx={{ 
+        <LinearProgress
+          variant='determinate'
+          value={validPercentage}
+          sx={{
             height: 10,
             borderRadius: 5,
             backgroundColor: 'rgba(0, 0, 0, 0.1)',
             '& .MuiLinearProgress-bar': {
               borderRadius: 5,
-            }
+            },
           }}
         />
       </Box>
-      
+
       {/* Text below progress bar */}
       <Box sx={{ mt: 0.5, display: 'flex', justifyContent: 'flex-end' }}>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant='body2' color='text.secondary'>
           Progress: {validPercentage}%
         </Typography>
       </Box>
@@ -48,11 +48,11 @@ const ProgressBar = ({ percentage }) => {
 };
 
 ProgressBar.propTypes = {
-  percentage: PropTypes.number
+  percentage: PropTypes.number,
 };
 
 ProgressBar.defaultProps = {
-  percentage: 0
+  percentage: 0,
 };
 
 export default ProgressBar;
