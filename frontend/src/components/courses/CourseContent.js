@@ -157,6 +157,7 @@ function CourseContent({ 'data-testid': dataTestId }) {
         // Check if user is enrolled or instructor
         if (user) {
           const userIsInstructor = user.fullName === courseData.instructor;
+          const userIsAdmin = user.role === 'admin'; // Check if user is admin
 
           // Check enrollment
           let userIsEnrolled = false;
@@ -185,7 +186,8 @@ function CourseContent({ 'data-testid': dataTestId }) {
           setIsEnrolled(userIsEnrolled);
 
           // If not authorized, redirect to course details
-          if (!userIsEnrolled && !userIsInstructor) {
+          if (!userIsEnrolled && !userIsInstructor && !userIsAdmin) {
+            // Add admin check
             navigate(`/courses/${id}`);
             return;
           }
@@ -252,7 +254,8 @@ function CourseContent({ 'data-testid': dataTestId }) {
   }
 
   // Handle unauthorized access
-  if (!isEnrolled && !isInstructor) {
+  if (!isEnrolled && !isInstructor && user?.role !== 'admin') {
+    // Add admin check
     return (
       <Container sx={{ py: 4 }}>
         <Alert severity='warning'>

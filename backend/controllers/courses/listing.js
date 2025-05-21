@@ -33,9 +33,10 @@ exports.getCourseById = async (req, res) => {
     // Check if user is the course instructor or is enrolled in the course
     const isInstructor = course.instructor === user.fullName;
     const isEnrolled = user.enrolledCourses.includes(req.params.id);
+    const isAdmin = user.role === 'admin'; // Check if user is admin
 
-    // If user is either the instructor or enrolled, return full course details
-    if (isInstructor || isEnrolled) {
+    // If user is either the instructor or enrolled or admin, return full course details
+    if (isInstructor || isEnrolled || isAdmin) {
       return res.json(course);
     }
 
@@ -82,9 +83,12 @@ exports.getCourseContentById = async (req, res) => {
     // Check if user is the course instructor or is enrolled in the course
     const isInstructor = course.instructor === user.fullName;
     const isEnrolled = user.enrolledCourses.includes(id);
+    const isAdmin = user.role === 'admin'; // Check if user is admin
 
-    if (!isInstructor && !isEnrolled) {
-      return res.status(403).json({ message: 'Not enrolled in this course' });
+    if (!isInstructor && !isEnrolled && !isAdmin) {
+      return res
+        .status(403)
+        .json({ message: 'Not enrolled in this course and not an admin' });
     }
 
     // Find the specific content item
