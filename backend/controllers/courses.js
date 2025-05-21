@@ -4,7 +4,11 @@ const {
   getCourseById,
   getCourseContentById,
 } = require('./courses/listing');
-const { createCourse, publishCourse } = require('./courses/management');
+const {
+  createCourse,
+  updateCourse,
+  publishCourse,
+} = require('./courses/management');
 const { updateCourseContent } = require('./courses/content');
 
 // Export all functionality
@@ -16,6 +20,7 @@ module.exports = {
 
   // Course management functionality
   createCourse,
+  updateCourse,
   publishCourse,
 
   // Course content functionality

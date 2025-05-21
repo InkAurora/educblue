@@ -97,10 +97,12 @@ describe('Progress Endpoints', () => {
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.status).toBe(200);
-      expect(Array.isArray(res.body)).toBe(true);
-      expect(res.body.length).toBe(1);
-      expect(res.body[0]).toHaveProperty('userId', userId);
-      expect(res.body[0]).toHaveProperty('completed', true);
+      expect(res.body).toHaveProperty('progressRecords');
+      expect(Array.isArray(res.body.progressRecords)).toBe(true);
+      expect(res.body.progressRecords.length).toBe(1);
+      expect(res.body.progressRecords[0]).toHaveProperty('userId', userId);
+      expect(res.body.progressRecords[0]).toHaveProperty('completed', true);
+      expect(res.body).toHaveProperty('progressPercentage');
     });
 
     it('should include answer field in progress records', async () => {
@@ -121,18 +123,23 @@ describe('Progress Endpoints', () => {
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.status).toBe(200);
-      expect(Array.isArray(res.body)).toBe(true);
-      expect(res.body.length).toBe(1);
-      expect(res.body[0]).toHaveProperty('answer', testAnswer);
+      expect(res.body).toHaveProperty('progressRecords');
+      expect(Array.isArray(res.body.progressRecords)).toBe(true);
+      expect(res.body.progressRecords.length).toBe(1);
+      expect(res.body.progressRecords[0]).toHaveProperty('answer', testAnswer);
+      expect(res.body).toHaveProperty('progressPercentage');
     });
 
-    it('should return 404 when no progress records exist', async () => {
+    it('should return 200 with empty records and 0% when no progress records exist', async () => {
       const res = await request(app)
         .get(`/api/progress/${courseId}`)
         .set('Authorization', `Bearer ${authToken}`);
 
-      expect(res.status).toBe(404);
-      expect(res.body.message).toBe('No progress found for this course');
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('progressRecords');
+      expect(Array.isArray(res.body.progressRecords)).toBe(true);
+      expect(res.body.progressRecords.length).toBe(0);
+      expect(res.body).toHaveProperty('progressPercentage', 0);
     });
 
     it('should not allow access without auth token', async () => {
@@ -146,7 +153,7 @@ describe('Progress Endpoints', () => {
         .get(`/api/progress/${invalidCourseId}`)
         .set('Authorization', `Bearer ${authToken}`);
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(400);
     });
   });
 

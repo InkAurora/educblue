@@ -32,6 +32,12 @@ const progressSchema = new mongoose.Schema({
     min: 0,
     max: 1,
   },
+  completionPercentage: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100,
+  }, // Added field for completion percentage
 });
 
 // Create a unique compound index to prevent duplicate progress entries

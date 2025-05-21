@@ -1,36 +1,58 @@
 const Course = require('../../models/course');
 const Progress = require('../../models/progress');
+const User = require('../../models/user'); // Import User model
 
 /**
  * Get analytics data for a specific course
  * @route GET /api/courses/:id/analytics
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
- * @returns {Object} Course analytics including completion rate and quiz statistics
+ * @returns {Object} Course analytics including completion rate, quiz statistics, total enrolled students, and active students in the last 30 days
  */
 const getCourseAnalytics = async (req, res) => {
   try {
-    const course = await Course.findById(req.params.id);
+    const courseId = req.params.id;
+    const course = await Course.findById(courseId);
 
     // Handle course not found
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
     }
 
-    // Ensure the requesting user is the instructor
-    if (req.user.fullName !== course.instructor) {
+    // Ensure the requesting user is the instructor or admin
+    // Assuming req.user.role is available from auth middleware
+    const isAdmin = req.user.role === 'admin';
+    if (req.user.fullName !== course.instructor && !isAdmin) {
       return res.status(403).json({
-        message: 'Access denied. Only the course instructor can view analytics',
+        message:
+          'Access denied. Only the course instructor or admin can view analytics',
       });
     }
 
     // Get all progress records for this course
-    const progressRecords = await Progress.find({ courseId: req.params.id });
+    const progressRecords = await Progress.find({ courseId });
+
+    // Get total enrolled students
+    const totalEnrolledStudents = await User.countDocuments({
+      enrolledCourses: courseId,
+    });
+
+    // Get students active (completed an item) in the last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const activeProgressRecords = await Progress.find({
+      courseId,
+      completedAt: { $gte: thirtyDaysAgo },
+    });
+    const activeStudentsLast30Days = new Set(
+      activeProgressRecords.map((record) => record.userId.toString())
+    ).size;
 
     // Get unique users who have at least one progress record for this course
-    const uniqueUserIds = [
-      ...new Set(progressRecords.map((record) => record.userId.toString())),
-    ];
+    // const uniqueUserIds = [
+    //   ...new Set(progressRecords.map((record) => record.userId.toString())),
+    // ]; // This is no longer directly needed for completionRate denominator
 
     // Calculate completion rate - percentage of users with at least one completed item
     const usersWithCompletedItems = new Set();
@@ -41,13 +63,16 @@ const getCourseAnalytics = async (req, res) => {
     });
 
     // Calculate completion rate (with 2 decimal precision)
-    const completionRate = uniqueUserIds.length
-      ? parseFloat(
-          ((usersWithCompletedItems.size / uniqueUserIds.length) * 100).toFixed(
-            2
+    // based on total enrolled students
+    const completionRate =
+      totalEnrolledStudents > 0
+        ? parseFloat(
+            (
+              (usersWithCompletedItems.size / totalEnrolledStudents) *
+              100
+            ).toFixed(2)
           )
-        )
-      : 0;
+        : 0;
 
     // Find quiz/multiple-choice content items in the course
     const quizContentItems = course.content.filter(
@@ -82,6 +107,8 @@ const getCourseAnalytics = async (req, res) => {
     });
 
     res.json({
+      totalEnrolledStudents,
+      activeStudentsLast30Days,
       completionRate,
       quizStats,
     });

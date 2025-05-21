@@ -165,9 +165,19 @@ function CourseContent({ 'data-testid': dataTestId }) {
               if (typeof enrolledCourse === 'string') {
                 return enrolledCourse === id;
               }
-              return (
-                enrolledCourse?.id === id || enrolledCourse?.courseId === id
-              );
+              // Handle cases where enrolledCourse is an object
+              if (
+                typeof enrolledCourse === 'object' &&
+                enrolledCourse !== null
+              ) {
+                // Check for various possible ID properties
+                return (
+                  enrolledCourse.id === id ||
+                  enrolledCourse['_id'] === id || // Common MongoDB ID field
+                  enrolledCourse.courseId === id
+                );
+              }
+              return false;
             });
           }
 
@@ -264,7 +274,6 @@ function CourseContent({ 'data-testid': dataTestId }) {
 
   // Constants for layout calculations
   const sidebarWidth = 300;
-  const navbarHeight = 64; // Standard AppBar height
   const contentNavHeight = 48; // Content navigation height
 
   // Return the main component structure with proper block divisions

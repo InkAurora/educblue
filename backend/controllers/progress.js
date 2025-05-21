@@ -1,7 +1,7 @@
+const mongoose = require('mongoose');
 const Progress = require('../models/progress');
 const User = require('../models/user');
 const Course = require('../models/course');
-const mongoose = require('mongoose');
 
 // Get progress for a specific course
 exports.getProgress = async (req, res) => {
@@ -39,7 +39,9 @@ exports.getProgress = async (req, res) => {
       (course.instructor === userId ||
         course.instructor.toString() === userId ||
         (typeof course.instructor === 'object' &&
+          // eslint-disable-next-line no-underscore-dangle
           course.instructor._id &&
+          // eslint-disable-next-line no-underscore-dangle
           course.instructor._id.toString() === userId));
 
     if (!isEnrolled && !isInstructor) {
@@ -64,16 +66,11 @@ exports.getProgress = async (req, res) => {
 
     // Return 0% if no progress records found
     if (!progressRecords || progressRecords.length === 0) {
-      return res.json({
-        progressRecords: [],
-        progressPercentage: 0,
-      });
+      // Ensure consistent response structure even with no progress
+      return res.json({ progressRecords: [], progressPercentage: 0 });
     }
 
-    return res.json({
-      progressRecords,
-      progressPercentage,
-    });
+    return res.json({ progressRecords, progressPercentage });
   } catch (error) {
     return res
       .status(500)
@@ -132,7 +129,9 @@ exports.updateProgress = async (req, res) => {
       (course.instructor === userId ||
         course.instructor.toString() === userId ||
         (typeof course.instructor === 'object' &&
+          // eslint-disable-next-line no-underscore-dangle
           course.instructor._id &&
+          // eslint-disable-next-line no-underscore-dangle
           course.instructor._id.toString() === userId));
 
     if (!isEnrolled && !isInstructor) {
@@ -167,7 +166,7 @@ exports.updateProgress = async (req, res) => {
 
         // Validate the answer format
         if (
-          isNaN(answerNum) ||
+          Number.isNaN(answerNum) ||
           answerNum < 0 ||
           answerNum > 3 ||
           !Number.isInteger(answerNum)

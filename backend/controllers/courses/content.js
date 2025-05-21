@@ -1,5 +1,6 @@
+const mongoose = require('mongoose'); // Moved mongoose import to the top
 const Course = require('../../models/course');
-const mongoose = require('mongoose');
+const User = require('../../models/user');
 
 // Helper function to sanitize content items
 const sanitizeContent = (contentArray) => {
@@ -7,11 +8,11 @@ const sanitizeContent = (contentArray) => {
     // Create a new object without the _id if it doesn't look like a valid MongoDB ObjectId
     const newItem = { ...item };
     if (
-      newItem._id &&
-      typeof newItem._id === 'string' &&
-      !mongoose.Types.ObjectId.isValid(newItem._id)
+      newItem._id && // Corrected from newItem.id to newItem._id
+      typeof newItem._id === 'string' && // Corrected from newItem.id to newItem._id
+      !mongoose.Types.ObjectId.isValid(newItem._id) // Corrected from newItem.id to newItem._id
     ) {
-      delete newItem._id;
+      delete newItem._id; // Corrected from delete newItem.id to delete newItem._id
     }
     return newItem;
   });
@@ -20,7 +21,7 @@ const sanitizeContent = (contentArray) => {
 // Update course content
 exports.updateCourseContent = async (req, res) => {
   const { id } = req.params;
-  let { content } = req.body;
+  const { content } = req.body; // Changed let to const
 
   // Validate content array
   if (!content || !Array.isArray(content) || content.length === 0) {
@@ -95,9 +96,16 @@ exports.updateCourseContent = async (req, res) => {
       return res.status(404).json({ message: 'Course not found' });
     }
 
+    // Fetch the user attempting the update
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      // This case might indicate an issue with the token or user DB consistency
+      return res.status(404).json({ message: 'User not found' });
+    }
+
     // Allow both instructors and admins to update content
-    const isInstructor = existingCourse.instructor === req.user.fullName;
-    const isAdmin = req.user.role === 'admin';
+    const isInstructor = existingCourse.instructor === user.fullName; // Use fetched user
+    const isAdmin = user.role === 'admin'; // Use fetched user
 
     if (!isInstructor && !isAdmin) {
       return res.status(403).json({

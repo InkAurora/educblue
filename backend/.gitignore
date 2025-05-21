@@ -1,2 +1,4 @@
 /node_modules
 .env
+# Code coverage reports
+coverage/

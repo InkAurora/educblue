@@ -79,8 +79,9 @@ function ContentRenderer({
 
   // Initialize YouTube iframe API
   useEffect(() => {
-    if (!isYoutubeVideo || isCompleted || !youtubeVideoId) return;
+    if (!isYoutubeVideo || !youtubeVideoId) return; // <--- MODIFIED LINE: Removed isCompleted from this condition
 
+    // Ensure YT API is loaded
     if (!window.YT) {
       const tag = document.createElement('script');
       tag.src = 'https://www.youtube.com/iframe_api';

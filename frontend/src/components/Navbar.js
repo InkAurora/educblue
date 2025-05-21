@@ -251,6 +251,11 @@ function Navbar() {
                       <MenuItem onClick={() => handleNavigation('/dashboard')}>
                         Dashboard
                       </MenuItem>
+                      {userRole === 'admin' && (
+                        <MenuItem onClick={() => handleNavigation('/admin')}>
+                          Admin
+                        </MenuItem>
+                      )}
                       {userRole === 'instructor' && (
                         <>
                           <MenuItem
@@ -324,6 +329,15 @@ function Navbar() {
                     >
                       Dashboard
                     </Button>
+                    {userRole === 'admin' && (
+                      <Button
+                        color='inherit'
+                        component={RouterLink}
+                        to='/admin'
+                      >
+                        Admin
+                      </Button>
+                    )}
                     <Button color='inherit' onClick={handleLogout}>
                       Logout
                     </Button>

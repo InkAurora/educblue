@@ -6,14 +6,11 @@
 const restrictTo =
   (...roles) =>
   (req, res, next) => {
-    // Check if user exists and has a role
-    if (!req.user || !req.user.role) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
-
-    // Check if user's role is in the allowed roles
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ message: 'Access denied' });
+    // auth middleware should ensure req.user is populated if token is valid
+    if (!roles.includes(req.user?.role)) {
+      return res
+        .status(403)
+        .json({ message: 'Access denied. You do not have the required role.' });
     }
 
     next();

@@ -6,7 +6,6 @@ const {
   beforeAll,
 } = require('@jest/globals');
 const request = require('supertest');
-const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const app = require('../../../index');
 const User = require('../../../models/user');
@@ -14,15 +13,13 @@ require('../../setup');
 
 describe('User Auth Endpoints', () => {
   let testUser;
+  const plainPassword = 'password123'; // Store plain password
 
   beforeAll(async () => {
-    // Create a test user with a hashed password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash('password123', salt);
-
+    // Define test user data (without hashing password here)
     testUser = {
       email: 'logintest@test.com',
-      password: hashedPassword,
+      // Password will be set to plainPassword and hashed by the model on create
       fullName: 'Login Test User',
       role: 'student',
       refreshTokens: [],
@@ -32,15 +29,15 @@ describe('User Auth Endpoints', () => {
   beforeEach(async () => {
     // Clear users collection before each test
     await User.deleteMany({});
-    // Re-create the test user
-    await User.create(testUser);
+    // Re-create the test user with the plain password, model will hash it
+    await User.create({ ...testUser, password: plainPassword });
   });
 
   describe('POST /api/auth/login', () => {
     it('should login a user with valid credentials', async () => {
       const loginData = {
         email: testUser.email,
-        password: 'password123',
+        password: plainPassword, // Use plain password for login attempt
       };
 
       const res = await request(app).post('/api/auth/login').send(loginData);
@@ -85,7 +82,7 @@ describe('User Auth Endpoints', () => {
     it('should save refresh token to user document', async () => {
       const loginData = {
         email: testUser.email,
-        password: 'password123',
+        password: plainPassword, // Use plain password for login attempt
       };
 
       const res = await request(app).post('/api/auth/login').send(loginData);
@@ -102,12 +99,13 @@ describe('User Auth Endpoints', () => {
       // Login first to get a refresh token
       const loginRes = await request(app).post('/api/auth/login').send({
         email: testUser.email,
-        password: 'password123',
+        password: plainPassword, // Use plain password for login attempt
       });
 
       // Then use that refresh token
+      const { refreshToken } = loginRes.body; // Use object destructuring
       const refreshRes = await request(app).post('/api/auth/refresh').send({
-        refreshToken: loginRes.body.refreshToken,
+        refreshToken,
       });
 
       expect(refreshRes.status).toBe(200);
@@ -143,18 +141,18 @@ describe('User Auth Endpoints', () => {
       // Login first to get a refresh token
       const loginRes = await request(app).post('/api/auth/login').send({
         email: testUser.email,
-        password: 'password123',
+        password: plainPassword, // Use plain password for login attempt
       });
 
       // Get the user and token after login
-      const refreshToken = loginRes.body.refreshToken;
-      let userAfterLogin = await User.findOne({ email: testUser.email });
+      const { refreshToken, accessToken } = loginRes.body; // Use object destructuring
+      const userAfterLogin = await User.findOne({ email: testUser.email }); // Use const
       expect(userAfterLogin.refreshTokens).toContain(refreshToken);
 
       // Logout
       const logoutRes = await request(app)
         .post('/api/auth/logout')
-        .set('Authorization', `Bearer ${loginRes.body.accessToken}`)
+        .set('Authorization', `Bearer ${accessToken}`)
         .send({ refreshToken });
 
       expect(logoutRes.status).toBe(200);
@@ -176,7 +174,7 @@ describe('User Auth Endpoints', () => {
       // Login to get access token
       const loginRes = await request(app).post('/api/auth/login').send({
         email: testUser.email,
-        password: 'password123',
+        password: plainPassword, // Use plain password for login attempt
       });
 
       // Try to logout without providing a refresh token

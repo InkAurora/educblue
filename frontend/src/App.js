@@ -14,6 +14,7 @@ import InstructorAnalytics from './components/instructor/InstructorAnalytics';
 import MyCourses from './components/MyCourses';
 import Navbar from './components/Navbar';
 import PersonalInformation from './components/PersonalInformation';
+import AdminDashboard from './components/admin/AdminDashboard';
 
 function App() {
   return (
@@ -144,6 +145,7 @@ function App() {
                 </Container>
               }
             />
+            <Route path='/admin' element={<AdminDashboard />} />
             <Route
               path='/personal-information'
               element={

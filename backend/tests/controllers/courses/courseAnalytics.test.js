@@ -1,17 +1,20 @@
 const { describe, it, expect, beforeEach } = require('@jest/globals');
-const request = require('supertest');
 const mongoose = require('mongoose');
-const app = require('../../../index');
+const jwt = require('jsonwebtoken'); // Import jsonwebtoken
+const request = require('supertest');
+const app = require('../../../index'); // Changed from ../../../app to ../../../index.js
 const User = require('../../../models/user');
 const Course = require('../../../models/course');
 const Progress = require('../../../models/progress');
 require('../../setup');
 
-describe('Course Analytics Controller', () => {
+describe('Course Analytics API', () => {
   let instructorToken;
   let studentToken;
   let courseId;
   let studentId;
+  let student2Id; // Declare student2Id
+  let student3Id; // Declare student3Id
   let quizContentId;
   let mcContentId;
   let videoContentId;
@@ -88,22 +91,30 @@ describe('Course Analytics Controller', () => {
     const student1Res = await request(app)
       .post('/api/auth/register')
       .send(student1);
+    studentToken = student1Res.body.accessToken; // Assign the student token
 
-    studentToken = student1Res.body.token || student1Res.body.accessToken;
-    studentId = student1Res.body.user?.id || student1Res.body.id;
+    // eslint-disable-next-line no-console
+    // console.log('student1Res.body:', student1Res.body);
+    const decodedStudent1 = jwt.decode(student1Res.body.accessToken);
+    studentId = decodedStudent1.id;
 
-    // Create other student users
     const student2Res = await request(app)
       .post('/api/auth/register')
       .send(student2);
 
-    const student2Id = student2Res.body.user?.id || student2Res.body.id;
+    // eslint-disable-next-line no-console
+    // console.log('student2Res.body:', student2Res.body);
+    const decodedStudent2 = jwt.decode(student2Res.body.accessToken);
+    student2Id = decodedStudent2.id;
 
     const student3Res = await request(app)
       .post('/api/auth/register')
       .send(student3);
 
-    const student3Id = student3Res.body.user?.id || student3Res.body.id;
+    // eslint-disable-next-line no-console
+    // console.log('student3Res.body:', student3Res.body);
+    const decodedStudent3 = jwt.decode(student3Res.body.accessToken);
+    student3Id = decodedStudent3.id;
 
     // Create test course with the instructor as the creator
     testCourse.instructor = instructor.fullName;

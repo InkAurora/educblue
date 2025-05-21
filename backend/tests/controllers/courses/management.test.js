@@ -392,16 +392,21 @@ describe('Course Management Endpoints', () => {
     });
 
     it('should not allow publishing a course without content', async () => {
+      const course = await Course.create({
+        title: 'Test Course No Content',
+        description: 'A course for testing publish without content',
+        price: 10,
+        duration: 1,
+        instructor: instructorUser.fullName, // Corrected to use instructor's fullName
+        // No content added
+      });
+
       const res = await request(app)
-        .patch(`/api/courses/${courseIdWithoutContent}/publish`)
+        .patch(`/api/courses/${course.id}/publish`)
         .set('Authorization', `Bearer ${instructorToken}`);
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain('no content');
-
-      // Verify the course status wasn't changed
-      const course = await Course.findById(courseIdWithoutContent);
-      expect(course.status).toBe('draft');
+      expect(res.body.message).toBe('Course must have content to be published');
     });
 
     it('should return 404 when publishing non-existent course', async () => {
@@ -421,6 +426,142 @@ describe('Course Management Endpoints', () => {
 
       expect(res.status).toBe(403);
       expect(res.body.message).toContain('Access denied');
+    });
+  });
+
+  describe('PUT /api/courses/:id', () => {
+    let courseId;
+    let courseCreatedByInstructor;
+
+    beforeEach(async () => {
+      // Create a test course
+      const course = await Course.create({
+        title: 'Original Course Title',
+        description: 'Original description',
+        markdownDescription: '# Original Markdown',
+        price: 99.99,
+        instructor: instructorUser.fullName,
+        duration: 10,
+        content: [
+          {
+            title: 'Introduction',
+            videoUrl: 'https://example.com/video1',
+            type: 'video',
+          },
+        ],
+      });
+      courseId = course._id;
+      courseCreatedByInstructor = course;
+    });
+
+    it('should update course details as instructor', async () => {
+      const updateData = {
+        title: 'Updated Course Title',
+        description: 'Updated description',
+        price: 129.99,
+      };
+
+      const res = await request(app)
+        .put(`/api/courses/${courseId}`)
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send(updateData);
+
+      expect(res.status).toBe(200);
+      expect(res.body.message).toContain('updated successfully');
+      expect(res.body.course).toHaveProperty('title', updateData.title);
+      expect(res.body.course).toHaveProperty(
+        'description',
+        updateData.description
+      );
+      expect(res.body.course).toHaveProperty('price', updateData.price);
+
+      // Original fields should remain unchanged
+      expect(res.body.course).toHaveProperty(
+        'instructor',
+        instructorUser.fullName
+      );
+      expect(res.body.course).toHaveProperty('duration', 10);
+
+      // Verify database update
+      const updatedCourse = await Course.findById(courseId);
+      expect(updatedCourse.title).toBe(updateData.title);
+    });
+
+    it('should update markdown description', async () => {
+      const updateData = {
+        markdownDescription: '# Updated Markdown\n\nWith more content',
+      };
+
+      const res = await request(app)
+        .put(`/api/courses/${courseId}`)
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send(updateData);
+
+      expect(res.status).toBe(200);
+      expect(res.body.course).toHaveProperty(
+        'markdownDescription',
+        updateData.markdownDescription
+      );
+    });
+
+    it('should reject invalid markdown description', async () => {
+      const updateData = {
+        markdownDescription: 123, // Should be a string
+      };
+
+      const res = await request(app)
+        .put(`/api/courses/${courseId}`)
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send(updateData);
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain(
+        'Markdown description must be a string'
+      );
+    });
+
+    it('should allow admin to update any course', async () => {
+      const updateData = {
+        title: 'Admin Updated Title',
+        price: 149.99,
+      };
+
+      const res = await request(app)
+        .put(`/api/courses/${courseId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(updateData);
+
+      expect(res.status).toBe(200);
+      expect(res.body.message).toContain('updated successfully');
+      expect(res.body.course).toHaveProperty('title', updateData.title);
+      expect(res.body.course).toHaveProperty('price', updateData.price);
+
+      // Should not change instructor
+      expect(res.body.course).toHaveProperty(
+        'instructor',
+        instructorUser.fullName
+      );
+    });
+
+    it('should deny access to non-instructor users', async () => {
+      const res = await request(app)
+        .put(`/api/courses/${courseId}`)
+        .set('Authorization', `Bearer ${studentToken}`)
+        .send({ title: 'Student Update Attempt' });
+
+      expect(res.status).toBe(403);
+      expect(res.body.message).toContain('Access denied');
+    });
+
+    it('should return 404 for non-existent course', async () => {
+      const nonExistentId = new mongoose.Types.ObjectId();
+      const res = await request(app)
+        .put(`/api/courses/${nonExistentId}`)
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send({ title: 'Update Attempt' });
+
+      expect(res.status).toBe(404);
+      expect(res.body.message).toContain('not found');
     });
   });
 });

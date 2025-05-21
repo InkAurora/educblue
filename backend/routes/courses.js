@@ -5,6 +5,7 @@ const {
   getCourses,
   getCourseById,
   createCourse,
+  updateCourse,
   updateCourseContent,
   publishCourse,
   getCourseContentById,
@@ -25,6 +26,7 @@ router.get(
   getCourseAnalytics
 );
 router.post('/', auth, restrictTo('instructor', 'admin'), createCourse);
+router.put('/:id', auth, restrictTo('instructor', 'admin'), updateCourse);
 router.put(
   '/:id/content',
   auth,

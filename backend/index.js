@@ -8,6 +8,8 @@ const enrollRoutes = require('./routes/enroll');
 const stripeRoutes = require('./routes/stripe');
 const userRoutes = require('./routes/users');
 const progressRoutes = require('./routes/progress');
+const analyticsRoutes = require('./routes/analytics');
+const setupRoutes = require('./routes/setup');
 
 // Load environment variables
 dotenv.config();
@@ -35,6 +37,8 @@ app.use('/api/enroll', enrollRoutes);
 app.use('/api/stripe', stripeRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/progress', progressRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api', setupRoutes);
 
 // Connect to MongoDB
 const connectDB = require('./config/db');

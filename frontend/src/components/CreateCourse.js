@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -30,6 +30,25 @@ function CreateCourse() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [validationError, setValidationError] = useState({});
+  const [user, setUser] = useState(null);
+  const [loadingUser, setLoadingUser] = useState(true);
+
+  // Fetch user data to check role
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await axiosInstance.get('/api/users/me');
+        setUser(response.data);
+        setLoadingUser(false);
+      } catch (err) {
+        console.error('Error fetching user data:', err);
+        setError('You must be logged in to create a course');
+        setLoadingUser(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -67,6 +86,17 @@ function CreateCourse() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Check if user has permission to create courses
+    if (!user) {
+      setError('You must be logged in to create a course');
+      return;
+    }
+
+    if (user.role !== 'instructor' && user.role !== 'admin') {
+      setError('Only instructors and admins can create courses');
+      return;
+    }
 
     // Form validation
     const errors = {};
@@ -110,6 +140,37 @@ function CreateCourse() {
       }
     }
   };
+
+  // Show loading spinner while fetching user data
+  if (loadingUser) {
+    return (
+      <Container maxWidth='md'>
+        <Box sx={{ my: 4, display: 'flex', justifyContent: 'center' }}>
+          <CircularProgress />
+        </Box>
+      </Container>
+    );
+  }
+
+  // Show error if user doesn't have permission
+  if (user && user.role !== 'instructor' && user.role !== 'admin') {
+    return (
+      <Container maxWidth='md'>
+        <Box sx={{ my: 4 }}>
+          <Alert severity='error'>
+            Only instructors and admins can create courses
+          </Alert>
+          <Button
+            variant='contained'
+            sx={{ mt: 2 }}
+            onClick={() => navigate('/dashboard')}
+          >
+            Return to Dashboard
+          </Button>
+        </Box>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth='md'>

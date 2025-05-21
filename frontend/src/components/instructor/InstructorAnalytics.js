@@ -82,7 +82,6 @@ function InstructorAnalytics() {
         setAnalytics(analyticsResponse.data);
         setLoading(false);
       } catch (err) {
-        console.error('Error fetching analytics:', err);
         setError(
           err.response?.data?.message || 'Failed to fetch analytics data',
         );
@@ -204,7 +203,8 @@ function InstructorAnalytics() {
                   : 'N/A'}
               </Typography>
               <Typography variant='body2' color='text.secondary'>
-                Percentage of students who completed the course
+                Percentage of students who completed at least one item in the
+                course
               </Typography>
             </CardContent>
           </Card>
@@ -218,7 +218,7 @@ function InstructorAnalytics() {
                 Enrolled Students
               </Typography>
               <Typography variant='h3' component='div' color='primary'>
-                {analytics?.enrolledCount || 0}
+                {analytics?.totalEnrolledStudents || 0}
               </Typography>
               <Typography variant='body2' color='text.secondary'>
                 Total number of enrolled students
@@ -235,7 +235,7 @@ function InstructorAnalytics() {
                 Active Students
               </Typography>
               <Typography variant='h3' component='div' color='primary'>
-                {analytics?.activeCount || 0}
+                {analytics?.activeStudentsLast30Days || 0}
               </Typography>
               <Typography variant='body2' color='text.secondary'>
                 Students active in the last 30 days
@@ -307,7 +307,7 @@ function InstructorAnalytics() {
 
               {analytics?.quizStats && analytics.quizStats.length > 0 ? (
                 analytics.quizStats.map((quiz, index) => (
-                  <React.Fragment key={`quiz-${index}`}>
+                  <React.Fragment key={quiz.contentId}>
                     <ListItem sx={{ py: 2 }}>
                       <Grid container spacing={2}>
                         <Grid item xs={12} sm={6}>
@@ -328,8 +328,8 @@ function InstructorAnalytics() {
                             Average Score: {quiz.averageScore}%
                           </Typography>
                           <Typography variant='body2' color='text.secondary'>
-                            Highest: {quiz.highestScore}% | Lowest:{' '}
-                            {quiz.lowestScore}%
+                            {/* Highest: {quiz.highestScore}% | Lowest:{' '}
+                            {quiz.lowestScore}% */}
                           </Typography>
                         </Grid>
                       </Grid>

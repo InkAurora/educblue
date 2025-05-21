@@ -1,4 +1,3 @@
-const bcrypt = require('bcryptjs');
 const User = require('../../models/user');
 const jwtUtils = require('../../utils/jwt');
 
@@ -22,13 +21,11 @@ exports.register = async (req, res) => {
 
     user = new User({
       email,
-      password,
+      password, // Password will be hashed by the pre-save hook in the User model
       role,
       fullName: userFullName,
     });
 
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(password, salt);
     await user.save();
 
     // Generate tokens using utility functions
@@ -38,9 +35,10 @@ exports.register = async (req, res) => {
     // Save refresh token to user's refreshTokens array
     await jwtUtils.saveRefreshToken(user.id, refreshToken);
 
-    res.status(201).json({ accessToken, refreshToken });
+    return res.status(201).json({ accessToken, refreshToken }); // Ensure response is returned
   } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    return res
+      .status(500)
+      .json({ message: 'Server error', error: error.message }); // Ensure response is returned
   }
 };

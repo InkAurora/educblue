@@ -80,6 +80,7 @@ function CourseDetails({ 'data-testid': dataTestId, testId = null }) {
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [user, setUser] = useState(null);
   const [isInstructor, setIsInstructor] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [loadingUser, setLoadingUser] = useState(true);
 
@@ -123,25 +124,28 @@ function CourseDetails({ 'data-testid': dataTestId, testId = null }) {
           const userIsInstructor =
             user.fullName === courseResponse.data.instructor;
 
+          // Check if user is admin (has admin privileges for any course)
+          const userIsAdmin = user.role === 'admin';
+
           // Check if user is enrolled
           let userIsEnrolled = false;
           if (Array.isArray(user.enrolledCourses)) {
-            userIsEnrolled = user.enrolledCourses.some((course) => {
-              if (typeof course === 'string') {
-                return course === id;
+            userIsEnrolled = user.enrolledCourses.some((enrolledCourse) => {
+              if (typeof enrolledCourse === 'string') {
+                return enrolledCourse === id;
               }
               return (
-                course?._id === id ||
-                course?.id === id ||
-                course?.courseId === id
+                enrolledCourse?._id === id ||
+                enrolledCourse?.id === id ||
+                enrolledCourse?.courseId === id
               );
             });
           }
 
           setIsEnrolled(userIsEnrolled);
-          setIsInstructor(userIsInstructor);
+          setIsInstructor(userIsInstructor || userIsAdmin); // Admin has same privileges as instructor
 
-          // If enrolled or instructor, fetch progress
+          // If enrolled or instructor or admin, fetch progress
           if (userIsEnrolled || userIsInstructor) {
             try {
               const progressResponse = await axiosInstance.get(
