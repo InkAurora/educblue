@@ -1,5 +1,5 @@
 import axios from 'axios';
-import jwtDecode from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode';
 
 // Get API host from environment variables
 const API_HOST = process.env.REACT_APP_API_HOST || 'http://localhost:5000';

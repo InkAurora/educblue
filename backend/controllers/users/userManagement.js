@@ -32,6 +32,11 @@ const getAllUsers = async (req, res) => {
 const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ message: 'User ID cannot be undefined' });
+    }
+
     const { role, enrolledCourses } = req.body;
 
     // Find the user first to check their current role
