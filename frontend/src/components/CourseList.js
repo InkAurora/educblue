@@ -18,17 +18,21 @@ function CourseList(props) {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { 'data-testid': dataTestId } = props;
 
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        console.log('Attempting to fetch courses from API...');
         const response = await axiosInstance.get('/api/courses');
-        console.log('Courses loaded successfully:', response.data);
-        setCourses(response.data);
-        setLoading(false);
+        if (Array.isArray(response.data)) {
+          setCourses(response.data);
+        } else {
+          setCourses([]); // Ensure courses is an array to prevent .map error
+          setError(
+            'Failed to load courses: Unexpected data format received from the server.',
+          );
+        }
       } catch (err) {
-        console.error('Error fetching courses:', err);
         if (err.message && err.message.includes('CORS')) {
           setError(
             'CORS error: The backend server needs to enable cross-origin requests. Please add CORS middleware to your backend application.',
@@ -36,6 +40,8 @@ function CourseList(props) {
         } else {
           setError(`Failed to fetch courses: ${err.message}`);
         }
+        setCourses([]); // Ensure courses is an empty array on error
+      } finally {
         setLoading(false);
       }
     };
@@ -67,7 +73,7 @@ function CourseList(props) {
   }
 
   return (
-    <Container sx={{ py: 4 }} data-testid={props['data-testid']}>
+    <Container sx={{ py: 4 }} data-testid={dataTestId}>
       <Grid container spacing={4}>
         {courses.length > 0 ? (
           courses.map((course) => (
