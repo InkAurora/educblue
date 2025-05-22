@@ -3,27 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import {
   Container,
   Typography,
-  Box,
-  Grid,
   Paper,
-  Card,
-  CardContent,
-  Button,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  CircularProgress,
-  Alert,
   Select,
   MenuItem,
-  FormControl,
-  InputLabel,
-  IconButton,
-  Tooltip,
-  Chip,
+  Button,
+  CircularProgress,
+  Alert,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -32,17 +23,19 @@ import {
   ListItem,
   ListItemText,
   Checkbox,
-  Divider,
-  TextField, // Add TextField for search input
+  Grid,
+  Card,
+  CardContent,
+  TextField,
+  FormControl,
+  Tooltip,
+  IconButton,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import axiosInstance from '../../utils/axiosConfig';
 
-function AdminDashboard() {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null); // Renamed user to currentUser to avoid conflict
+const AdminDashboard = () => {
+  const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [analytics, setAnalytics] = useState({
     totalCourses: 0,
@@ -51,169 +44,186 @@ function AdminDashboard() {
     totalStudents: 0,
     averageCompletionRate: 0,
   });
-  const [courses, setCourses] = useState([]);
+  const [availableCourses, setAvailableCourses] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [coursesLoading, setCoursesLoading] = useState(true); // Manage loading state for courses
+  const [coursesError, setCoursesError] = useState(null); // Manage error state for courses
+
   const [selectedUser, setSelectedUser] = useState(null);
   const [openEnrollDialog, setOpenEnrollDialog] = useState(false);
   const [selectedCourses, setSelectedCourses] = useState([]);
   const [processingAction, setProcessingAction] = useState(false);
-  const [actionSuccess, setActionSuccess] = useState(null);
-  const [searchTerm, setSearchTerm] = useState(''); // State for search term
+  const [successMessage, setSuccessMessage] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const navigate = useNavigate();
 
-  // Fetch user data to check if admin
+  // New state for admin promotion confirmation
+  const [openAdminConfirmDialog, setOpenAdminConfirmDialog] = useState(false);
+  const [userToPromote, setUserToPromote] = useState(null);
+  const [targetRole, setTargetRole] = useState(null);
+
   useEffect(() => {
-    const checkAdminAccess = async () => {
-      try {
-        const response = await axiosInstance.get('/api/users/me');
-        setCurrentUser(response.data); // Use setCurrentUser
+    const fetchInitialData = async () => {
+      setIsLoading(true);
+      setCoursesLoading(true); // Start loading courses
+      setError(null);
+      setCoursesError(null);
 
-        if (response.data.role !== 'admin') {
+      try {
+        const userResponse = await axiosInstance.get('/api/users/me');
+        setCurrentUser(userResponse.data);
+
+        if (userResponse.data.role !== 'admin') {
           setError('Admin access required');
           navigate('/dashboard');
+          setIsLoading(false);
+          setCoursesLoading(false);
+          return;
         }
-      } catch (err) {
-        setError('Error verifying admin access');
-        navigate('/login');
-      }
-    };
 
-    checkAdminAccess();
-  }, [navigate]);
+        const [usersResponse, analyticsResponse, coursesDataResponse] =
+          await Promise.all([
+            axiosInstance.get('/api/users'),
+            axiosInstance.get('/api/analytics'),
+            axiosInstance.get('/api/courses'),
+          ]);
 
-  // Fetch all users and analytics data
-  useEffect(() => {
-    const fetchAdminData = async () => {
-      if (!currentUser || currentUser.role !== 'admin') return; // Use currentUser
-
-      setLoading(true);
-      try {
-        // Fetch all users
-        const usersResponse = await axiosInstance.get('/api/users');
         setUsers(usersResponse.data);
-
-        // Fetch analytics data
-        const analyticsResponse = await axiosInstance.get('/api/analytics');
         const apiData = analyticsResponse.data;
         setAnalytics({
           totalCourses: apiData.courses?.total ?? 0,
           totalUsers: apiData.users?.total ?? 0,
           totalInstructors: apiData.users?.byRole?.instructor ?? 0,
-          totalStudents: apiData.users?.byRole?.student ?? 0, // Preserving for potential use
-          averageCompletionRate: apiData.engagement?.averageCompletionRate ?? 0, // Will be 0-1
+          totalStudents: apiData.users?.byRole?.student ?? 0,
+          averageCompletionRate: apiData.engagement?.averageCompletionRate ?? 0,
         });
-
-        // Fetch all courses for enrollment management
-        const coursesResponse = await axiosInstance.get('/api/courses');
-        setCourses(coursesResponse.data);
-
-        setLoading(false);
+        setAvailableCourses(coursesDataResponse.data);
+        setCoursesError(null);
       } catch (err) {
-        setError('Failed to load admin data');
-        setLoading(false);
+        const errorMessage = `Failed to load initial data: ${err.response?.data?.message || err.message || 'Unknown error'}`;
+        setError(errorMessage);
+        setCoursesError(errorMessage); // Also set coursesError if initial fetch fails broadly
+        if (err.response?.status === 401 || err.response?.status === 403) {
+          navigate('/login');
+        }
+      } finally {
+        setIsLoading(false);
+        setCoursesLoading(false); // Finish loading courses
       }
     };
 
-    fetchAdminData();
-  }, [currentUser]); // Dependency on currentUser
+    fetchInitialData();
+  }, [navigate]);
 
-  // Handle role change
-  const handleRoleChange = async (userId, newRole) => {
+  const proceedWithRoleChange = async (userId, newRole) => {
+    setError(null);
+    setSuccessMessage(null);
     setProcessingAction(true);
-    setActionSuccess(null);
+    const userToUpdate = users.find((user) => user._id === userId);
+    // This check is already here, but good to keep
+    if (userToUpdate && userToUpdate.role === 'admin' && newRole !== 'admin') {
+      setError('Admin accounts cannot be demoted.');
+      setProcessingAction(false);
+      return;
+    }
 
     try {
-      await axiosInstance.put(`/api/users/${userId}`, { role: newRole });
-
-      // Update users list with new role
-      setUsers(
-        users.map((u) => (u.id === userId ? { ...u, role: newRole } : u)), // Changed _id to id
-      );
-
-      setActionSuccess(`User role updated to ${newRole}`);
+      const response = await axiosInstance.put(`/api/users/${userId}`, {
+        role: newRole,
+      });
+      setUsers(users.map((u) => (u._id === userId ? response.data.user : u)));
+      setSuccessMessage('User role updated successfully.');
     } catch (err) {
       setError(
-        `Failed to update role: ${err.response?.data?.message || 'Unknown error'}`,
+        `Failed to update role: ${err.response?.data?.message || err.message || 'Unknown error'}`,
       );
     } finally {
       setProcessingAction(false);
+      setUserToPromote(null); // Clear the user to promote
+      setTargetRole(null); // Clear the target role
     }
   };
 
-  // Open enrollment dialog
-  const handleOpenEnrollDialog = (userToEnroll) => {
-    setSelectedUser(userToEnroll);
-    // Pre-select courses the user is already enrolled in.
-    // Ensure enrolledCourses is an array and map to IDs,
-    // handling cases where it might contain objects with _id or just string IDs.
-    const enrolledCourseIds = (userToEnroll.enrolledCourses || []).map(
-      (courseOrId) => {
-        if (typeof courseOrId === 'string') {
-          return courseOrId;
-        }
-        // Check for id first, then _id as a fallback
-        // eslint-disable-next-line no-underscore-dangle
-        return courseOrId.id || courseOrId._id;
-      },
-    );
-    setSelectedCourses(enrolledCourseIds.filter((id) => id != null)); // Filter out null/undefined ids
-    setOpenEnrollDialog(true);
+  const handleRoleChange = async (userId, newRole) => {
+    const userToUpdate = users.find((user) => user._id === userId);
+    if (newRole === 'admin' && userToUpdate?.role !== 'admin') {
+      setUserToPromote(userToUpdate);
+      setTargetRole(newRole);
+      setOpenAdminConfirmDialog(true);
+    } else {
+      // Proceed directly if not promoting to admin or demoting an admin (which is handled in proceedWithRoleChange)
+      proceedWithRoleChange(userId, newRole);
+    }
   };
 
-  // Handle course selection in dialog
+  const handleAdminPromotionConfirm = () => {
+    if (userToPromote && targetRole) {
+      proceedWithRoleChange(userToPromote._id, targetRole);
+    }
+    setOpenAdminConfirmDialog(false);
+  };
+
+  const handleAdminPromotionCancel = () => {
+    setOpenAdminConfirmDialog(false);
+    setUserToPromote(null);
+    setTargetRole(null);
+  };
+
+  const handleOpenEnrollDialog = (userToEnroll) => {
+    setSelectedUser(userToEnroll);
+    setSelectedCourses(
+      userToEnroll.enrolledCourses?.map((courseOrId) =>
+        typeof courseOrId === 'string' ? courseOrId : courseOrId._id,
+      ) || [],
+    );
+    setOpenEnrollDialog(true);
+    setError(null);
+    setSuccessMessage(null);
+  };
+
   const handleCourseToggle = (courseId) => {
     const currentIndex = selectedCourses.indexOf(courseId);
     const newSelectedCourses = [...selectedCourses];
-
     if (currentIndex === -1) {
       newSelectedCourses.push(courseId);
     } else {
       newSelectedCourses.splice(currentIndex, 1);
     }
-
     setSelectedCourses(newSelectedCourses);
   };
 
-  // Save course enrollments
   const handleSaveEnrollments = async () => {
-    if (!selectedUser) return;
-
-    // eslint-disable-next-line no-underscore-dangle
-    const userId = selectedUser.id || selectedUser._id;
-
-    if (!userId) {
-      setError('Failed to update enrollments: User ID is missing.');
+    if (!selectedUser || !selectedUser._id) {
+      setError('No user selected for enrollment.');
       return;
     }
-
+    setError(null);
+    setSuccessMessage(null);
     setProcessingAction(true);
+    const userId = selectedUser._id;
+
     try {
-      await axiosInstance.put(`/api/users/${userId}`, {
-        enrolledCourses: selectedCourses,
-      });
-
-      // Update users list with new enrollments
-      setUsers(
-        users.map((u) => {
-          // eslint-disable-next-line no-underscore-dangle
-          const currentUserId = u.id || u._id;
-          return currentUserId === userId
-            ? { ...u, enrolledCourses: selectedCourses }
-            : u;
-        }),
+      const courseIdsToEnroll = selectedCourses.map(
+        (courseId) => (typeof courseId === 'string' ? courseId : courseId), // Assuming selectedCourses already holds IDs
       );
-
-      setActionSuccess('User enrollments updated');
+      const response = await axiosInstance.put(`/api/users/${userId}`, {
+        enrolledCourses: courseIdsToEnroll,
+      });
+      setUsers(users.map((u) => (u._id === userId ? response.data.user : u)));
       setOpenEnrollDialog(false);
+      setSelectedUser(null);
+      setSuccessMessage('User enrollments updated successfully.');
     } catch (err) {
       setError(
-        `Failed to update enrollments: ${err.response?.data?.message || 'Unknown error'}`,
+        `Failed to update enrollments: ${err.response?.data?.message || err.message || 'Unknown error'}`,
       );
     } finally {
       setProcessingAction(false);
     }
   };
 
-  // Render loading state
-  if (loading) {
+  if (isLoading) {
     return (
       <Container sx={{ py: 4, textAlign: 'center' }}>
         <CircularProgress size={60} />
@@ -224,21 +234,22 @@ function AdminDashboard() {
     );
   }
 
-  // Render error state
-  if (error) {
+  if (error && (!currentUser || currentUser.role !== 'admin')) {
     return (
       <Container sx={{ py: 4 }}>
         <Alert severity='error' sx={{ mb: 4 }}>
           {error}
         </Alert>
-        <Button variant='contained' onClick={() => navigate('/dashboard')}>
-          Return to Dashboard
+        <Button
+          variant='contained'
+          onClick={() => navigate(currentUser ? '/dashboard' : '/login')}
+        >
+          {currentUser ? 'Return to Dashboard' : 'Go to Login'}
         </Button>
       </Container>
     );
   }
 
-  // Filter users based on search term
   const filteredUsers = users.filter(
     (user) =>
       (user.fullName &&
@@ -248,246 +259,235 @@ function AdminDashboard() {
   );
 
   return (
-    <Box sx={{ display: 'flex', width: '100%' }}>
-      {' '}
-      {/* Ensure parent Box takes full width */}
-      {/* Sidebar Removed */}
-      {/*
-      <CourseSidebar
-        title='Admin Dashboard'
-        items={[
-          { name: 'Analytics', icon: <AssignmentIcon /> },
-          { name: 'User Management', icon: <PersonIcon /> },
-          { name: 'Course Management', icon: <SchoolIcon /> },
-        ]}
-      />
-      */}
-      {/* Main content */}
-      {/* Ensure main content takes full width by adjusting its container or ensuring flexGrow works as expected */}
-      <Box sx={{ flexGrow: 1, p: 3, width: '100%' }}>
-        <Typography variant='h4' component='h1' gutterBottom>
-          Admin Dashboard
-        </Typography>
+    <Container sx={{ py: 4 }}>
+      <Typography variant='h4' component='h1' gutterBottom>
+        Admin Dashboard
+      </Typography>
 
-        {actionSuccess && (
-          <Alert
-            severity='success'
-            sx={{ mb: 2 }}
-            onClose={() => setActionSuccess(null)}
-          >
-            {actionSuccess}
-          </Alert>
-        )}
-
-        {/* Analytics Cards */}
-        <Typography variant='h5' component='h2' gutterBottom sx={{ mt: 4 }}>
-          Platform Analytics
-        </Typography>
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Typography color='textSecondary' gutterBottom>
-                  Total Courses
-                </Typography>
-                <Typography variant='h3'>
-                  {typeof analytics.totalCourses === 'number' &&
-                  !Number.isNaN(analytics.totalCourses)
-                    ? analytics.totalCourses
-                    : 0}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Typography color='textSecondary' gutterBottom>
-                  Total Users
-                </Typography>
-                <Typography variant='h3'>
-                  {typeof analytics.totalUsers === 'number' &&
-                  !Number.isNaN(analytics.totalUsers)
-                    ? analytics.totalUsers
-                    : 0}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Typography color='textSecondary' gutterBottom>
-                  Total Instructors
-                </Typography>
-                <Typography variant='h3'>
-                  {typeof analytics.totalInstructors === 'number' &&
-                  !Number.isNaN(analytics.totalInstructors)
-                    ? analytics.totalInstructors
-                    : 0}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Typography color='textSecondary' gutterBottom>
-                  Avg. Completion Rate
-                </Typography>
-                <Typography variant='h3'>
-                  {typeof analytics.averageCompletionRate === 'number' &&
-                  !Number.isNaN(analytics.averageCompletionRate)
-                    ? Math.round(analytics.averageCompletionRate * 100) // Multiply by 100
-                    : 0}
-                  %
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-
-        {/* Users Table */}
-        <Typography variant='h5' component='h2' gutterBottom sx={{ mt: 4 }}>
-          User Management
-        </Typography>
-        <TextField // Add TextField for search input
-          label='Search Users (Name or Email)' // Changed to single quotes
-          variant='outlined' // Changed to single quotes
-          fullWidth
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+      {successMessage && (
+        <Alert
+          severity='success'
           sx={{ mb: 2 }}
-        />
-        <Paper sx={{ width: '100%', overflow: 'hidden' }}>
-          <TableContainer sx={{ maxHeight: 440 }}>
-            <Table stickyHeader aria-label='users table'>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Full Name</TableCell>
-                  <TableCell>Email</TableCell>
-                  <TableCell>Role</TableCell>
-                  <TableCell>Enrolled Courses</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredUsers.map(
-                  // Use filteredUsers instead of users
-                  (tableUser) => {
-                    // eslint-disable-next-line no-underscore-dangle
-                    const userId = tableUser.id || tableUser._id;
-                    return (
-                      <TableRow key={userId} hover>
-                        <TableCell>{tableUser.fullName}</TableCell>
-                        <TableCell>{tableUser.email}</TableCell>
-                        <TableCell>
-                          <FormControl size='small' fullWidth>
-                            <Select
-                              value={tableUser.role || 'student'}
-                              onChange={
-                                (e) =>
-                                  handleRoleChange(tableUser.id, e.target.value) // Changed _id to id
-                              }
-                              disabled={processingAction}
-                            >
-                              <MenuItem value='student'>Student</MenuItem>
-                              <MenuItem value='instructor'>Instructor</MenuItem>
-                              <MenuItem value='admin'>Admin</MenuItem>
-                            </Select>
-                          </FormControl>
-                        </TableCell>
-                        <TableCell>
-                          {tableUser.enrolledCourses?.length > 0 ? (
-                            <Chip
-                              label={`${tableUser.enrolledCourses.length} courses`}
-                              color='primary'
-                              variant='outlined'
-                            />
-                          ) : (
-                            <Chip label='None' variant='outlined' />
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Tooltip title='Manage Enrollments'>
-                            <IconButton
-                              onClick={() => handleOpenEnrollDialog(tableUser)}
-                              disabled={processingAction}
-                            >
-                              <EditIcon />
-                            </IconButton>
-                          </Tooltip>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  },
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Paper>
-
-        {/* Enrollment Dialog */}
-        <Dialog
-          open={openEnrollDialog}
-          onClose={() => setOpenEnrollDialog(false)}
-          maxWidth='md'
-          fullWidth
+          onClose={() => setSuccessMessage(null)}
         >
-          <DialogTitle>
-            Manage Course Enrollments for {selectedUser?.fullName}
-          </DialogTitle>
-          <DialogContent>
-            <List>
-              {courses.map((course) => {
-                // Get the string ID from the course object. Prefer 'id', fallback to '_id'.
-                // eslint-disable-next-line no-underscore-dangle
-                const idFromCourseObject =
-                  course.id || (course._id ? course._id.toString() : null);
+          {successMessage}
+        </Alert>
+      )}
 
-                if (!idFromCourseObject) {
-                  // Skip rendering this course if it has no ID
-                  return null;
-                }
+      {error && !successMessage && (
+        <Alert severity='error' sx={{ mb: 2 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
 
-                return (
-                  <React.Fragment key={idFromCourseObject}>
-                    <ListItem>
-                      <Checkbox
-                        edge='start'
-                        checked={selectedCourses.includes(idFromCourseObject)}
-                        onChange={() => handleCourseToggle(idFromCourseObject)}
+      <Typography variant='h5' component='h2' gutterBottom sx={{ mt: 4 }}>
+        Platform Analytics
+      </Typography>
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Typography color='textSecondary' gutterBottom>
+                Total Courses
+              </Typography>
+              <Typography variant='h3'>{analytics.totalCourses}</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Typography color='textSecondary' gutterBottom>
+                Total Users
+              </Typography>
+              <Typography variant='h3'>{analytics.totalUsers}</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Typography color='textSecondary' gutterBottom>
+                Total Instructors
+              </Typography>
+              <Typography variant='h3'>{analytics.totalInstructors}</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Typography color='textSecondary' gutterBottom>
+                Avg. Completion Rate
+              </Typography>
+              <Typography variant='h3'>
+                {`${(analytics.averageCompletionRate * 100).toFixed(1)}%`}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      <Typography variant='h5' component='h2' gutterBottom sx={{ mt: 4 }}>
+        User Management
+      </Typography>
+      <TextField
+        label='Search Users (Name or Email)'
+        variant='outlined'
+        fullWidth
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        sx={{ mb: 2 }}
+      />
+      <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+        <TableContainer sx={{ maxHeight: 600 }}>
+          <Table stickyHeader aria-label='user management table'>
+            <TableHead>
+              <TableRow>
+                <TableCell>Name</TableCell>
+                <TableCell>Email</TableCell>
+                <TableCell>Role</TableCell>
+                <TableCell>Enrolled Courses</TableCell>
+                {/* <TableCell>Actions</TableCell> */}
+                {/* Removed Actions header */}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredUsers.map((tableUser) => (
+                <TableRow key={tableUser._id}>
+                  <TableCell component='th' scope='row'>
+                    <Button
+                      variant='text'
+                      onClick={() => navigate(`/profile/${tableUser._id}`)}
+                    >
+                      {tableUser.fullName}
+                    </Button>
+                  </TableCell>
+                  <TableCell>{tableUser.email}</TableCell>
+                  <TableCell>
+                    <FormControl size='small' sx={{ minWidth: 120 }}>
+                      <Select
+                        value={tableUser.role}
+                        onChange={(e) =>
+                          handleRoleChange(tableUser._id, e.target.value)
+                        }
+                        disabled={
+                          tableUser.email === currentUser?.email ||
+                          tableUser.role === 'admin' ||
+                          processingAction
+                        }
+                        sx={{ minWidth: 120 }}
+                      >
+                        <MenuItem value='student'>Student</MenuItem>
+                        <MenuItem value='instructor'>Instructor</MenuItem>
+                        <MenuItem value='admin'>Admin</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </TableCell>
+                  <TableCell>
+                    {tableUser.enrolledCourses?.length || 0}
+                    <Tooltip title='Manage Enrollments'>
+                      <IconButton
+                        size='small'
+                        onClick={() => handleOpenEnrollDialog(tableUser)}
                         disabled={processingAction}
-                      />
-                      <ListItemText
-                        primary={course.title}
-                        secondary={`Instructor: ${course.instructor}`}
-                      />
-                    </ListItem>
-                    <Divider />
-                  </React.Fragment>
-                );
-              })}
+                        sx={{ ml: 1 }}
+                      >
+                        <EditIcon fontSize='small' />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
+                  {/* Removed empty TableCell for Actions */}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
+
+      <Dialog
+        open={openEnrollDialog}
+        onClose={() => setOpenEnrollDialog(false)}
+        maxWidth='sm'
+        fullWidth
+      >
+        <DialogTitle>Enroll User in Courses</DialogTitle>
+        <DialogContent>
+          {coursesLoading ? (
+            <CircularProgress />
+          ) : coursesError ? (
+            <Alert severity='error'>{coursesError}</Alert>
+          ) : (
+            <List>
+              {availableCourses.map((course) => (
+                <ListItem
+                  key={course._id}
+                  dense
+                  button
+                  onClick={() => handleCourseToggle(course._id)}
+                >
+                  <Checkbox
+                    edge='start'
+                    checked={selectedCourses.includes(course._id)}
+                    tabIndex={-1}
+                    disableRipple
+                  />
+                  <ListItemText primary={course.title} />
+                </ListItem>
+              ))}
             </List>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenEnrollDialog(false)}>Cancel</Button>
-            <Button
-              onClick={handleSaveEnrollments}
-              color='primary'
-              disabled={processingAction}
-            >
-              {processingAction ? (
-                <CircularProgress size={24} />
-              ) : (
-                'Save Changes'
-              )}
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </Box>
-    </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenEnrollDialog(false)} color='primary'>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSaveEnrollments}
+            color='primary'
+            disabled={processingAction}
+          >
+            {processingAction ? <CircularProgress size={24} /> : 'Save'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Admin Promotion Confirmation Dialog */}
+      <Dialog
+        open={openAdminConfirmDialog}
+        onClose={handleAdminPromotionCancel}
+        aria-labelledby='admin-promotion-dialog-title'
+      >
+        <DialogTitle id='admin-promotion-dialog-title'>
+          Confirm Admin Promotion
+        </DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to promote{' '}
+            <strong>{userToPromote?.fullName || 'this user'}</strong> to Admin?
+            This action grants significant permissions.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleAdminPromotionCancel}
+            color='primary'
+            disabled={processingAction}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleAdminPromotionConfirm}
+            color='error' // Use error color for potentially destructive/sensitive actions
+            disabled={processingAction}
+            autoFocus
+          >
+            {processingAction ? <CircularProgress size={24} /> : 'Confirm'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Container>
   );
-}
+};
 
 export default AdminDashboard;
