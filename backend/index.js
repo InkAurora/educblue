@@ -23,13 +23,15 @@ const stripeClient = stripe(process.env.STRIPE_SECRET_KEY);
 
 // Middleware
 app.use(express.json());
+
+// Parse CORS origins from environment variable
+const allowedOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',')
+  : ['http://localhost:3000'];
+
 app.use(
   cors({
-    origin: [
-      'http://localhost:3000',
-      'https://educblue.vercel.app',
-      'https://educblue-dev.vercel.app',
-    ],
+    origin: allowedOrigins,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
