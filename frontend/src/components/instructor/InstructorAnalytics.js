@@ -55,7 +55,6 @@ function InstructorAnalytics() {
         const decoded = jwtDecode(token);
         setUser(decoded);
       } catch (err) {
-        console.error('Failed to decode token:', err);
         navigate('/login');
       }
     } else {

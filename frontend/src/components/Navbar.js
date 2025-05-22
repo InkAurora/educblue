@@ -66,7 +66,7 @@ function Navbar() {
         setUserFullName(response.data.fullName);
       }
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      // console.error('Error fetching user data:', error);
     }
   };
 
@@ -76,13 +76,9 @@ function Navbar() {
 
       if (token) {
         const decodedToken = jwtDecode(token);
-        console.log('Decoded token:', decodedToken);
 
         const email = decodedToken.email || '';
         const role = decodedToken.role || '';
-
-        console.log('Extracted email:', email);
-        console.log('Extracted role:', role);
 
         setUserEmail(email);
         setUserRole(role);
@@ -96,7 +92,7 @@ function Navbar() {
         setUserFullName('');
       }
     } catch (error) {
-      console.error('Error decoding token:', error);
+      // console.error('Error decoding token:', error);
       localStorage.removeItem('token');
       setIsLoggedIn(false);
       setUserEmail('');
@@ -131,7 +127,7 @@ function Navbar() {
         await axiosInstance.post('/api/auth/logout', { refreshToken });
       }
     } catch (error) {
-      console.error('Error during logout:', error);
+      // console.error('Error during logout:', error);
     } finally {
       localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');

@@ -48,7 +48,7 @@ const useCourseContent = (courseId) => {
 
         setLoading(false);
       } catch (err) {
-        console.error('Error fetching course:', err);
+        // console.error('Error fetching course:', err);
 
         if (err.response?.status === 404) {
           setError('Course not found');
@@ -114,8 +114,6 @@ const useCourseContent = (courseId) => {
         return standardizedItem;
       });
 
-      console.log('Saving content:', JSON.stringify(contentToSave, null, 2));
-
       // Using axiosInstance - no need to manually include the token
       await axiosInstance.put(`/api/courses/${courseId}/content`, {
         content: contentToSave,
@@ -129,15 +127,15 @@ const useCourseContent = (courseId) => {
       // Show success message or update UI as needed
       return true;
     } catch (err) {
-      console.error('Error saving course content:', err);
-      console.error('Request data:', JSON.stringify({ content }, null, 2));
+      // console.error('Error saving course content:', err);
+      // console.error('Request data:', JSON.stringify({ content }, null, 2));
 
       if (err.response) {
-        console.error(
-          'Response error:',
-          err.response.status,
-          err.response.data,
-        );
+        // console.error(
+        //   'Response error:',
+        //   err.response.status,
+        //   err.response.data,
+        // );
         // Display the detailed error message from the backend if available
         if (
           err.response.data &&
@@ -226,15 +224,14 @@ const useCourseContent = (courseId) => {
         content: contentToSave,
       });
 
-      console.log('Course published successfully');
       // Redirect to the published course
       navigate(`/courses/${courseId}`);
     } catch (err) {
-      console.error('Error publishing course:', err);
+      // console.error('Error publishing course:', err);
       setPublishing(false);
 
       if (err.response) {
-        console.error('Response error data:', err.response.data);
+        // console.error('Response error data:', err.response.data);
 
         if (err.response.status === 403) {
           setError('Access denied. Only instructors can publish courses.');

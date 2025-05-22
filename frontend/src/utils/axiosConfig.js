@@ -89,40 +89,6 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-// Add debug interceptors to log request and response details
-axiosInstance.interceptors.request.use((request) => {
-  if (request.method === 'put' || request.method === 'post') {
-    console.log('🚀 Request:', request.method.toUpperCase(), request.url);
-    console.log(
-      '📦 Request Data:',
-      typeof request.data === 'string'
-        ? JSON.parse(request.data)
-        : request.data,
-    );
-  }
-  return request;
-});
-
-axiosInstance.interceptors.response.use(
-  (response) => {
-    console.log('✅ Response:', response.status, response.config.url);
-    return response;
-  },
-  (error) => {
-    console.log('❌ Error:', error.message);
-    if (error.response) {
-      console.log('📄 Status:', error.response.status);
-      console.log('📄 Data:', error.response.data);
-
-      // If there's a detailed validation error, log it
-      if (error.response.data && error.response.data.invalidItem) {
-        console.log('🔍 Invalid Item:', error.response.data.invalidItem);
-      }
-    }
-    return Promise.reject(error);
-  },
-);
-
 // Add a response interceptor to handle 401 errors as backup
 axiosInstance.interceptors.response.use(
   (response) => response,

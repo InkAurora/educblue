@@ -79,7 +79,7 @@ function ContentRenderer({
 
   // Initialize YouTube iframe API
   useEffect(() => {
-    if (!isYoutubeVideo || !youtubeVideoId) return; // <--- MODIFIED LINE: Removed isCompleted from this condition
+    if (!isYoutubeVideo || !youtubeVideoId) return;
 
     // Ensure YT API is loaded
     if (!window.YT) {
@@ -97,7 +97,7 @@ function ContentRenderer({
         youtubePlayer.destroy();
       }
     };
-  }, [isYoutubeVideo, youtubeVideoId, isCompleted]);
+  }, [isYoutubeVideo, youtubeVideoId, youtubePlayer]); // Added youtubePlayer to dependency array
 
   // Function to initialize YouTube player
   const initYoutubePlayer = () => {
@@ -122,7 +122,7 @@ function ContentRenderer({
 
   // YouTube player ready handler
   const onPlayerReady = (event) => {
-    console.log('YouTube player is ready');
+    // console.log('YouTube player is ready');
   };
 
   // YouTube player state change handler
@@ -218,13 +218,10 @@ function ContentRenderer({
     try {
       setSubmittingAnswer(true);
 
-      const response = await axiosInstance.post(
-        `/api/progress/${courseId}/${contentId}`,
-        {
-          answer: quizAnswer,
-          completed: true,
-        },
-      );
+      await axiosInstance.post(`/api/progress/${courseId}/${contentId}`, {
+        answer: quizAnswer,
+        completed: true,
+      });
 
       setFeedbackMessage('Answer saved!');
       setFeedbackType('success');
@@ -236,7 +233,7 @@ function ContentRenderer({
         onCompleted();
       }
     } catch (err) {
-      console.error('Error submitting quiz answer:', err);
+      // console.error('Error submitting quiz answer:', err);
 
       if (err.response?.status === 403) {
         setFeedbackMessage(
@@ -294,7 +291,7 @@ function ContentRenderer({
         onCompleted();
       }
     } catch (err) {
-      console.error('Error submitting multiple choice answer:', err);
+      // console.error('Error submitting multiple choice answer:', err);
 
       if (err.response?.status === 403) {
         setFeedbackMessage(
@@ -318,6 +315,23 @@ function ContentRenderer({
     setSelectedOption(event.target.value);
   };
 
+  const getContentTypeDisplay = () => {
+    if (type && typeof type === 'string') {
+      return type.charAt(0).toUpperCase() + type.slice(1);
+    }
+    return '';
+  };
+
+  const renderCompletionButtonText = () => {
+    if (isCompleted) {
+      return 'Completed';
+    }
+    if (completing) {
+      return 'Marking...';
+    }
+    return 'Mark as Completed';
+  };
+
   return (
     <Box sx={{ mt: 3, position: 'relative', pb: 4 }}>
       <Typography
@@ -326,7 +340,7 @@ function ContentRenderer({
         sx={{ mb: 2 }}
         data-testid='content-type'
       >
-        {type?.charAt(0).toUpperCase() + type?.slice(1)}
+        {getContentTypeDisplay()}
       </Typography>
 
       {/* Video content rendering */}
@@ -337,7 +351,7 @@ function ContentRenderer({
               <Box
                 sx={{
                   position: 'relative',
-                  paddingTop: '56.25%',
+                  paddingTop: '56.25%', // 16:9 aspect ratio
                   width: '100%',
                   mb: 2,
                 }}
@@ -374,6 +388,7 @@ function ContentRenderer({
               data-testid='video-player'
             >
               <source src={videoUrl} type='video/mp4' />
+              <track kind='captions' srcLang='en' label='English captions' />
               Your browser does not support the video tag.
             </video>
           )}
@@ -490,7 +505,7 @@ function ContentRenderer({
                 : options || []
               ).map((option, index) => (
                 <FormControlLabel
-                  key={index}
+                  key={option || `option-${index}`} // Use option as key if available, otherwise fallback to index
                   value={index.toString()}
                   control={<Radio />}
                   label={option}
@@ -540,11 +555,7 @@ function ContentRenderer({
               boxShadow: 3,
             }}
           >
-            {isCompleted
-              ? 'Completed'
-              : completing
-                ? 'Marking...'
-                : 'Mark as Completed'}
+            {renderCompletionButtonText()}
           </Button>
         </Box>
       )}
@@ -583,7 +594,7 @@ ContentRenderer.propTypes = {
   completing: PropTypes.bool,
   onCompleted: PropTypes.func.isRequired,
   error: PropTypes.string,
-  progress: PropTypes.array,
+  progress: PropTypes.arrayOf(PropTypes.shape({})), // Changed from PropTypes.array to PropTypes.arrayOf(PropTypes.shape({}))
   courseId: PropTypes.string,
   isInstructor: PropTypes.bool,
 };
