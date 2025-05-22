@@ -27,11 +27,12 @@ app.use(
   cors({
     origin: [
       'http://localhost:3000',
-      'https://educblue.vercel.app/',
-      'https://educblue-dev.vercel.app/',
+      'https://educblue.vercel.app',
+      'https://educblue-dev.vercel.app',
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
   })
 ); // Enable CORS specifically for frontend
 
