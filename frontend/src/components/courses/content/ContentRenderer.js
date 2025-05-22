@@ -93,11 +93,11 @@ function ContentRenderer({
     }
 
     return () => {
-      if (youtubePlayer && youtubePlayer.destroy) {
+      if (youtubePlayer && typeof youtubePlayer.destroy === 'function') {
         youtubePlayer.destroy();
       }
     };
-  }, [isYoutubeVideo, youtubeVideoId, youtubePlayer]); // Added youtubePlayer to dependency array
+  }, [isYoutubeVideo, youtubeVideoId]);
 
   // Function to initialize YouTube player
   const initYoutubePlayer = () => {

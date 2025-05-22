@@ -214,11 +214,24 @@ function CourseDetails({ 'data-testid': dataTestId, testId = null }) {
       });
 
       // Handle payment flow here based on response
+      if (response.data && response.data.url) {
+        // Store courseId in localStorage before redirecting to Stripe
+        localStorage.setItem('enrollingCourseId', id);
+        // Redirect to Stripe checkout
+        window.location.href = response.data.url;
+      } else {
+        // Fallback or error if URL is not in response
+        setPaymentStatus({
+          type: 'error',
+          message: 'Could not retrieve checkout session. Please try again.',
+        });
+      }
+
       // For now, just set dummy success response
-      setPaymentStatus({
-        type: 'success',
-        message: 'Payment initiated. You will be redirected to checkout.',
-      });
+      // setPaymentStatus({
+      //   type: 'success',
+      //   message: 'Payment initiated. You will be redirected to checkout.',
+      // });
 
       // In a real app, you'd redirect to Stripe checkout here
     } catch (err) {

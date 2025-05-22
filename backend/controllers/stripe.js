@@ -53,7 +53,7 @@ const createCheckoutSession = async (req, res) => {
       },
     });
 
-    return res.status(200).json({ sessionId: session.id });
+    return res.status(200).json({ sessionId: session.id, url: session.url });
   } catch (error) {
     // Log the error to server logs
     // eslint-disable-next-line no-console
