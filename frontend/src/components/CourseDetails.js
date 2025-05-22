@@ -99,7 +99,6 @@ function CourseDetails({ 'data-testid': dataTestId, testId = null }) {
         setUser(userResponse.data);
         setLoadingUser(false);
       } catch (err) {
-        console.error('Error fetching user data:', err);
         if (err.response?.status === 401) {
           localStorage.removeItem('token');
           localStorage.removeItem('refreshToken');
@@ -182,7 +181,6 @@ function CourseDetails({ 'data-testid': dataTestId, testId = null }) {
                 }
               }
             } catch (progressErr) {
-              console.error('Error fetching progress:', progressErr);
               setProgressPercentage(0);
             }
           }

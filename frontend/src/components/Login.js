@@ -44,7 +44,7 @@ function Login() {
       // Redirect to dashboard page
       navigate('/dashboard');
     } catch (err) {
-      console.error('Login error:', err);
+      // console.error('Login error:', err);
 
       if (err.response?.status === 401) {
         setError('Invalid email or password');

@@ -41,7 +41,6 @@ function CreateCourse() {
         setUser(response.data);
         setLoadingUser(false);
       } catch (err) {
-        console.error('Error fetching user data:', err);
         setError('You must be logged in to create a course');
         setLoadingUser(false);
       }

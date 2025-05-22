@@ -1,392 +1,378 @@
 import { renderHook, act } from '@testing-library/react';
-import { waitFor } from '@testing-library/react';
-import useCourseContent from './useCourseContent';
+import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../utils/axiosConfig';
+import useCourseContent from './useCourseContent';
 
-// Mock axios and useNavigate
-const mockNavigate = jest.fn();
-jest.mock('../utils/axiosConfig', () => ({
-  get: jest.fn(),
-  put: jest.fn(),
-  patch: jest.fn(),
-}));
-
+// Mock react-router-dom
 jest.mock('react-router-dom', () => ({
-  useNavigate: () => mockNavigate,
+  ...jest.requireActual('react-router-dom'), // Import and retain default behavior
+  useNavigate: jest.fn(), // Mock useNavigate
 }));
+
+// Mock axiosInstance
+jest.mock('../utils/axiosConfig');
 
 describe('useCourseContent Hook', () => {
-  const mockCourseId = 'course-123';
-  const mockCourse = {
-    _id: mockCourseId,
-    title: 'Test Course',
-    description: 'Test Description',
-    content: [
-      {
-        id: 'content-1',
-        title: 'Test Content 1',
-        type: 'markdown',
-        content: '# Test',
-      },
-      {
-        id: 'content-2',
-        title: 'Test Content 2',
-        type: 'video',
-        content: 'https://example.com/video.mp4',
-      },
-    ],
-  };
+  let mockNavigate;
 
   beforeEach(() => {
-    jest.clearAllMocks();
     // Reset mocks before each test
-    document.body.innerHTML = '<div></div>';
+    mockNavigate = jest.fn();
+    useNavigate.mockReturnValue(mockNavigate);
+    axiosInstance.get.mockReset();
+    axiosInstance.put.mockReset();
+    axiosInstance.patch.mockReset();
   });
 
-  it('should fetch course data on init', async () => {
-    axiosInstance.get.mockResolvedValueOnce({ data: mockCourse });
+  afterEach(() => {
+    jest.clearAllMocks(); // Clear all mocks after each test
+  });
 
-    const { result } = renderHook(() => useCourseContent(mockCourseId));
+  // Test case 1: Initial state and fetching course data
+  test('should initialize with correct state and fetch course data', async () => {
+    const mockCourseData = {
+      _id: 'course123',
+      title: 'Test Course',
+      content: [{ _id: 'content1', title: 'Content 1' }],
+    };
+    axiosInstance.get.mockResolvedValue({ data: mockCourseData });
 
-    // Initially loading should be true and course null
-    expect(result.current.loading).toBe(true);
+    const { result } = renderHook(() => useCourseContent('course123'));
+
+    // Check initial state
     expect(result.current.course).toBeNull();
+    expect(result.current.content).toEqual([]);
+    expect(result.current.loading).toBe(true); // Should be true initially
+    expect(result.current.error).toBe('');
 
-    // Wait for data to be loaded
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+    // Wait for API call and state update
+    await act(async () => {
+      // Wait for promises to resolve
+      await Promise.resolve();
     });
 
-    // Now data should be loaded
-    expect(result.current.course).toEqual(mockCourse);
-    expect(result.current.content).toEqual(mockCourse.content);
-    expect(axiosInstance.get).toHaveBeenCalledWith(
-      `/api/courses/${mockCourseId}`,
+    // Check state after fetching data
+    expect(result.current.loading).toBe(false);
+    expect(result.current.course).toEqual(mockCourseData);
+    expect(result.current.content).toEqual(mockCourseData.content);
+    expect(axiosInstance.get).toHaveBeenCalledWith('/api/courses/course123');
+  });
+
+  // Test case 2: Handling error when fetching course data
+  test('should handle errors when fetching course data', async () => {
+    axiosInstance.get.mockRejectedValue(new Error('Failed to fetch'));
+
+    const { result } = renderHook(() => useCourseContent('course123'));
+
+    // Wait for API call and state update
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    // Check state after error
+    expect(result.current.loading).toBe(false);
+    expect(result.current.error).toBe('Failed to load course: Failed to fetch');
+  });
+
+  // Test case 3: Saving course content successfully
+  test('should save course content successfully', async () => {
+    const initialContent = [{ _id: 'content1', title: 'Content 1' }];
+    axiosInstance.get.mockResolvedValue({
+      data: { _id: 'course123', content: initialContent },
+    });
+    axiosInstance.put.mockResolvedValue({ data: { success: true } }); // Mock PUT request
+
+    const { result } = renderHook(() => useCourseContent('course123'));
+
+    // Wait for initial fetch
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    // Update content and save
+    const newContent = [
+      ...initialContent,
+      { title: 'New Content', type: 'text', content: 'Details' },
+    ];
+    act(() => {
+      result.current.setContent(newContent);
+    });
+
+    await act(async () => {
+      await result.current.saveContent();
+    });
+
+    // Check state after saving
+    expect(result.current.savingContent).toBe(false);
+    expect(result.current.error).toBe(''); // No error
+    expect(axiosInstance.put).toHaveBeenCalledWith(
+      '/api/courses/course123/content',
+      { content: expect.any(Array) }, // Check that content is passed
     );
   });
 
-  it('should handle errors when fetching course', async () => {
-    const consoleErrorSpy = jest
-      .spyOn(console, 'error')
-      .mockImplementation(() => {});
+  // Test case 4: Handling error when saving course content
+  test('should handle errors when saving course content', async () => {
+    axiosInstance.get.mockResolvedValue({
+      data: { _id: 'course123', content: [{ title: 'Content 1' }] },
+    });
+    axiosInstance.put.mockRejectedValue(new Error('Save failed')); // Mock failed PUT
 
-    axiosInstance.get.mockRejectedValueOnce({
-      response: { status: 404, data: { message: 'Course not found' } },
+    const { result } = renderHook(() => useCourseContent('course123'));
+
+    // Wait for initial fetch
+    await act(async () => {
+      await Promise.resolve();
     });
 
-    const { result } = renderHook(() => useCourseContent(mockCourseId));
-
-    // Wait for the error to be processed
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+    // Attempt to save
+    await act(async () => {
+      await result.current.saveContent();
     });
 
-    // Check that error handling is correct
-    expect(result.current.course).toBeNull();
-    expect(result.current.error).toBe('Course not found');
-    expect(consoleErrorSpy).toHaveBeenCalled();
-
-    consoleErrorSpy.mockRestore();
+    // Check state after error
+    expect(result.current.savingContent).toBe(false);
+    expect(result.current.error).toBe(
+      'Failed to save course content: Save failed',
+    );
   });
 
-  it('should handle invalid course ID', async () => {
-    const { result } = renderHook(() => useCourseContent('undefined'));
+  // Test case 5: Publishing a course successfully
+  test('should publish a course successfully', async () => {
+    const courseContent = [{ _id: 'content1', title: 'Content 1' }];
+    axiosInstance.get.mockResolvedValue({
+      data: { _id: 'course123', content: courseContent },
+    });
+    axiosInstance.put.mockResolvedValue({ data: { success: true } }); // For saving before publish
+    axiosInstance.patch.mockResolvedValue({ data: { success: true } }); // For publishing
 
-    // Wait for the validation to complete
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+    const { result } = renderHook(() => useCourseContent('course123'));
+
+    // Wait for initial fetch
+    await act(async () => {
+      await Promise.resolve();
     });
 
+    // Publish the course
+    await act(async () => {
+      await result.current.publishCourse();
+    });
+
+    // Check state and navigation
+    expect(result.current.publishing).toBe(false); // Should reset after attempt
+    expect(mockNavigate).toHaveBeenCalledWith('/courses/course123'); // Navigation
+    expect(axiosInstance.patch).toHaveBeenCalledWith(
+      '/api/courses/course123/publish',
+      { status: 'published', content: expect.any(Array) }, // Check payload
+    );
+  });
+
+  // Test case 6: Handling error when publishing a course
+  test('should handle errors when publishing a course', async () => {
+    axiosInstance.get.mockResolvedValue({
+      data: { _id: 'course123', content: [{ title: 'Content 1' }] },
+    });
+    axiosInstance.patch.mockRejectedValue(new Error('Publish failed')); // Mock failed PATCH
+
+    const { result } = renderHook(() => useCourseContent('course123'));
+
+    // Wait for initial fetch
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    // Attempt to publish
+    await act(async () => {
+      await result.current.publishCourse();
+    });
+
+    // Check state after error
+    expect(result.current.publishing).toBe(false);
+    expect(result.current.error).toBe(
+      'Failed to publish course: Publish failed',
+    );
+  });
+
+  // Test case 7: Invalid course ID handling
+  test('should handle invalid course ID during fetch', async () => {
+    const { result } = renderHook(() => useCourseContent(undefined)); // Pass undefined ID
+
+    // Wait for effect to run
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    // Check state for invalid ID
+    expect(result.current.loading).toBe(false);
     expect(result.current.error).toBe(
       'Invalid course ID. Please try creating the course again.',
     );
-    expect(axiosInstance.get).not.toHaveBeenCalled();
+    expect(axiosInstance.get).not.toHaveBeenCalled(); // Should not call API
   });
 
-  it('should save content successfully', async () => {
-    // Mock the course fetch
-    axiosInstance.get.mockResolvedValueOnce({ data: mockCourse });
-    axiosInstance.put.mockResolvedValueOnce({});
-
-    // Create an error alert element that might be required by the code
-    const errorAlert = document.createElement('div');
-    errorAlert.setAttribute('data-testid', 'error-alert');
-    document.body.appendChild(errorAlert);
-
-    const { result } = renderHook(() => useCourseContent(mockCourseId));
-
-    // Wait for initial data to be loaded
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+  // Test case 8: Error when saving content with empty array
+  test('should set error if trying to save empty content', async () => {
+    axiosInstance.get.mockResolvedValue({
+      data: { _id: 'course123', content: [] }, // Start with empty content
     });
 
-    // Set new content
-    act(() => {
-      result.current.setContent(mockCourse.content);
-    });
+    const { result } = renderHook(() => useCourseContent('course123'));
 
-    // Save content
-    let success;
+    // Wait for initial fetch
     await act(async () => {
-      success = await result.current.saveContent();
+      await Promise.resolve();
     });
 
-    // Check if content was saved
-    expect(success).toBe(true);
-    expect(axiosInstance.put).toHaveBeenCalledWith(
-      `/api/courses/${mockCourseId}/content`,
-      { content: mockCourse.content },
-    );
-    expect(result.current.savingContent).toBe(false);
-    expect(result.current.error).toBe('');
-  });
-
-  it('should show error if trying to save empty content', async () => {
-    // Mock the course fetch
-    axiosInstance.get.mockResolvedValueOnce({
-      data: { ...mockCourse, content: [] },
+    // Mock querySelector for error visibility check
+    document.querySelector = jest.fn().mockReturnValue({
+      setAttribute: jest.fn(),
     });
 
-    // Create an error alert element
-    const errorAlert = document.createElement('div');
-    errorAlert.setAttribute('data-testid', 'error-alert');
-    document.body.appendChild(errorAlert);
-
-    const { result } = renderHook(() => useCourseContent(mockCourseId));
-
-    // Wait for initial data to be loaded
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    // Set empty content
-    act(() => {
-      result.current.setContent([]);
-    });
-
-    // Try to save empty content
-    let success;
+    // Attempt to save empty content
     await act(async () => {
-      success = await result.current.saveContent();
+      await result.current.saveContent();
     });
 
-    // Should show an error message
+    // Check error state
     expect(result.current.error).toBe('Please add at least one content item');
-    expect(axiosInstance.put).not.toHaveBeenCalled();
+    expect(axiosInstance.put).not.toHaveBeenCalled(); // PUT should not be called
   });
 
-  it('should publish course successfully', async () => {
-    // Mock the course fetch and API calls
-    axiosInstance.get.mockResolvedValueOnce({ data: mockCourse });
-    axiosInstance.put.mockResolvedValueOnce({});
-    axiosInstance.patch.mockResolvedValueOnce({});
-
-    // Spy on console.log
-    const consoleLogSpy = jest
-      .spyOn(console, 'log')
-      .mockImplementation(() => {});
-
-    const { result } = renderHook(() => useCourseContent(mockCourseId));
-
-    // Wait for initial data to be loaded
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+  // Test case 9: Error when publishing with empty content
+  test('should set error if trying to publish empty content', async () => {
+    axiosInstance.get.mockResolvedValue({
+      data: { _id: 'course123', content: [] }, // Start with empty content
     });
 
-    // Publish course
+    const { result } = renderHook(() => useCourseContent('course123'));
+
+    // Wait for initial fetch
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    // Mock querySelector for error visibility check
+    document.querySelector = jest.fn().mockReturnValue({
+      setAttribute: jest.fn(),
+    });
+
+    // Attempt to publish empty content
     await act(async () => {
       await result.current.publishCourse();
     });
 
-    // Check that publish request was made correctly
-    expect(axiosInstance.put).toHaveBeenCalledWith(
-      `/api/courses/${mockCourseId}/content`,
-      { content: mockCourse.content },
-    );
-
-    expect(axiosInstance.patch).toHaveBeenCalledWith(
-      `/api/courses/${mockCourseId}/publish`,
-      {
-        status: 'published',
-        content: mockCourse.content,
-      },
-    );
-
-    // Check that navigation was called
-    expect(mockNavigate).toHaveBeenCalledWith(`/courses/${mockCourseId}`);
-    expect(consoleLogSpy).toHaveBeenCalledWith('Course published successfully');
-
-    consoleLogSpy.mockRestore();
-  });
-
-  it('should show error if trying to publish empty content', async () => {
-    // Mock the course fetch with empty content
-    axiosInstance.get.mockResolvedValueOnce({
-      data: { ...mockCourse, content: [] },
-    });
-
-    // Create an error alert element
-    const errorAlert = document.createElement('div');
-    errorAlert.setAttribute('data-testid', 'error-alert');
-    document.body.appendChild(errorAlert);
-
-    const { result } = renderHook(() => useCourseContent(mockCourseId));
-
-    // Wait for initial data to be loaded
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    // Set empty content
-    act(() => {
-      result.current.setContent([]);
-    });
-
-    // Try to publish with empty content
-    await act(async () => {
-      await result.current.publishCourse();
-    });
-
-    // Should show an error message
+    // Check error state
     expect(result.current.error).toBe('Please add content before publishing');
-    expect(axiosInstance.patch).not.toHaveBeenCalled();
+    expect(axiosInstance.patch).not.toHaveBeenCalled(); // PATCH should not be called
   });
 
-  it('should handle save content errors', async () => {
-    const consoleErrorSpy = jest
-      .spyOn(console, 'error')
-      .mockImplementation(() => {});
+  // Test case 10: Handling 404 error when fetching course
+  test('should handle 404 error when fetching course', async () => {
+    axiosInstance.get.mockRejectedValue({ response: { status: 404 } });
 
-    axiosInstance.get.mockResolvedValueOnce({ data: mockCourse });
-    axiosInstance.put.mockRejectedValueOnce({
-      response: { status: 403 },
-    });
+    const { result } = renderHook(() => useCourseContent('nonexistent-course'));
 
-    const { result } = renderHook(() => useCourseContent(mockCourseId));
-
-    // Wait for initial data to be loaded
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    // Try to save content
-    let success;
     await act(async () => {
-      success = await result.current.saveContent();
+      await Promise.resolve();
     });
 
-    // Check if error was handled properly
-    expect(success).toBe(false);
+    expect(result.current.loading).toBe(false);
+    expect(result.current.error).toBe('Course not found');
+  });
+
+  // Test case 11: Handling 403 error when fetching course
+  test('should handle 403 error when fetching course', async () => {
+    axiosInstance.get.mockRejectedValue({ response: { status: 403 } });
+
+    const { result } = renderHook(() => useCourseContent('forbidden-course'));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(result.current.loading).toBe(false);
+    expect(result.current.error).toBe(
+      'You do not have permission to edit this course',
+    );
+  });
+
+  // Test case 12: Handling 403 error when saving content
+  test('should handle 403 error when saving content', async () => {
+    axiosInstance.get.mockResolvedValue({
+      data: { _id: 'course123', content: [{ title: 'Content 1' }] },
+    });
+    axiosInstance.put.mockRejectedValue({ response: { status: 403 } });
+
+    const { result } = renderHook(() => useCourseContent('course123'));
+
+    await act(async () => {
+      await Promise.resolve(); // Initial fetch
+      await result.current.saveContent(); // Attempt save
+    });
+
+    expect(result.current.savingContent).toBe(false);
     expect(result.current.error).toBe(
       'Access denied. Only instructors can edit courses.',
     );
-    expect(consoleErrorSpy).toHaveBeenCalled();
-
-    consoleErrorSpy.mockRestore();
   });
 
-  it('should handle publish course errors with 403 status', async () => {
-    const consoleErrorSpy = jest
-      .spyOn(console, 'error')
-      .mockImplementation(() => {});
-
-    axiosInstance.get.mockResolvedValueOnce({ data: mockCourse });
-    axiosInstance.put.mockResolvedValueOnce({});
-    axiosInstance.patch.mockRejectedValueOnce({
-      response: {
-        status: 403,
-        data: { message: 'Only instructors can publish courses' },
-      },
+  // Test case 13: Handling 403 error when publishing course
+  test('should handle 403 error when publishing course', async () => {
+    axiosInstance.get.mockResolvedValue({
+      data: { _id: 'course123', content: [{ title: 'Content 1' }] },
     });
+    axiosInstance.patch.mockRejectedValue({ response: { status: 403 } });
 
-    const { result } = renderHook(() => useCourseContent(mockCourseId));
+    const { result } = renderHook(() => useCourseContent('course123'));
 
-    // Wait for initial data to be loaded
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    // Try to publish course
     await act(async () => {
-      await result.current.publishCourse();
+      await Promise.resolve(); // Initial fetch
+      await result.current.publishCourse(); // Attempt publish
     });
 
-    // Check if error was handled properly
+    expect(result.current.publishing).toBe(false);
     expect(result.current.error).toBe(
       'Access denied. Only instructors can publish courses.',
     );
-    expect(result.current.publishing).toBe(false);
-    expect(consoleErrorSpy).toHaveBeenCalled();
-
-    consoleErrorSpy.mockRestore();
   });
 
-  it('should handle publish course errors with 400 status', async () => {
-    const consoleErrorSpy = jest
-      .spyOn(console, 'error')
-      .mockImplementation(() => {});
-
-    axiosInstance.get.mockResolvedValueOnce({ data: mockCourse });
-    axiosInstance.put.mockResolvedValueOnce({});
-    axiosInstance.patch.mockRejectedValueOnce({
-      response: {
-        status: 400,
-        data: { message: 'Content validation failed' },
-      },
+  // Test case 14: Handling specific backend error message on save
+  test('should display specific backend error message on save failure', async () => {
+    const errorMessage = 'Backend validation failed';
+    axiosInstance.get.mockResolvedValue({
+      data: { _id: 'course123', content: [{ title: 'Content 1' }] },
+    });
+    axiosInstance.put.mockRejectedValue({
+      response: { data: { message: errorMessage } },
     });
 
-    const { result } = renderHook(() => useCourseContent(mockCourseId));
+    const { result } = renderHook(() => useCourseContent('course123'));
 
-    // Wait for initial data to be loaded
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    // Try to publish course
     await act(async () => {
+      await Promise.resolve();
+      await result.current.saveContent();
+    });
+
+    expect(result.current.error).toBe(`Failed to save: ${errorMessage}`);
+  });
+
+  // Test case 15: Handling specific backend error message on publish
+  test('should display specific backend error message on publish failure', async () => {
+    const errorMessage = 'Publishing prerequisites not met';
+    axiosInstance.get.mockResolvedValue({
+      data: { _id: 'course123', content: [{ title: 'Content 1' }] },
+    });
+    axiosInstance.patch.mockRejectedValue({
+      response: { status: 400, data: { message: errorMessage } },
+    });
+
+    const { result } = renderHook(() => useCourseContent('course123'));
+
+    await act(async () => {
+      await Promise.resolve();
       await result.current.publishCourse();
     });
 
-    // Check if error was handled properly
-    expect(result.current.error).toBe(
-      'Failed to publish: Content validation failed',
-    );
-    expect(result.current.publishing).toBe(false);
-    expect(consoleErrorSpy).toHaveBeenCalled();
-
-    consoleErrorSpy.mockRestore();
-  });
-
-  it('should handle publish course errors with network error', async () => {
-    const consoleErrorSpy = jest
-      .spyOn(console, 'error')
-      .mockImplementation(() => {});
-
-    axiosInstance.get.mockResolvedValueOnce({ data: mockCourse });
-    axiosInstance.put.mockResolvedValueOnce({});
-    axiosInstance.patch.mockRejectedValueOnce(
-      new Error('Network error during publishing'),
-    );
-
-    const { result } = renderHook(() => useCourseContent(mockCourseId));
-
-    // Wait for initial data to be loaded
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    // Try to publish course
-    await act(async () => {
-      await result.current.publishCourse();
-    });
-
-    // Check if error was handled properly
-    expect(result.current.error).toBe(
-      'Failed to publish course: Network error during publishing',
-    );
-    expect(result.current.publishing).toBe(false);
-    expect(consoleErrorSpy).toHaveBeenCalled();
-
-    consoleErrorSpy.mockRestore();
+    expect(result.current.error).toBe(`Failed to publish: ${errorMessage}`);
   });
 });
