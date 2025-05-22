@@ -1,3 +1,4 @@
+const mongoose = require('mongoose'); // Added Mongoose import
 const User = require('../../models/user');
 
 /**
@@ -33,8 +34,9 @@ const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
 
-    if (!id) {
-      return res.status(400).json({ message: 'User ID cannot be undefined' });
+    // Validate MongoDB ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid user ID format' });
     }
 
     const { role, enrolledCourses } = req.body;
@@ -98,7 +100,7 @@ const updateUser = async (req, res) => {
     return res.json({
       message: 'User updated successfully',
       user: {
-        id: updatedUser._id,
+        id: updatedUser.id, // Changed from updatedUser._id
         email: updatedUser.email,
         fullName: updatedUser.fullName,
         role: updatedUser.role,
@@ -106,7 +108,7 @@ const updateUser = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error updating user:', error);
+    // console.error('Error updating user:', error); // Keep console.error for debugging
     if (error.name === 'CastError') {
       return res.status(400).json({ message: 'Invalid user ID format' });
     }
@@ -139,7 +141,7 @@ const deleteUser = async (req, res) => {
 
     return res.json({ message: 'User deleted successfully' });
   } catch (error) {
-    console.error('Error deleting user:', error);
+    // console.error('Error deleting user:', error); // Keep console.error for debugging
     if (error.name === 'CastError') {
       return res.status(400).json({ message: 'Invalid user ID format' });
     }
