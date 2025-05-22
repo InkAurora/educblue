@@ -106,6 +106,7 @@ axiosInstance.interceptors.request.use((request) => {
 axiosInstance.interceptors.response.use(
   (response) => {
     console.log('✅ Response:', response.status, response.config.url);
+    console.log('📦 Response Data:', response.data); // Added this line
     return response;
   },
   (error) => {
