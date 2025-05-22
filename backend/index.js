@@ -25,8 +25,8 @@ const stripeClient = stripe(process.env.STRIPE_SECRET_KEY);
 app.use(express.json());
 
 // Parse CORS origins from environment variable
-const allowedOrigins = process.env.CORS_ORIGINS
-  ? process.env.CORS_ORIGINS.split(',')
+const allowedOrigins = process.env.APP_URL
+  ? process.env.APP_URL.split(',')
   : ['http://localhost:3000'];
 
 app.use(
