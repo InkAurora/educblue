@@ -25,8 +25,13 @@ const stripeClient = stripe(process.env.STRIPE_SECRET_KEY);
 app.use(express.json());
 app.use(
   cors({
-    origin: ['http://localhost:3000', 'https://educblue.vercel.app/', 'https://educblue-dev.vercel.app/'],
-    credentials: true,
+    origin: [
+      'http://localhost:3000',
+      'https://educblue.vercel.app/',
+      'https://educblue-dev.vercel.app/',
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   })
 ); // Enable CORS specifically for frontend
 
