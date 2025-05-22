@@ -25,9 +25,10 @@ function Success() {
         // Get session_id from URL query params
         const queryParams = new URLSearchParams(location.search);
         const sessionId = queryParams.get('session_id');
-        const queryCourseId = queryParams.get('course_id');
+        const queryCourseId = queryParams.get('course_id'); // Read course_id from URL
 
         // Store course ID for later use after successful enrollment
+        // Use course_id from URL first, then fallback to localStorage
         const courseToPurchase =
           queryCourseId || localStorage.getItem('enrollingCourseId');
         setCourseId(courseToPurchase);

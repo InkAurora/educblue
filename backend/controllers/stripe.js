@@ -12,6 +12,9 @@ console.log('Stripe initialization - Key available:', !!stripeSecretKey);
 
 const Course = require('../models/course');
 
+// Get frontend URL from environment variable, with a fallback for development
+const APP_URL = process.env.APP_URL || 'http://localhost:3000';
+
 // Create a Stripe checkout session
 const createCheckoutSession = async (req, res) => {
   try {
@@ -45,15 +48,15 @@ const createCheckoutSession = async (req, res) => {
         },
       ],
       mode: 'payment',
-      success_url: `http://localhost:3000/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `http://localhost:3000/courses/${courseId}`,
+      success_url: `${APP_URL}/success?session_id={CHECKOUT_SESSION_ID}&course_id=${courseId}`,
+      cancel_url: `${APP_URL}/courses/${courseId}`,
       metadata: {
         courseId,
         userId: req.user.id,
       },
     });
 
-    return res.status(200).json({ sessionId: session.id });
+    return res.status(200).json({ sessionId: session.id, url: session.url });
   } catch (error) {
     // Log the error to server logs
     // eslint-disable-next-line no-console
