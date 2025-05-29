@@ -7,6 +7,7 @@ import {
   Grid,
   Card,
   CardContent,
+  CardActions,
   Button,
   CircularProgress,
   Alert,
@@ -83,12 +84,11 @@ function UserDashboard() {
     // Use bracket notation to avoid ESLint warnings about dangling underscore
     // eslint-disable-next-line no-prototype-builtins
     if (Object.prototype.hasOwnProperty.call(course, '_id')) {
-      return course['_id'];
+      return course._id;
     }
 
     return null;
   };
-
   return (
     <Container sx={{ py: 4 }}>
       {userData && (
@@ -99,11 +99,18 @@ function UserDashboard() {
             </Typography>
           </Box>
 
-          <Box mb={4}>
+          <Box
+            sx={{
+              py: 4,
+              px: { xs: 2, sm: 6 }, // Match homepage padding
+              width: '100%',
+              margin: '0 auto',
+            }}
+          >
             <Typography variant='h5' component='h2' gutterBottom>
               Your Enrolled Courses
             </Typography>
-            <Grid container spacing={4}>
+            <Grid container spacing={3} sx={{ justifyContent: 'center' }}>
               {enrolledCourses.length > 0 ? (
                 enrolledCourses.map((course) => {
                   const courseId = getCourseId(course);
@@ -111,13 +118,23 @@ function UserDashboard() {
                     <Grid
                       key={courseId || `course-${Math.random()}`}
                       sx={{
-                        width: { xs: '100%', sm: '50%', md: '33.33%' },
-                        p: 2,
+                        width: {
+                          xs: '100%', // Full width on mobile
+                          sm: '320px', // Fixed width on small screens and up
+                        },
+                        maxWidth: '320px', // Maximum card width
+                        minWidth: {
+                          xs: '280px', // Minimum width on mobile
+                          sm: '320px', // Fixed minimum on larger screens
+                        },
+                        flexGrow: 0,
+                        flexShrink: 0,
+                        p: 1.5, // Fixed padding around each card
                       }}
                     >
                       <Card
                         sx={{
-                          height: '100%',
+                          height: '400px', // Fixed card height
                           display: 'flex',
                           flexDirection: 'column',
                         }}
@@ -127,6 +144,15 @@ function UserDashboard() {
                             {course.title}
                           </Typography>
                           <Typography>{course.description}</Typography>
+                          {course.price && (
+                            <Typography
+                              variant='h6'
+                              color='primary'
+                              sx={{ mt: 2 }}
+                            >
+                              ${course.price}
+                            </Typography>
+                          )}
                           <Typography
                             variant='body2'
                             color='text.secondary'
@@ -134,10 +160,17 @@ function UserDashboard() {
                           >
                             Instructor: {course.instructor}
                           </Typography>
+                          {course.duration && (
+                            <Typography variant='body2' color='text.secondary'>
+                              Duration: {course.duration} hours
+                            </Typography>
+                          )}
+                        </CardContent>
+                        <CardActions>
                           <Button
                             variant='contained'
                             color='primary'
-                            sx={{ mt: 2 }}
+                            fullWidth
                             onClick={() => {
                               if (courseId) {
                                 navigate(`/courses/${courseId}`);
@@ -151,7 +184,7 @@ function UserDashboard() {
                           >
                             Continue Learning
                           </Button>
-                        </CardContent>
+                        </CardActions>
                       </Card>
                     </Grid>
                   );

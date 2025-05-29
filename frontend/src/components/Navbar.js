@@ -12,7 +12,6 @@ import {
   IconButton,
   Menu,
   MenuItem,
-  Avatar,
   Tooltip,
   useMediaQuery,
   useTheme,
@@ -145,12 +144,13 @@ function Navbar() {
 
   return (
     <AppBar
-      position='static'
+      position='fixed'
       sx={{
-        zIndex: 1200,
-        boxShadow: 2, // Use a slightly stronger shadow
-        margin: 0,
-        padding: 0,
+        zIndex: 1300, // Higher z-index to be above everything
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)', // Enhanced shadow for mobile app feel        margin: 0,        padding: 0,
+        backgroundColor: '#02e6ef', // Consistent primary color
+        backgroundImage: 'linear-gradient(135deg, #02e6ef 0%, #02e6ef 100%)', // Subtle gradient
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)', // Subtle border
       }}
     >
       <Container
@@ -160,11 +160,21 @@ function Navbar() {
       >
         <Toolbar
           disableGutters
-          sx={{ display: 'flex', justifyContent: 'space-between' }}
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            minHeight: { xs: '56px', sm: '64px' }, // Responsive height
+            px: { xs: 2, sm: 3 }, // Responsive padding
+          }}
         >
           {/* Left section - Course sidebar toggle (if on course content page) */}
           <Box
-            sx={{ display: 'flex', flex: '1', justifyContent: 'flex-start' }}
+            sx={{
+              display: 'flex',
+              flex: '1',
+              justifyContent: 'flex-start',
+              alignItems: 'center',
+            }}
           >
             {showSidebarToggle && (
               <Box
@@ -177,7 +187,14 @@ function Navbar() {
           </Box>
 
           {/* Center section - Site title */}
-          <Box sx={{ display: 'flex', flex: '1', justifyContent: 'center' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              flex: '1',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
             <Typography
               variant='h6'
               noWrap
@@ -188,6 +205,9 @@ function Navbar() {
                 color: 'inherit',
                 textDecoration: 'none',
                 textAlign: 'center',
+                fontSize: { xs: '1.1rem', sm: '1.25rem' }, // Responsive font size
+                letterSpacing: '0.5px', // Better letter spacing for mobile
+                textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)', // Subtle text shadow
               }}
             >
               Educ Blue
@@ -195,7 +215,14 @@ function Navbar() {
           </Box>
 
           {/* Right section - User menu or navigation links */}
-          <Box sx={{ display: 'flex', flex: '1', justifyContent: 'flex-end' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              flex: '1',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+            }}
+          >
             {isMobile ? (
               <>
                 <Tooltip title='User menu'>
@@ -204,8 +231,16 @@ function Navbar() {
                     color='inherit'
                     aria-label='user menu'
                     onClick={handleMenuOpen}
+                    sx={{
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      },
+                      '&:active': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                      },
+                    }}
                   >
-                    <AccountCircleIcon />
+                    <AccountCircleIcon sx={{ fontSize: '1.8rem' }} />
                   </IconButton>
                 </Tooltip>
                 <Menu
@@ -213,7 +248,7 @@ function Navbar() {
                   open={open}
                   onClose={handleMenuClose}
                   anchorOrigin={{
-                    vertical: 'top',
+                    vertical: 'bottom',
                     horizontal: 'right',
                   }}
                   transformOrigin={{
@@ -221,16 +256,36 @@ function Navbar() {
                     horizontal: 'right',
                   }}
                   PaperProps={{
-                    elevation: 3,
+                    elevation: 8,
                     sx: {
-                      minWidth: '200px',
+                      minWidth: '220px',
                       mt: 1,
+                      borderRadius: '12px',
+                      background:
+                        'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+                      border: '1px solid rgba(0, 0, 0, 0.05)',
+                      '& .MuiMenuItem-root': {
+                        py: 1.5,
+                        px: 2,
+                        fontSize: '0.95rem',
+                        fontWeight: 500,
+                        '&:hover': {
+                          backgroundColor: 'rgba(0, 191, 165, 0.08)',
+                        },
+                      },
                     },
                   }}
                 >
                   {isLoggedIn && (
                     <MenuItem
-                      sx={{ justifyContent: 'center', fontWeight: 'bold' }}
+                      sx={{
+                        justifyContent: 'center',
+                        fontWeight: 'bold !important',
+                        color: 'primary.main',
+                        borderBottom: '1px solid rgba(0, 0, 0, 0.08)',
+                        py: 2,
+                      }}
                     >
                       {userFullName || userEmail || 'User'}
                     </MenuItem>
@@ -266,7 +321,16 @@ function Navbar() {
                           </MenuItem>
                         </>
                       )}
-                      <MenuItem onClick={handleLogout}>Logout</MenuItem>
+                      <MenuItem
+                        onClick={handleLogout}
+                        sx={{
+                          borderTop: '1px solid rgba(0, 0, 0, 0.08)',
+                          color: 'error.main',
+                          fontWeight: '600 !important',
+                        }}
+                      >
+                        Logout
+                      </MenuItem>
                     </>
                   ) : (
                     <>
@@ -281,17 +345,22 @@ function Navbar() {
                 </Menu>
               </>
             ) : (
-              <Stack direction='row' spacing={2} alignItems='center'>
+              <Stack direction='row' spacing={5} alignItems='center'>
                 {isLoggedIn ? (
                   <>
                     <Typography
-                      variant='body1'
+                      variant='body2'
                       sx={{
                         display: { xs: 'none', sm: 'block' },
-                        color: 'inherit',
+                        color: 'rgba(255, 255, 255, 0.9)',
+                        maxWidth: '120px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        marginRight: '8px', // Add extra space after username
                       }}
                     >
-                      Hello, {userFullName || userEmail || 'User'}
+                      {userFullName || userEmail || 'User'}
                     </Typography>
                     {userRole === 'instructor' && (
                       <>
@@ -299,6 +368,14 @@ function Navbar() {
                           color='inherit'
                           component={RouterLink}
                           to='/create-course'
+                          size='small'
+                          sx={{
+                            fontSize: '0.875rem',
+                            fontWeight: 500,
+                            '&:hover': {
+                              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                            },
+                          }}
                         >
                           Create Course
                         </Button>
@@ -306,6 +383,14 @@ function Navbar() {
                           color='inherit'
                           component={RouterLink}
                           to='/my-courses'
+                          size='small'
+                          sx={{
+                            fontSize: '0.875rem',
+                            fontWeight: 500,
+                            '&:hover': {
+                              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                            },
+                          }}
                         >
                           My Courses
                         </Button>
@@ -315,6 +400,14 @@ function Navbar() {
                       color='inherit'
                       component={RouterLink}
                       to='/personal-information'
+                      size='small'
+                      sx={{
+                        fontSize: '0.875rem',
+                        fontWeight: 500,
+                        '&:hover': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        },
+                      }}
                     >
                       Profile
                     </Button>
@@ -322,6 +415,14 @@ function Navbar() {
                       color='inherit'
                       component={RouterLink}
                       to='/dashboard'
+                      size='small'
+                      sx={{
+                        fontSize: '0.875rem',
+                        fontWeight: 500,
+                        '&:hover': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        },
+                      }}
                     >
                       Dashboard
                     </Button>
@@ -330,11 +431,30 @@ function Navbar() {
                         color='inherit'
                         component={RouterLink}
                         to='/admin'
+                        size='small'
+                        sx={{
+                          fontSize: '0.875rem',
+                          fontWeight: 500,
+                          '&:hover': {
+                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                          },
+                        }}
                       >
                         Admin
                       </Button>
                     )}
-                    <Button color='inherit' onClick={handleLogout}>
+                    <Button
+                      color='inherit'
+                      onClick={handleLogout}
+                      size='small'
+                      sx={{
+                        fontSize: '0.875rem',
+                        fontWeight: 500,
+                        '&:hover': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        },
+                      }}
+                    >
                       Logout
                     </Button>
                   </>
@@ -344,7 +464,14 @@ function Navbar() {
                       color='inherit'
                       component={RouterLink}
                       to='/login'
-                      sx={{ mr: 1 }}
+                      size='small'
+                      sx={{
+                        fontSize: '0.875rem',
+                        fontWeight: 500,
+                        '&:hover': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        },
+                      }}
                     >
                       Login
                     </Button>
@@ -352,6 +479,14 @@ function Navbar() {
                       color='inherit'
                       component={RouterLink}
                       to='/register'
+                      size='small'
+                      sx={{
+                        fontSize: '0.875rem',
+                        fontWeight: 500,
+                        '&:hover': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        },
+                      }}
                     >
                       Register
                     </Button>

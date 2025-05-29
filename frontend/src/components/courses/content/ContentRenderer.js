@@ -369,15 +369,22 @@ function ContentRenderer({
                 />
               </Box>
               {!isCompleted && (
-                <Button
-                  variant='outlined'
-                  color='primary'
-                  onClick={handleYoutubeManualCompletion}
-                  disabled={completing}
-                  sx={{ mt: 1 }}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    mt: 1,
+                  }}
                 >
-                  {completing ? 'Saving Progress...' : 'Mark as Completed'}
-                </Button>
+                  <Button
+                    variant='outlined'
+                    color='primary'
+                    onClick={handleYoutubeManualCompletion}
+                    disabled={completing}
+                  >
+                    {completing ? 'Saving Progress...' : 'Mark as Completed'}
+                  </Button>
+                </Box>
               )}
             </>
           ) : (
@@ -393,15 +400,22 @@ function ContentRenderer({
             </video>
           )}
           {videoEnded && !isCompleted && !isYoutubeVideo && (
-            <Button
-              variant='outlined'
-              color='primary'
-              onClick={handleCompletionClick}
-              disabled={completing}
-              sx={{ mt: 2 }}
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                mt: 2,
+              }}
             >
-              {completing ? 'Saving Progress...' : 'Mark Video as Completed'}
-            </Button>
+              <Button
+                variant='outlined'
+                color='primary'
+                onClick={handleCompletionClick}
+                disabled={completing}
+              >
+                {completing ? 'Saving Progress...' : 'Mark Video as Completed'}
+              </Button>
+            </Box>
           )}
           {isCompleted && (
             <Typography

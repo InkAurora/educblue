@@ -73,40 +73,43 @@ function App() {
                       py: { xs: 3, sm: 4 },
                     }}
                   >
-                    {/* Title Section - Centered with max width */}
-                    <Box
+                    <Container
+                      maxWidth='lg'
                       sx={{
-                        maxWidth: 'lg',
-                        mx: 'auto',
-                        mb: { xs: 3, sm: 4 },
-                        textAlign: 'center',
-                        py: { xs: 2, sm: 3 },
+                        px: 0, // Remove default container padding since we handle it above
                       }}
                     >
-                      <Typography
-                        variant='h4'
-                        component='h1'
+                      <Box
                         sx={{
-                          fontWeight: 'bold',
-                          color: 'primary.main',
-                          mb: 2,
-                          fontSize: { xs: '1.75rem', sm: '2.125rem' },
+                          mb: { xs: 3, sm: 4 },
+                          textAlign: 'center',
+                          py: { xs: 2, sm: 3 },
                         }}
                       >
-                        Educ Blue
-                      </Typography>
-                      <Typography
-                        variant='subtitle1'
-                        sx={{
-                          color: 'text.secondary',
-                          fontSize: { xs: '1rem', sm: '1.125rem' },
-                        }}
-                      >
-                        Learn. Grow. Succeed.
-                      </Typography>
-                    </Box>
-                    {/* CourseList - Full width without container constraints */}
-                    <CourseList data-testid='course-list' />
+                        <Typography
+                          variant='h4'
+                          component='h1'
+                          sx={{
+                            fontWeight: 'bold',
+                            color: 'primary.main',
+                            mb: 2,
+                            fontSize: { xs: '1.75rem', sm: '2.125rem' },
+                          }}
+                        >
+                          Educ Blue
+                        </Typography>
+                        <Typography
+                          variant='subtitle1'
+                          sx={{
+                            color: 'text.secondary',
+                            fontSize: { xs: '1rem', sm: '1.125rem' },
+                          }}
+                        >
+                          Learn. Grow. Succeed.
+                        </Typography>
+                      </Box>
+                      <CourseList data-testid='course-list' />
+                    </Container>
                   </Box>
                 }
               />
