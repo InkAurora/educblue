@@ -51,7 +51,7 @@ export const getMarkdownStyles = () => {
         marginBottom: '0.5rem',
       },
       '& a': {
-        color: '#1976d2',
+        color: '#02e6ef',
         textDecoration: 'none',
         '&:hover': {
           textDecoration: 'underline',

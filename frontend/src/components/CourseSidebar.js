@@ -87,18 +87,58 @@ function CourseSidebar({ course, progress, progressPercentage, courseId }) {
   const drawerWidth = 300;
 
   const drawerContent = (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        background: 'linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%)',
+      }}
+    >
       <Box>
-        <Box sx={{ p: 2 }}>
-          <Typography variant='h6' noWrap component='div'>
+        <Box
+          sx={{
+            p: 3,
+            background: 'linear-gradient(135deg, #02e6ef 0%, #02e6ef 100%)',
+            color: 'white',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+          }}
+        >
+          <Typography
+            variant='h6'
+            noWrap
+            component='div'
+            sx={{
+              fontWeight: 600,
+              fontSize: '1.1rem',
+              textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)',
+              mb: 1,
+            }}
+          >
             {course?.title}
           </Typography>
-          <Typography variant='body2' color='text.secondary'>
+          <Typography
+            variant='body2'
+            sx={{
+              color: 'rgba(255, 255, 255, 0.9)',
+              fontSize: '0.85rem',
+              fontWeight: 500,
+            }}
+          >
             Instructor: {course?.instructor}
           </Typography>
         </Box>
-        <Divider />
-        <List sx={{ flexGrow: 1, overflow: 'auto' }}>
+
+        <List
+          sx={{
+            flexGrow: 1,
+            overflow: 'auto',
+            py: 1,
+            '& .MuiListItem-root': {
+              px: 1,
+            },
+          }}
+        >
           {course?.content?.map((item, index) => {
             const contentId = getValidContentId(item, index);
             const completed = isContentCompleted(contentId);
@@ -112,9 +152,28 @@ function CourseSidebar({ course, progress, progressPercentage, courseId }) {
                   <ListItemButton
                     component={Link}
                     to={`/courses/${courseId}/content/${contentId}`}
+                    sx={{
+                      py: 1.5,
+                      '&:hover': {
+                        backgroundColor: 'rgba(0, 191, 165, 0.08)',
+                      },
+                    }}
                   >
-                    <ListItemIcon>{getContentTypeIcon(item.type)}</ListItemIcon>
-                    <ListItemText primary={item.title} secondary={item.type} />
+                    <ListItemIcon sx={{ minWidth: 40 }}>
+                      {getContentTypeIcon(item.type)}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={item.title}
+                      secondary={item.type}
+                      primaryTypographyProps={{
+                        fontWeight: 500,
+                        fontSize: '0.95rem',
+                      }}
+                      secondaryTypographyProps={{
+                        fontSize: '0.8rem',
+                        color: 'text.secondary',
+                      }}
+                    />
                     {completed && (
                       <CheckCircleIcon color='success' fontSize='small' />
                     )}
