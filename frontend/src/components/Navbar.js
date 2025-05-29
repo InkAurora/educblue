@@ -345,7 +345,7 @@ function Navbar() {
                 </Menu>
               </>
             ) : (
-              <Stack direction='row' spacing={1} alignItems='center'>
+              <Stack direction='row' spacing={5} alignItems='center'>
                 {isLoggedIn ? (
                   <>
                     <Typography
@@ -357,6 +357,7 @@ function Navbar() {
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
+                        marginRight: '8px', // Add extra space after username
                       }}
                     >
                       {userFullName || userEmail || 'User'}

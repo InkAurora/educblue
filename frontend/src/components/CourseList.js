@@ -4,9 +4,9 @@ import {
   Grid,
   Card,
   CardContent,
+  CardActions,
   Typography,
   Button,
-  Container,
   Box,
   CircularProgress,
   Alert,
@@ -61,29 +61,49 @@ function CourseList(props) {
       </Box>
     );
   }
-
   if (error) {
     return (
-      <Container>
+      <Box sx={{ py: 4, px: 6, width: '100%', margin: '0 auto' }}>
         <Alert severity='error' sx={{ mt: 2 }}>
           {error}
         </Alert>
-      </Container>
+      </Box>
     );
   }
 
   return (
-    <Container sx={{ py: 4 }} data-testid={dataTestId}>
-      <Grid container spacing={4}>
+    <Box
+      sx={{
+        py: 4,
+        px: { xs: 2, sm: 6 }, // Reduced padding on mobile for more card space
+        width: '100%', // Use full width
+        margin: '0 auto', // Center the container
+      }}
+      data-testid={dataTestId}
+    >
+      <Grid container spacing={3} sx={{ justifyContent: 'center' }}>
         {courses.length > 0 ? (
           courses.map((course) => (
             <Grid
               key={course._id} // Changed from id to _id to match MongoDB format
-              sx={{ width: { xs: '100%', sm: '50%', md: '33.33%' }, p: 2 }}
+              sx={{
+                width: {
+                  xs: '100%', // 90% width on mobile for better spacing
+                  sm: '320px', // Fixed width on small screens and up
+                },
+                maxWidth: '320px', // Maximum card width
+                minWidth: {
+                  xs: '280px', // Minimum width on mobile
+                  sm: '320px', // Fixed minimum on larger screens
+                },
+                flexGrow: 0,
+                flexShrink: 0,
+                p: 1.5, // Fixed padding around each card
+              }}
             >
               <Card
                 sx={{
-                  height: '100%',
+                  height: '400px', // Fixed card height
                   display: 'flex',
                   flexDirection: 'column',
                 }}
@@ -106,15 +126,17 @@ function CourseList(props) {
                   <Typography variant='body2' color='text.secondary'>
                     Duration: {course.duration} hours
                   </Typography>
+                </CardContent>
+                <CardActions>
                   <Button
                     variant='contained'
                     color='primary'
-                    sx={{ mt: 2 }}
+                    fullWidth
                     onClick={() => navigate(`/courses/${course._id}`)}
                   >
                     View Details
                   </Button>
-                </CardContent>
+                </CardActions>
               </Card>
             </Grid>
           ))
@@ -127,7 +149,7 @@ function CourseList(props) {
           </Typography>
         )}
       </Grid>
-    </Container>
+    </Box>
   );
 }
 
