@@ -3,6 +3,7 @@ const {
   getCourses,
   getCourseById,
   getCourseContentById,
+  getCourseContents,
 } = require('./courses/listing');
 const {
   createCourse,
@@ -17,6 +18,7 @@ module.exports = {
   getCourses,
   getCourseById,
   getCourseContentById,
+  getCourseContents,
 
   // Course management functionality
   createCourse,

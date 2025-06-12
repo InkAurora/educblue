@@ -445,10 +445,10 @@ function ContentRenderer({
       )}
 
       {/* Text-based quiz content rendering */}
-      {type === 'quiz' && content && (
+      {type === 'quiz' && (question || content) && (
         <Box sx={{ mb: 4 }} data-testid='quiz-content'>
           <Typography variant='body1' paragraph>
-            {content}
+            {question || content}
           </Typography>
           <TextField
             fullWidth

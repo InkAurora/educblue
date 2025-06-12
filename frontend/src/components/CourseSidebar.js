@@ -22,6 +22,7 @@ import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import DescriptionIcon from '@mui/icons-material/Description';
 import QuizIcon from '@mui/icons-material/Quiz';
 import ProgressBar from './courses/ProgressBar';
+import axiosInstance from '../utils/axiosConfig';
 
 /**
  * CourseSidebar component displays a persistent sidebar showing course content navigation.
@@ -29,10 +30,24 @@ import ProgressBar from './courses/ProgressBar';
  */
 function CourseSidebar({ course, progress, progressPercentage, courseId }) {
   const [open, setOpen] = useState(false);
+  const [contentList, setContentList] = useState(course?.content || []);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navbarHeight = 64; // Standard AppBar height in Material UI
   const [sidebarToggleContainer, setSidebarToggleContainer] = useState(null);
+
+  // Fetch course content summaries for sidebar
+  useEffect(() => {
+    const fetchContentList = async () => {
+      try {
+        const res = await axiosInstance.get(`/api/courses/${courseId}/content`);
+        setContentList(Array.isArray(res.data) ? res.data : []);
+      } catch (err) {
+        // ignore load errors
+      }
+    };
+    fetchContentList();
+  }, [courseId]);
 
   useEffect(() => {
     // Find the container element in the navbar where we'll render the toggle button
@@ -139,12 +154,10 @@ function CourseSidebar({ course, progress, progressPercentage, courseId }) {
             },
           }}
         >
-          {course?.content?.map((item, index) => {
+          {contentList.map((item, index) => {
             const contentId = getValidContentId(item, index);
             const completed = isContentCompleted(contentId);
-            const isLastItem = Boolean(
-              course?.content && index < course.content.length - 1,
-            );
+            const isLastItem = contentList.length > index + 1;
 
             return (
               <React.Fragment key={contentId}>

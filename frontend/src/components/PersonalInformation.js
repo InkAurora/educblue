@@ -208,7 +208,12 @@ function PersonalInformation() {
                 <ListItem>
                   <ListItemText
                     primary='Role'
-                    secondary={formData.role || 'Not specified'}
+                    secondary={
+                      formData.role
+                        ? formData.role.charAt(0).toUpperCase() +
+                          formData.role.slice(1)
+                        : 'Not specified'
+                    }
                   />
                 </ListItem>
                 <ListItem>
@@ -268,7 +273,12 @@ function PersonalInformation() {
                   id='role'
                   label='Role'
                   name='role'
-                  value={formData.role}
+                  value={
+                    formData.role
+                      ? formData.role.charAt(0).toUpperCase() +
+                        formData.role.slice(1)
+                      : ''
+                  }
                   helperText='Role cannot be changed'
                 />
               )}

@@ -4,6 +4,7 @@ const router = express.Router();
 const {
   getCourses,
   getCourseById,
+  getCourseContents,
   createCourse,
   updateCourse,
   updateCourseContent,
@@ -18,6 +19,8 @@ const restrictTo = require('../middleware/role');
 
 router.get('/', getCourses);
 router.get('/:id', getCourseById);
+// List all content items for a course
+router.get('/:id/content', auth, getCourseContents);
 router.get('/:id/content/:contentId', auth, getCourseContentById);
 router.get(
   '/:id/analytics',

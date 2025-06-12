@@ -110,48 +110,39 @@ function CourseContent({ 'data-testid': dataTestId }) {
     fetchUserData();
   }, [id, contentId, navigate]);
 
-  // Fetch course data and content
+  // Fetch course metadata, content list, and content item
   useEffect(() => {
     const fetchCourseAndContentData = async () => {
       try {
         setLoading(true);
 
-        // Fetch course data
+        // Fetch course metadata
         const courseResponse = await axiosInstance.get(`/api/courses/${id}`);
         const courseData = courseResponse.data;
-        setCourse(courseData);
 
-        // Find content and its index
-        let foundContent = null;
-        let foundIndex = -1;
-
-        if (Array.isArray(courseData.content)) {
-          // First try to find by ID match
-          foundIndex = courseData.content.findIndex(
-            (item, index) =>
-              getValidContentId(item, index) === contentId ||
-              getValidContentId(item, index)?.toString() === contentId,
-          );
-
-          // If not found by ID, try by index
-          if (foundIndex === -1 && !Number.isNaN(parseInt(contentId, 10))) {
-            foundIndex = parseInt(contentId, 10);
-            if (foundIndex >= 0 && foundIndex < courseData.content.length) {
-              foundContent = courseData.content[foundIndex];
-            }
-          } else if (foundIndex !== -1) {
-            foundContent = courseData.content[foundIndex];
-          }
+        // Fetch list of course content items and override course.content for sidebar
+        const listResponse = await axiosInstance.get(
+          `/api/courses/${id}/content`,
+        );
+        let list = Array.isArray(listResponse.data) ? listResponse.data : [];
+        // If new summary list is empty, fall back to original courseData.content
+        if (list.length === 0 && Array.isArray(courseData.content)) {
+          list = courseData.content;
         }
+        setCourse({ ...courseData, content: list });
 
-        // If content not found, show error
-        if (!foundContent) {
-          setError('Content not found');
-          setLoading(false);
-          return;
-        }
+        // Fetch the single content item by ID
+        const contentResponse = await axiosInstance.get(
+          `/api/courses/${id}/content/${contentId}`,
+        );
+        // Use raw response data as the content item
+        setContent(contentResponse.data);
 
-        setContent(foundContent);
+        // Determine the index of this content in the list for navigation
+        const foundIndex = list.findIndex((item, idx) => {
+          const validId = getValidContentId(item, idx);
+          return validId === contentId || validId?.toString() === contentId;
+        });
         setContentIndex(foundIndex);
 
         // Check if user is enrolled or instructor
@@ -174,7 +165,7 @@ function CourseContent({ 'data-testid': dataTestId }) {
                 // Check for various possible ID properties
                 return (
                   enrolledCourse.id === id ||
-                  enrolledCourse['_id'] === id || // Common MongoDB ID field
+                  enrolledCourse._id === id || // Common MongoDB ID field
                   enrolledCourse.courseId === id
                 );
               }
@@ -201,6 +192,7 @@ function CourseContent({ 'data-testid': dataTestId }) {
       }
     };
 
+    // Only fetch protected course/content after user is loaded
     if (!loadingUser && user) {
       fetchCourseAndContentData();
     }
