@@ -14,33 +14,25 @@ exports.getCourses = async (req, res) => {
 // Get course by ID
 exports.getCourseById = async (req, res) => {
   try {
-    // Check if user exists in the request (set by auth middleware)
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ message: 'Authentication required' });
-    }
-
+    // Fetch the course
     const course = await Course.findById(req.params.id);
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
     }
 
-    // Find the user to check enrollment status
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+    // If authenticated user, check enrollment, instructor, or admin to show full details
+    if (req.user && req.user.id) {
+      const user = await User.findById(req.user.id);
+      if (user) {
+        const isInstructor = course.instructor === user.fullName;
+        const isEnrolled = user.enrolledCourses.includes(req.params.id);
+        const isAdmin = user.role === 'admin';
+        if (isInstructor || isEnrolled || isAdmin) {
+          return res.json(course);
+        }
+      }
     }
-
-    // Check if user is the course instructor or is enrolled in the course
-    const isInstructor = course.instructor === user.fullName;
-    const isEnrolled = user.enrolledCourses.includes(req.params.id);
-    const isAdmin = user.role === 'admin'; // Check if user is admin
-
-    // If user is either the instructor or enrolled or admin, return full course details
-    if (isInstructor || isEnrolled || isAdmin) {
-      return res.json(course);
-    }
-
-    // For non-enrolled users, return limited course information
+    // Public or non-enrolled user: return limited course information
     const limitedCourse = {
       _id: course._id,
       title: course.title,
@@ -51,7 +43,6 @@ exports.getCourseById = async (req, res) => {
       duration: course.duration,
       status: course.status,
     };
-
     return res.json(limitedCourse);
   } catch (error) {
     return res.status(500).json({ message: 'Server error' });

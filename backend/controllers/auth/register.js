@@ -5,6 +5,13 @@ const jwtUtils = require('../../utils/jwt');
 exports.register = async (req, res) => {
   const { email, password, role, fullName } = req.body;
 
+  // Prevent self-registration as instructor or admin
+  if (role && role !== 'student') {
+    return res
+      .status(403)
+      .json({ message: 'Cannot register with specified role' });
+  }
+
   // Validate required fields
   if (!email || !password) {
     return res.status(400).json({ message: 'Email and password are required' });
@@ -22,8 +29,7 @@ exports.register = async (req, res) => {
     user = new User({
       email,
       password, // Password will be hashed by the pre-save hook in the User model
-      role,
-      fullName: userFullName,
+      fullName: userFullName, // default role 'student' is applied
     });
 
     await user.save();

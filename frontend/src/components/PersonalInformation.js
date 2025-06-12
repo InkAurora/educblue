@@ -7,10 +7,10 @@ import {
   Button,
   Alert,
   Paper,
-  Grid,
+  List,
+  ListItem,
+  ListItemText,
   CircularProgress,
-  Card,
-  CardContent,
 } from '@mui/material';
 import axiosInstance from '../utils/axiosConfig';
 
@@ -178,71 +178,46 @@ function PersonalInformation() {
           )}
 
           {!editMode ? (
-            // View Mode
+            // View Mode with list layout
             <>
-              <Card variant='outlined' sx={{ mb: 3, mt: 2 }}>
-                <CardContent>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12}>
-                      <Typography variant='subtitle1' color='textSecondary'>
-                        Full Name
-                      </Typography>
-                      <Typography variant='body1' gutterBottom>
-                        {formData.fullName || 'Not provided'}
-                      </Typography>
-                    </Grid>
-
-                    <Grid item xs={12}>
-                      <Typography variant='subtitle1' color='textSecondary'>
-                        Email
-                      </Typography>
-                      <Typography variant='body1' gutterBottom>
-                        {formData.email || 'Not provided'}
-                      </Typography>
-                    </Grid>
-
-                    <Grid item xs={12}>
-                      <Typography variant='subtitle1' color='textSecondary'>
-                        Phone Number
-                      </Typography>
-                      <Typography variant='body1' gutterBottom>
-                        {formData.phoneNumber || 'Not provided'}
-                      </Typography>
-                    </Grid>
-
-                    <Grid item xs={12}>
-                      <Typography variant='subtitle1' color='textSecondary'>
-                        Bio
-                      </Typography>
-                      <Typography
-                        variant='body1'
-                        gutterBottom
-                        sx={{ whiteSpace: 'pre-wrap' }}
-                      >
-                        {formData.bio || 'No bio provided'}
-                      </Typography>
-                    </Grid>
-
-                    <Grid item xs={12}>
-                      <Typography variant='subtitle1' color='textSecondary'>
-                        Role
-                      </Typography>
-                      <Typography variant='body1' gutterBottom>
-                        {formData.role || 'Not specified'}
-                      </Typography>
-                    </Grid>
-
-                    <Grid item xs={12}>
-                      <Typography variant='subtitle1' color='textSecondary'>
-                        Member Since
-                      </Typography>
-                      <Typography variant='body1' gutterBottom>
-                        {formData.createdAt || 'Not available'}
-                      </Typography>
-                    </Grid>
-                  </Grid>
-                </CardContent>
-              </Card>
+              <List sx={{ mb: 2, mt: 2 }}>
+                <ListItem>
+                  <ListItemText
+                    primary='Full Name'
+                    secondary={formData.fullName || 'Not provided'}
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemText
+                    primary='Email'
+                    secondary={formData.email || 'Not provided'}
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemText
+                    primary='Phone Number'
+                    secondary={formData.phoneNumber || 'Not provided'}
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemText
+                    primary='Bio'
+                    secondary={formData.bio || 'No bio provided'}
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemText
+                    primary='Role'
+                    secondary={formData.role || 'Not specified'}
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemText
+                    primary='Member Since'
+                    secondary={formData.createdAt || 'Not available'}
+                  />
+                </ListItem>
+              </List>
               <Button
                 fullWidth
                 variant='contained'

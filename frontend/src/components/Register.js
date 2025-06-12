@@ -8,11 +8,6 @@ import {
   Button,
   Alert,
   Paper,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
-  FormHelperText,
 } from '@mui/material';
 import axiosInstance from '../utils/axiosConfig';
 
@@ -35,12 +30,8 @@ function Register() {
   // Email validation regex
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  // Validate form fields whenever they change
-  useEffect(() => {
-    validateForm();
-  }, [formData]);
-
-  const validateForm = () => {
+  // Validation logic for form fields
+  function validateForm() {
     const newErrors = {
       email: '',
       password: '',
@@ -58,8 +49,8 @@ function Register() {
     }
 
     // Role validation
-    if (formData.role && !['student', 'instructor'].includes(formData.role)) {
-      newErrors.role = 'Role must be either student or instructor';
+    if (formData.role && !['student'].includes(formData.role)) {
+      newErrors.role = 'Role must be student';
     }
 
     setErrors(newErrors);
@@ -71,10 +62,15 @@ function Register() {
       formData.role.trim() !== '' &&
       emailRegex.test(formData.email) &&
       formData.password.length >= 6 &&
-      ['student', 'instructor'].includes(formData.role);
+      ['student'].includes(formData.role);
 
     setIsFormValid(isValid);
-  };
+  }
+
+  // Validate form fields whenever they change
+  useEffect(() => {
+    validateForm();
+  }, [formData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -108,8 +104,6 @@ function Register() {
       // Redirect to personal information page
       navigate('/personal-information');
     } catch (err) {
-      console.error('Registration error:', err);
-
       if (err.response?.status === 409) {
         setError('User already exists');
       } else if (err.response?.data?.message) {
@@ -178,21 +172,7 @@ function Register() {
               error={!!errors.password}
               helperText={errors.password}
             />
-            <FormControl fullWidth margin='normal' error={!!errors.role}>
-              <InputLabel id='role-label'>Role</InputLabel>
-              <Select
-                labelId='role-label'
-                id='role'
-                name='role'
-                value={formData.role}
-                label='Role'
-                onChange={handleChange}
-              >
-                <MenuItem value='student'>Student</MenuItem>
-                <MenuItem value='instructor'>Instructor</MenuItem>
-              </Select>
-              {errors.role && <FormHelperText>{errors.role}</FormHelperText>}
-            </FormControl>
+            {/* Role selection removed; users are always Students */}
             <Button
               type='submit'
               fullWidth

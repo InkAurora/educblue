@@ -17,7 +17,7 @@ const auth = require('../middleware/auth');
 const restrictTo = require('../middleware/role');
 
 router.get('/', getCourses);
-router.get('/:id', auth, getCourseById);
+router.get('/:id', getCourseById);
 router.get('/:id/content/:contentId', auth, getCourseContentById);
 router.get(
   '/:id/analytics',

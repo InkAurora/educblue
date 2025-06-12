@@ -195,14 +195,14 @@ describe('CourseDetails Component', () => {
     });
 
     expect(screen.getByText('$49.99')).toBeInTheDocument();
-    expect(screen.getByText('Pay Now')).toBeInTheDocument();
+    expect(screen.getByText('Buy Course')).toBeInTheDocument();
     expect(
       screen.getByText('Please enroll to access course content'),
     ).toBeInTheDocument();
     expect(screen.queryByTestId('course-sidebar-mock')).not.toBeInTheDocument();
   });
 
-  test('calls payment API when Pay Now button is clicked', async () => {
+  test('calls payment API when Buy Course button is clicked', async () => {
     localStorage.setItem('token', 'fake-token');
 
     axiosInstance.get.mockImplementation((url) => {
@@ -222,11 +222,11 @@ describe('CourseDetails Component', () => {
     render(<CourseDetails testId='123' data-testid='course-details' />);
 
     await waitFor(() => {
-      expect(screen.getByText('Pay Now')).toBeInTheDocument();
+      expect(screen.getByText('Buy Course')).toBeInTheDocument();
     });
 
     // Use fireEvent instead of userEvent.setup()
-    fireEvent.click(screen.getByText('Pay Now'));
+    fireEvent.click(screen.getByText('Buy Course'));
 
     expect(axiosInstance.post).toHaveBeenCalledWith('/api/stripe/checkout', {
       courseId: '123',
@@ -290,11 +290,11 @@ describe('CourseDetails Component', () => {
     render(<CourseDetails testId='123' data-testid='course-details' />);
 
     await waitFor(() => {
-      expect(screen.getByText('Pay Now')).toBeInTheDocument();
+      expect(screen.getByText('Buy Course')).toBeInTheDocument();
     });
 
     // Use fireEvent instead of userEvent.setup()
-    fireEvent.click(screen.getByText('Pay Now'));
+    fireEvent.click(screen.getByText('Buy Course'));
 
     await waitFor(() => {
       expect(screen.getByText('Payment processing failed')).toBeInTheDocument();
@@ -315,11 +315,11 @@ describe('CourseDetails Component', () => {
     render(<CourseDetails testId='123' data-testid='course-details' />);
 
     await waitFor(() => {
-      expect(screen.getByText('Pay Now')).toBeInTheDocument();
+      expect(screen.getByText('Buy Course')).toBeInTheDocument();
     });
 
     // Use fireEvent instead of userEvent.setup()
-    fireEvent.click(screen.getByText('Pay Now'));
+    fireEvent.click(screen.getByText('Buy Course'));
 
     expect(mockNavigate).toHaveBeenCalledWith('/login', {
       state: { from: '/courses/123' },

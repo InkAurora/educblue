@@ -56,13 +56,13 @@ describe('Register Component', () => {
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/role/i)).toBeInTheDocument();
+    // Role selector remains but only student option available
     expect(
       screen.getByRole('button', { name: /register/i }),
     ).toBeInTheDocument();
   });
 
-  test('allows entering email, password and selecting role', () => {
+  test('allows entering email and password', () => {
     render(<Register />);
 
     // Simulate user input
@@ -79,8 +79,7 @@ describe('Register Component', () => {
     );
     expect(screen.getByLabelText(/password/i)).toHaveValue('password123');
 
-    // Check that role selector exists
-    expect(screen.getByText(/student/i)).toBeInTheDocument();
+    // No role selection UI; default role handled internally
   });
 
   test('submits form and handles successful registration', async () => {
@@ -118,7 +117,7 @@ describe('Register Component', () => {
       expect(axiosInstance.post).toHaveBeenCalledWith('/api/auth/register', {
         email: 'test@example.com',
         password: 'password123',
-        role: 'student',
+        role: 'student', // role is fixed to student
       });
 
       // Check if tokens were stored in localStorage
@@ -375,59 +374,20 @@ describe('Register Component', () => {
     });
   });
 
-  test('allows changing role selection', async () => {
-    render(<Register />);
-
-    // Check that default role is displayed
-    expect(screen.getByText(/student/i)).toBeInTheDocument();
-
-    // Change role to instructor
-    fireEvent.mouseDown(screen.getByLabelText(/role/i));
-
-    // Wait for dropdown to appear and select instructor
-    await waitFor(() => {
-      const instructorOption = screen.getByText(/instructor/i);
-      expect(instructorOption).toBeInTheDocument();
-      fireEvent.click(instructorOption);
-    });
-
-    // Fill in valid email and password
-    fireEvent.change(screen.getByLabelText(/email address/i), {
-      target: { value: 'test@example.com' },
-    });
-    fireEvent.change(screen.getByLabelText(/password/i), {
-      target: { value: 'password123' },
-    });
-
-    // Form should be valid
-    await waitFor(() => {
-      expect(
-        screen.getByRole('button', { name: /register/i }),
-      ).not.toBeDisabled();
-    });
-  });
-
-  test('validates role selection', async () => {
-    render(<Register />);
-
-    // Check that the default role is selected correctly
-    expect(screen.getByLabelText(/role/i).textContent).toBe('Student');
-
-    // Other form validations already cover role validation implicitly
-    // since the isFormValid state depends on proper role values
-  });
-
   test('button shows loading state during submission', async () => {
     // Mock axiosInstance to delay response
-    axiosInstance.post.mockImplementationOnce(() => {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({
-            data: { accessToken: 'token', refreshToken: 'refresh-token' },
-          });
-        }, 100);
-      });
-    });
+    axiosInstance.post.mockImplementationOnce(
+      () =>
+        new Promise((resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                data: { accessToken: 'token', refreshToken: 'refresh-token' },
+              }),
+            100,
+          ),
+        ),
+    );
 
     render(<Register />);
 

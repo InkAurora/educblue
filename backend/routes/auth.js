@@ -8,7 +8,7 @@ const {
 } = require('../controllers/auth');
 const auth = require('../middleware/auth');
 
-router.post('/register', register);
+router.post('/register', register); // role defaults to 'student', instructor registration restricted
 router.post('/login', login);
 router.post('/refresh', refreshToken);
 router.post('/logout', auth, logout);

@@ -366,7 +366,7 @@ function CourseDetails({ 'data-testid': dataTestId, testId = null }) {
                       onClick={handlePayment}
                       disabled={processing}
                     >
-                      {processing ? 'Processing...' : 'Pay Now'}
+                      {processing ? 'Processing...' : 'Buy Course'}
                     </Button>
                   ) : (
                     <Button
