@@ -21,6 +21,27 @@ import {
  * Component to display and manage a list of course content items
  */
 function ContentItemList({ content, onEdit, onDelete, onAdd }) {
+  // Helper function to make content types more user-friendly
+  const getContentTypeLabel = (type) => {
+    switch (type?.toLowerCase()) {
+      case 'video':
+        return 'Video Lesson';
+      case 'quiz':
+        return 'Quiz';
+      case 'document':
+        return 'Document';
+      case 'markdown':
+        return 'Reading Material';
+      case 'multiplechoice':
+        return 'Multiple Choice Quiz';
+      default:
+        // Capitalize first letter and replace underscores/hyphens with spaces
+        return type
+          ? type.charAt(0).toUpperCase() + type.slice(1).replace(/[_-]/g, ' ')
+          : 'Content';
+    }
+  };
+
   return (
     <Box sx={{ mt: 3 }}>
       {content.length > 0 ? (
@@ -30,7 +51,7 @@ function ContentItemList({ content, onEdit, onDelete, onAdd }) {
               <ListItem>
                 <ListItemText
                   primary={item.title}
-                  secondary={`Type: ${item.type}`}
+                  secondary={`Type: ${getContentTypeLabel(item.type)}`}
                 />
                 <ListItemSecondaryAction>
                   <IconButton

@@ -82,16 +82,38 @@ function CourseSidebar({ course, progress, progressPercentage, courseId }) {
   const toggleDrawer = () => {
     setOpen(!open);
   };
-
   const getContentTypeIcon = (type) => {
     switch (type) {
       case 'video':
         return <PlayCircleOutlineIcon />;
       case 'quiz':
+      case 'multipleChoice':
         return <QuizIcon />;
+      case 'document':
       case 'markdown':
       default:
         return <DescriptionIcon />;
+    }
+  };
+
+  // Helper function to make content types more user-friendly
+  const getContentTypeLabel = (type) => {
+    switch (type?.toLowerCase()) {
+      case 'video':
+        return 'Video Lesson';
+      case 'quiz':
+        return 'Quiz';
+      case 'document':
+        return 'Document';
+      case 'markdown':
+        return 'Reading Material';
+      case 'multiplechoice':
+        return 'Multiple Choice Quiz';
+      default:
+        // Capitalize first letter and replace underscores/hyphens with spaces
+        return type
+          ? type.charAt(0).toUpperCase() + type.slice(1).replace(/[_-]/g, ' ')
+          : 'Content';
     }
   };
 
@@ -177,7 +199,7 @@ function CourseSidebar({ course, progress, progressPercentage, courseId }) {
                     </ListItemIcon>
                     <ListItemText
                       primary={item.title}
-                      secondary={item.type}
+                      secondary={getContentTypeLabel(item.type)}
                       primaryTypographyProps={{
                         fontWeight: 500,
                         fontSize: '0.95rem',

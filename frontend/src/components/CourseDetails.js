@@ -36,7 +36,9 @@ const getContentTypeIcon = (type) => {
     case 'video':
       return <PlayCircleOutlineIcon />;
     case 'quiz':
+    case 'multipleChoice':
       return <QuizIcon />;
+    case 'document':
     case 'markdown':
     default:
       return <DescriptionIcon />;
