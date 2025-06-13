@@ -440,14 +440,14 @@ describe('Course Content Endpoints', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.course.content).toHaveLength(2); // Same length as before
-      
+
       const updatedItem1 = res.body.course.content.find(
         // eslint-disable-next-line no-underscore-dangle
         (item) => item._id.toString() === contentId1.toString()
       );
       expect(updatedItem1.title).toBe('Updated Content 1');
       expect(updatedItem1.content).toBe('# Updated markdown content');
-      
+
       const updatedItem2 = res.body.course.content.find(
         // eslint-disable-next-line no-underscore-dangle
         (item) => item._id.toString() === contentId2.toString()
@@ -471,7 +471,7 @@ describe('Course Content Endpoints', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.course.content).toHaveLength(1); // Only the new item
-      
+
       const newItem = res.body.course.content.find(
         (item) => item.title === 'New Quiz Content'
       );
@@ -504,21 +504,21 @@ describe('Course Content Endpoints', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.course.content).toHaveLength(2); // 1 updated + 1 new
-      
+
       // Check updated item
       const updatedItem = res.body.course.content.find(
         // eslint-disable-next-line no-underscore-dangle
         (item) => item._id.toString() === contentId1.toString()
       );
       expect(updatedItem.title).toBe('Updated Markdown');
-      
+
       // Check new item
       const newItem = res.body.course.content.find(
         (item) => item.title === 'New Document'
       );
       expect(newItem).toBeDefined();
       expect(newItem.type).toBe('document');
-      
+
       // The second original item should NOT be present (not mentioned in update)
       const originalItem2 = res.body.course.content.find(
         // eslint-disable-next-line no-underscore-dangle

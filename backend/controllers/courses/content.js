@@ -5,7 +5,7 @@ const User = require('../../models/user');
 // Helper function to process content items for update/insert
 const processContentItems = (contentArray, existingContent) => {
   const processedContent = [];
-  
+
   // eslint-disable-next-line no-restricted-syntax
   for (const item of contentArray) {
     // eslint-disable-next-line no-underscore-dangle
@@ -16,18 +16,18 @@ const processContentItems = (contentArray, existingContent) => {
         // eslint-disable-next-line no-underscore-dangle
         throw new Error(`Invalid content item ID: ${item._id}`);
       }
-      
+
       // Find the existing content item by _id to verify it exists
       const existingItem = existingContent.find(
         // eslint-disable-next-line no-underscore-dangle
         (existing) => existing._id.toString() === item._id.toString()
       );
-      
+
       if (!existingItem) {
         // eslint-disable-next-line no-underscore-dangle
         throw new Error(`Content item with ID ${item._id} not found`);
       }
-      
+
       // Add the updated item (preserve the _id)
       processedContent.push({
         ...item,
@@ -42,7 +42,7 @@ const processContentItems = (contentArray, existingContent) => {
       processedContent.push(newItem);
     }
   }
-  
+
   // Return the complete new content array (this replaces the existing content)
   return processedContent;
 };
@@ -167,7 +167,7 @@ exports.updateCourseContent = async (req, res) => {
         message: error.message,
       });
     }
-    
+
     return res.status(500).json({
       message: 'Failed to update course content',
       error: error.message,
