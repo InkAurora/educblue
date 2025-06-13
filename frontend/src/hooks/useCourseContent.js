@@ -14,6 +14,7 @@ const useCourseContent = (courseId) => {
   const [content, setContent] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [savingContent, setSavingContent] = useState(false);
   const [publishing, setPublishing] = useState(false);
 
@@ -41,10 +42,6 @@ const useCourseContent = (courseId) => {
         }
 
         setCourse(response.data);
-        // Initialize content array if it exists in the course data
-        if (response.data.content && response.data.content.length > 0) {
-          setContent(response.data.content);
-        }
 
         setLoading(false);
       } catch (err) {
@@ -65,6 +62,48 @@ const useCourseContent = (courseId) => {
     fetchCourse();
   }, [courseId]);
 
+  // Fetch content list from new endpoint after course is loaded
+  useEffect(() => {
+    const fetchContentList = async () => {
+      if (!courseId) return;
+
+      try {
+        // First get the content list (summaries)
+        const listResponse = await axiosInstance.get(
+          `/api/courses/${courseId}/content`,
+        );
+        const summaryList = Array.isArray(listResponse.data)
+          ? listResponse.data
+          : [];
+
+        // Then fetch full details for each content item
+        const fullContentPromises = summaryList.map(async (summary) => {
+          try {
+            const detailResponse = await axiosInstance.get(
+              `/api/courses/${courseId}/content/${summary.id}`,
+            );
+            // Map backend format to frontend format
+            const item = detailResponse.data;
+            const mappedItem = { ...item };
+
+            return mappedItem;
+          } catch (err) {
+            // If detail fetch fails, use summary data
+            return summary;
+          }
+        });
+
+        const fullContentList = await Promise.all(fullContentPromises);
+        setContent(fullContentList);
+      } catch (err) {
+        // If content fetch fails, start with empty array for new courses
+        setContent([]);
+      }
+    };
+
+    fetchContentList();
+  }, [courseId]);
+
   /**
    * Save content changes to the API
    */
@@ -81,23 +120,20 @@ const useCourseContent = (courseId) => {
     try {
       setSavingContent(true);
 
-      // Ensure all content items have a consistent structure with all required fields
+      // Ensure all content items match new API structure
       const contentToSave = content.map((item) => {
-        // Base content item structure (same for all types)
+        // Base content item structure
         const standardizedItem = {
           title: item.title || '',
           type: item.type,
-          videoUrl: item.videoUrl || '',
         };
 
-        // Add _id if it exists or generate a temporary one
-        if (item._id) {
+        // Include _id if it exists (for updates), omit for new items
+        if (item._id && !item._id.startsWith('temp_')) {
           standardizedItem._id = item._id;
-        } else {
-          standardizedItem._id = `temp_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
         }
 
-        // Handle different content types
+        // Handle different content types according to new API spec
         if (item.type === 'multipleChoice') {
           // For multiple-choice quizzes, include question, options, and correctOption fields
           standardizedItem.question = item.question || item.content || '';
@@ -106,9 +142,23 @@ const useCourseContent = (courseId) => {
             : [];
           standardizedItem.correctOption =
             typeof item.correctOption === 'number' ? item.correctOption : 0;
+        } else if (item.type === 'video') {
+          // For video content, backend expects 'videoUrl' field
+          standardizedItem.videoUrl = item.videoUrl || item.url || '';
+          if (item.duration) standardizedItem.duration = item.duration;
+        } else if (item.type === 'document') {
+          // For document content, use 'url' field
+          standardizedItem.url = item.url || '';
         } else {
-          // For other types, only include the content field (no options array)
-          standardizedItem.content = item.content || '';
+          // For markdown and quiz types, include content field
+          // Ensure content field has a valid string value
+          const contentValue = item.content || '';
+          if (item.type === 'markdown' && !contentValue.trim()) {
+            throw new Error(
+              `Markdown content "${item.title}" must have content`,
+            );
+          }
+          standardizedItem.content = contentValue;
         }
 
         return standardizedItem;
@@ -123,7 +173,10 @@ const useCourseContent = (courseId) => {
       setContent(contentToSave);
 
       setSavingContent(false);
+      setSuccessMessage('Course content saved successfully!');
       setError('');
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccessMessage(''), 3000);
       // Show success message or update UI as needed
       return true;
     } catch (err) {
@@ -255,6 +308,8 @@ const useCourseContent = (courseId) => {
     loading,
     error,
     setError,
+    successMessage,
+    setSuccessMessage,
     savingContent,
     publishing,
     saveContent,

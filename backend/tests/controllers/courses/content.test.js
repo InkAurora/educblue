@@ -379,4 +379,193 @@ describe('Course Content Endpoints', () => {
       ).toBeDefined();
     });
   });
+
+  describe('Content Update with _id matching (Refactored)', () => {
+    let existingCourse;
+    let contentId1;
+    let contentId2;
+
+    beforeEach(async () => {
+      // Create a course with existing content
+      existingCourse = await Course.create({
+        title: 'Course with Existing Content',
+        description: 'Test course for _id matching',
+        instructor: instructorUser.fullName,
+        price: 50,
+        duration: 40, // Duration in hours as a number
+        content: [
+          {
+            type: 'markdown',
+            title: 'Original Content 1',
+            content: '# Original markdown content',
+          },
+          {
+            type: 'video',
+            title: 'Original Video',
+            url: 'https://example.com/original-video.mp4',
+          },
+        ],
+      });
+
+      // eslint-disable-next-line no-underscore-dangle
+      courseId = existingCourse._id;
+      // eslint-disable-next-line no-underscore-dangle
+      contentId1 = existingCourse.content[0]._id;
+      // eslint-disable-next-line no-underscore-dangle
+      contentId2 = existingCourse.content[1]._id;
+    });
+
+    it('should update existing content item when _id is provided', async () => {
+      const updateContent = [
+        {
+          // eslint-disable-next-line no-underscore-dangle
+          _id: contentId1,
+          type: 'markdown',
+          title: 'Updated Content 1',
+          content: '# Updated markdown content',
+        },
+        {
+          // eslint-disable-next-line no-underscore-dangle
+          _id: contentId2,
+          type: 'video',
+          title: 'Updated Video Title',
+          url: 'https://example.com/updated-video.mp4',
+        },
+      ];
+
+      const res = await request(app)
+        .put(`/api/courses/${courseId}/content`)
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send({ content: updateContent });
+
+      expect(res.status).toBe(200);
+      expect(res.body.course.content).toHaveLength(2); // Same length as before
+      
+      const updatedItem1 = res.body.course.content.find(
+        // eslint-disable-next-line no-underscore-dangle
+        (item) => item._id.toString() === contentId1.toString()
+      );
+      expect(updatedItem1.title).toBe('Updated Content 1');
+      expect(updatedItem1.content).toBe('# Updated markdown content');
+      
+      const updatedItem2 = res.body.course.content.find(
+        // eslint-disable-next-line no-underscore-dangle
+        (item) => item._id.toString() === contentId2.toString()
+      );
+      expect(updatedItem2.title).toBe('Updated Video Title');
+    });
+
+    it('should add new content item when no _id is provided', async () => {
+      const newContent = [
+        {
+          type: 'quiz',
+          title: 'New Quiz Content',
+          questions: ['Question 1', 'Question 2'],
+        },
+      ];
+
+      const res = await request(app)
+        .put(`/api/courses/${courseId}/content`)
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send({ content: newContent });
+
+      expect(res.status).toBe(200);
+      expect(res.body.course.content).toHaveLength(1); // Only the new item
+      
+      const newItem = res.body.course.content.find(
+        (item) => item.title === 'New Quiz Content'
+      );
+      expect(newItem).toBeDefined();
+      expect(newItem.type).toBe('quiz');
+      // eslint-disable-next-line no-underscore-dangle
+      expect(newItem._id).toBeDefined(); // Should have auto-generated _id
+    });
+
+    it('should handle mixed update and insert operations', async () => {
+      const mixedContent = [
+        {
+          // eslint-disable-next-line no-underscore-dangle
+          _id: contentId1,
+          type: 'markdown',
+          title: 'Updated Markdown',
+          content: '# Updated content',
+        },
+        {
+          type: 'document',
+          title: 'New Document',
+          url: 'https://example.com/new-doc.pdf',
+        },
+      ];
+
+      const res = await request(app)
+        .put(`/api/courses/${courseId}/content`)
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send({ content: mixedContent });
+
+      expect(res.status).toBe(200);
+      expect(res.body.course.content).toHaveLength(2); // 1 updated + 1 new
+      
+      // Check updated item
+      const updatedItem = res.body.course.content.find(
+        // eslint-disable-next-line no-underscore-dangle
+        (item) => item._id.toString() === contentId1.toString()
+      );
+      expect(updatedItem.title).toBe('Updated Markdown');
+      
+      // Check new item
+      const newItem = res.body.course.content.find(
+        (item) => item.title === 'New Document'
+      );
+      expect(newItem).toBeDefined();
+      expect(newItem.type).toBe('document');
+      
+      // The second original item should NOT be present (not mentioned in update)
+      const originalItem2 = res.body.course.content.find(
+        // eslint-disable-next-line no-underscore-dangle
+        (item) => item._id.toString() === contentId2.toString()
+      );
+      expect(originalItem2).toBeUndefined();
+    });
+
+    it('should return 400 for invalid _id format', async () => {
+      const invalidContent = [
+        {
+          // eslint-disable-next-line no-underscore-dangle
+          _id: 'invalid-id-format',
+          type: 'markdown',
+          title: 'Should Fail',
+          content: 'This should not work',
+        },
+      ];
+
+      const res = await request(app)
+        .put(`/api/courses/${courseId}/content`)
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send({ content: invalidContent });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('Invalid content item ID');
+    });
+
+    it('should return 400 for non-existent _id', async () => {
+      const nonExistentId = new mongoose.Types.ObjectId();
+      const invalidContent = [
+        {
+          // eslint-disable-next-line no-underscore-dangle
+          _id: nonExistentId,
+          type: 'markdown',
+          title: 'Should Fail',
+          content: 'This should not work',
+        },
+      ];
+
+      const res = await request(app)
+        .put(`/api/courses/${courseId}/content`)
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send({ content: invalidContent });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('not found');
+    });
+  });
 });

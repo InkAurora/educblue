@@ -25,6 +25,7 @@ function CourseContentEditor() {
     loading,
     error,
     setError,
+    successMessage,
     savingContent,
     publishing,
     saveContent,
@@ -240,6 +241,16 @@ function CourseContentEditor() {
           {error && (
             <Alert severity='error' sx={{ mb: 2 }} data-testid='error-alert'>
               {error}
+            </Alert>
+          )}
+
+          {successMessage && (
+            <Alert
+              severity='success'
+              sx={{ mb: 2 }}
+              data-testid='success-alert'
+            >
+              {successMessage}
             </Alert>
           )}
 

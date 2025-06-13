@@ -2,20 +2,49 @@ const mongoose = require('mongoose'); // Moved mongoose import to the top
 const Course = require('../../models/course');
 const User = require('../../models/user');
 
-// Helper function to sanitize content items
-const sanitizeContent = (contentArray) => {
-  return contentArray.map((item) => {
-    // Create a new object without the _id if it doesn't look like a valid MongoDB ObjectId
-    const newItem = { ...item };
-    if (
-      newItem._id && // Corrected from newItem.id to newItem._id
-      typeof newItem._id === 'string' && // Corrected from newItem.id to newItem._id
-      !mongoose.Types.ObjectId.isValid(newItem._id) // Corrected from newItem.id to newItem._id
-    ) {
-      delete newItem._id; // Corrected from delete newItem.id to delete newItem._id
+// Helper function to process content items for update/insert
+const processContentItems = (contentArray, existingContent) => {
+  const processedContent = [];
+  
+  // eslint-disable-next-line no-restricted-syntax
+  for (const item of contentArray) {
+    // eslint-disable-next-line no-underscore-dangle
+    if (item._id) {
+      // Validate the _id format
+      // eslint-disable-next-line no-underscore-dangle
+      if (!mongoose.Types.ObjectId.isValid(item._id)) {
+        // eslint-disable-next-line no-underscore-dangle
+        throw new Error(`Invalid content item ID: ${item._id}`);
+      }
+      
+      // Find the existing content item by _id to verify it exists
+      const existingItem = existingContent.find(
+        // eslint-disable-next-line no-underscore-dangle
+        (existing) => existing._id.toString() === item._id.toString()
+      );
+      
+      if (!existingItem) {
+        // eslint-disable-next-line no-underscore-dangle
+        throw new Error(`Content item with ID ${item._id} not found`);
+      }
+      
+      // Add the updated item (preserve the _id)
+      processedContent.push({
+        ...item,
+        // eslint-disable-next-line no-underscore-dangle
+        _id: existingItem._id,
+      });
+    } else {
+      // Add as new content (MongoDB will generate a new _id)
+      const newItem = { ...item };
+      // eslint-disable-next-line no-underscore-dangle
+      delete newItem._id; // Ensure no _id is set for new items
+      processedContent.push(newItem);
     }
-    return newItem;
-  });
+  }
+  
+  // Return the complete new content array (this replaces the existing content)
+  return processedContent;
 };
 
 // Update course content
@@ -114,13 +143,13 @@ exports.updateCourseContent = async (req, res) => {
       });
     }
 
-    // Sanitize content to handle temporary IDs
-    const sanitizedContent = sanitizeContent(content);
+    // Process content items for update/insert
+    const updatedContent = processContentItems(content, existingCourse.content);
 
-    // We only update the content field, ensuring instructor field can't be modified
+    // Update the course with the processed content
     const course = await Course.findByIdAndUpdate(
       id,
-      { content: sanitizedContent },
+      { content: updatedContent },
       { new: true, runValidators: true }
     );
 
@@ -129,7 +158,17 @@ exports.updateCourseContent = async (req, res) => {
       course,
     });
   } catch (error) {
-    return res.status(400).json({
+    // Handle specific validation errors from processContentItems
+    if (
+      error.message.includes('Invalid content item ID') ||
+      error.message.includes('not found')
+    ) {
+      return res.status(400).json({
+        message: error.message,
+      });
+    }
+    
+    return res.status(500).json({
       message: 'Failed to update course content',
       error: error.message,
     });
