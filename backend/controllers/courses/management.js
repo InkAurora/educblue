@@ -127,7 +127,8 @@ exports.createCourse = async (req, res) => {
 // Update course details
 exports.updateCourse = async (req, res) => {
   const { id } = req.params;
-  const { title, description, markdownDescription, price, duration } = req.body;
+  const { title, description, markdownDescription, price, duration, status } =
+    req.body;
   // eslint-disable-next-line no-console
   console.log(
     `Update course called for ID: ${id} by user: ${req.user.id}. Body:`,
@@ -142,6 +143,7 @@ exports.updateCourse = async (req, res) => {
     updateData.markdownDescription = markdownDescription;
   if (price !== undefined) updateData.price = price;
   if (duration !== undefined) updateData.duration = duration;
+  if (status !== undefined) updateData.status = status;
 
   // Validate markdown description if provided
   if (
@@ -151,6 +153,13 @@ exports.updateCourse = async (req, res) => {
     return res
       .status(400)
       .json({ message: 'Markdown description must be a string' });
+  }
+
+  // Validate status if provided
+  if (status !== undefined && !['draft', 'published'].includes(status)) {
+    return res
+      .status(400)
+      .json({ message: 'Status must be either "draft" or "published"' });
   }
 
   try {
@@ -213,56 +222,32 @@ exports.updateCourse = async (req, res) => {
 // Publish course
 exports.publishCourse = async (req, res) => {
   const { id } = req.params;
-  // eslint-disable-next-line no-console
-  console.log(`Publish course called for ID: ${id} by user: ${req.user.id}`);
-  // eslint-disable-next-line no-console
-  console.log('publishCourse - req.params.id:', req.params.id); // Added log
-  // eslint-disable-next-line no-console
-  console.log('publishCourse - req.user:', JSON.stringify(req.user, null, 2));
 
   try {
-    const courseToPublish = await Course.findById(id); // Renamed variable to avoid conflict
+    const courseToPublish = await Course.findById(id);
 
     if (!courseToPublish) {
-      // eslint-disable-next-line no-console
-      console.log(`Publish course: Course not found for ID: ${id}`);
       return res.status(404).json({ message: 'Course not found' });
     }
 
     // Get the user making the request
     const user = await User.findById(req.user.id);
     if (!user) {
-      // eslint-disable-next-line no-console
-      console.log(`Publish course: User not found for ID: ${req.user.id}`);
       return res.status(404).json({ message: 'User not found' });
     }
-    // eslint-disable-next-line no-console
-    console.log(
-      `Publish course: Course instructor: ${courseToPublish.instructor}, User: ${user.fullName}, User role: ${user.role}`
-    );
 
     // Check if user is either an admin or the course instructor
     const isInstructor = courseToPublish.instructor === user.fullName;
     const isAdmin = user.role === 'admin';
-    // eslint-disable-next-line no-console
-    console.log(
-      `Publish course: isInstructor: ${isInstructor}, isAdmin: ${isAdmin}`
-    );
 
-    // Check if the course has content first, then permission
-    if (!courseToPublish.content || courseToPublish.content.length === 0) {
-      // eslint-disable-next-line no-console
-      console.log(
-        `Publish course: Course ${id} has no content and cannot be published.`
-      );
-      return res
-        .status(400)
-        .json({ message: 'Course must have content to be published' });
+    // Check if the course is already published
+    if (courseToPublish.status === 'published') {
+      return res.status(400).json({
+        message: 'Course is already published',
+      });
     }
 
     if (!isInstructor && !isAdmin) {
-      // eslint-disable-next-line no-console
-      console.log('Publish course: Access denied.');
       return res.status(403).json({
         message:
           'Access denied. Only the course instructor or an admin can publish the course',
@@ -273,12 +258,10 @@ exports.publishCourse = async (req, res) => {
     await courseToPublish.save();
     return res.json({
       message: 'Course published successfully',
-      course: courseToPublish, // Return the updated course
-      published: true, // Explicitly set published for the test
+      course: courseToPublish,
+      published: true,
     });
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Error in publishCourse:', error);
     return res
       .status(500)
       .json({ message: 'Failed to publish course', error: error.message });

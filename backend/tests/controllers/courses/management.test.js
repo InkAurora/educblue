@@ -391,14 +391,36 @@ describe('Course Management Endpoints', () => {
       expect(updatedCourse.status).toBe('published');
     });
 
-    it('should not allow publishing a course without content', async () => {
+    it('should allow publishing a course and change status to published', async () => {
       const course = await Course.create({
         title: 'Test Course No Content',
-        description: 'A course for testing publish without content',
+        description: 'A course for testing publish functionality',
         price: 10,
         duration: 1,
         instructor: instructorUser.fullName, // Corrected to use instructor's fullName
-        // No content added
+        // No content validation needed at publish time
+      });
+
+      const res = await request(app)
+        .patch(`/api/courses/${course.id}/publish`)
+        .set('Authorization', `Bearer ${instructorToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.message).toBe('Course published successfully');
+
+      // Verify the course status was updated in the database
+      const updatedCourse = await Course.findById(course.id);
+      expect(updatedCourse.status).toBe('published');
+    });
+
+    it('should not allow publishing a course that is already published', async () => {
+      const course = await Course.create({
+        title: 'Already Published Course',
+        description: 'This course is already published',
+        price: 15,
+        duration: 2,
+        instructor: instructorUser.fullName,
+        status: 'published', // Course is already published
       });
 
       const res = await request(app)
@@ -406,7 +428,7 @@ describe('Course Management Endpoints', () => {
         .set('Authorization', `Bearer ${instructorToken}`);
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toBe('Course must have content to be published');
+      expect(res.body.message).toBe('Course is already published');
     });
 
     it('should return 404 when publishing non-existent course', async () => {
@@ -551,6 +573,63 @@ describe('Course Management Endpoints', () => {
 
       expect(res.status).toBe(403);
       expect(res.body.message).toContain('Access denied');
+    });
+
+    it('should return 404 for non-existent course', async () => {
+      const nonExistentId = new mongoose.Types.ObjectId();
+      const res = await request(app)
+        .put(`/api/courses/${nonExistentId}`)
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send({ title: 'Update Attempt' });
+
+      expect(res.status).toBe(404);
+      expect(res.body.message).toContain('not found');
+    });
+
+    it('should allow updating course status to unpublish a course', async () => {
+      // First create and publish a course
+      const course = await Course.create({
+        title: 'Course to Unpublish',
+        description: 'This course will be unpublished',
+        price: 50,
+        duration: 5,
+        instructor: instructorUser.fullName,
+        status: 'published', // Start as published
+      });
+
+      // Now unpublish it by changing status to draft
+      const res = await request(app)
+        .put(`/api/courses/${course.id}`)
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send({ status: 'draft' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.message).toBe('Course updated successfully');
+      expect(res.body.course.status).toBe('draft');
+
+      // Verify the course was updated in the database
+      const updatedCourse = await Course.findById(course.id);
+      expect(updatedCourse.status).toBe('draft');
+    });
+
+    it('should reject invalid status values', async () => {
+      const course = await Course.create({
+        title: 'Test Course',
+        description: 'Test description',
+        price: 30,
+        duration: 3,
+        instructor: instructorUser.fullName,
+      });
+
+      const res = await request(app)
+        .put(`/api/courses/${course.id}`)
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send({ status: 'invalid_status' });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe(
+        'Status must be either "draft" or "published"'
+      );
     });
 
     it('should return 404 for non-existent course', async () => {

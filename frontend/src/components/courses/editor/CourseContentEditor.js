@@ -57,11 +57,19 @@ function CourseContentEditor() {
   const [editingSectionId, setEditingSectionId] = useState(null); // null = create mode, id = edit mode
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
-
   // Delete confirmation state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
   const [deleteIndex, setDeleteIndex] = useState(-1);
+
+  // Course details editing state
+  const [courseEditDialogOpen, setCourseEditDialogOpen] = useState(false);
+  const [courseEditData, setCourseEditData] = useState({
+    title: '',
+    description: '',
+    price: '',
+    duration: '',
+  });
 
   // Section management functions - defined early to avoid hoisting issues
   const fetchSectionContent = async () => {
@@ -105,12 +113,12 @@ function CourseContentEditor() {
         id: section._id || section.id,
       }));
       setSections(normalizedSections);
-      
+
       // Set the newly created section as selected
       if (response.data.newSectionId) {
         setSelectedSection(response.data.newSectionId);
       }
-      
+
       setNewSectionTitle('');
       setNewSectionDescription('');
       setSectionDialogOpen(false);
@@ -151,7 +159,7 @@ function CourseContentEditor() {
           : section,
       );
       setSections(updatedSections);
-      
+
       setNewSectionTitle('');
       setNewSectionDescription('');
       setEditingSectionId(null);
@@ -190,14 +198,14 @@ function CourseContentEditor() {
         (section) => section.id !== editingSectionId,
       );
       setSections(updatedSections);
-      
+
       // Clear selected section if it was the deleted one
       if (selectedSection === editingSectionId) {
         setSelectedSection(
           updatedSections.length > 0 ? updatedSections[0].id : '',
         );
       }
-      
+
       setNewSectionTitle('');
       setNewSectionDescription('');
       setEditingSectionId(null);
@@ -424,7 +432,7 @@ function CourseContentEditor() {
           const newContentItem = response.data.content || standardizedItem;
           setContent([...content, newContentItem]);
         }
-        
+
         handleCloseDialog();
       } catch (err) {
         setError('Failed to save content. Please try again.');
@@ -445,7 +453,7 @@ function CourseContentEditor() {
     if (!itemToDelete) return;
 
     const contentId = itemToDelete._id || itemToDelete.id;
-    
+
     if (!contentId) {
       // If no ID, just remove from local state
       const newContent = content.filter((_, i) => i !== deleteIndex);
@@ -491,20 +499,101 @@ function CourseContentEditor() {
   };
 
   const publishCourse = async () => {
-    if (content.length === 0) {
+    const isPublished = course?.status === 'published';
+
+    if (!isPublished && content.length === 0) {
       setError('Please add content before publishing');
       return;
     }
 
     try {
       setPublishing(true);
-      await axiosInstance.patch(`/api/courses/${id}/publish`, {
-        status: 'published',
-      });
-      // Navigate to published course or show success message
-    } catch (err) {
-      setError('Failed to publish course. Please try again.');
+
+      if (isPublished) {
+        // Unpublish the course
+        await axiosInstance.put(`/api/courses/${id}`, {
+          status: 'draft',
+        });
+        // Update course status in local state
+        setCourse((prevCourse) => ({
+          ...prevCourse,
+          status: 'draft',
+        }));
+      } else {
+        // Publish the course
+        await axiosInstance.patch(`/api/courses/${id}/publish`);
+        // Update course status in local state
+        setCourse((prevCourse) => ({
+          ...prevCourse,
+          status: 'published',
+        }));
+      }
+
       setPublishing(false);
+    } catch (err) {
+      setError('Failed to update course status. Please try again.');
+      setPublishing(false);
+    }
+  };
+
+  // Course details editing functions
+  const handleOpenCourseEdit = () => {
+    if (course) {
+      setCourseEditData({
+        title: course.title || '',
+        description: course.description || '',
+        price: course.price || '',
+        duration: course.duration || '',
+      });
+      setCourseEditDialogOpen(true);
+    }
+  };
+
+  const handleCloseCourseEdit = () => {
+    setCourseEditDialogOpen(false);
+    setCourseEditData({
+      title: '',
+      description: '',
+      price: '',
+      duration: '',
+    });
+    setError('');
+  };
+
+  const handleSaveCourseDetails = async () => {
+    if (!courseEditData.title.trim()) {
+      setError('Course title is required');
+      return;
+    }
+
+    try {
+      const updateData = {
+        title: courseEditData.title.trim(),
+        description: courseEditData.description.trim(),
+      };
+
+      // Only include price and duration if they have values
+      if (courseEditData.price) {
+        updateData.price = parseFloat(courseEditData.price);
+      }
+      if (courseEditData.duration) {
+        updateData.duration = parseInt(courseEditData.duration, 10);
+      }
+
+      const response = await axiosInstance.put(
+        `/api/courses/${id}`,
+        updateData,
+      );
+
+      // Update local course state - merge with existing data to preserve structure
+      setCourse((prevCourse) => ({
+        ...prevCourse,
+        ...response.data.course,
+      }));
+      setCourseEditDialogOpen(false);
+      setError('');
+    } catch (err) {
+      setError('Failed to update course details. Please try again.');
     }
   };
 
@@ -551,9 +640,39 @@ function CourseContentEditor() {
         }}
       >
         <Paper elevation={3} sx={{ p: 4, width: '100%' }}>
-          <Typography component='h1' variant='h5' align='center' gutterBottom>
-            {course ? `Add Content: ${course.title}` : 'Add Course Content'}
-          </Typography>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mb: 1,
+            }}
+          >
+            <Typography component='h1' variant='h5' align='center'>
+              {course ? course.title : 'Course Content Editor'}
+            </Typography>
+            {course && (
+              <IconButton
+                onClick={handleOpenCourseEdit}
+                size='small'
+                sx={{ ml: 1 }}
+                aria-label='Edit course details'
+              >
+                <EditIcon fontSize='small' />
+              </IconButton>
+            )}
+          </Box>
+
+          {/* Course Status Label */}
+          {course && course.status && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+              <Chip
+                label={`Status: ${course.status.charAt(0).toUpperCase() + course.status.slice(1)}`}
+                color={course.status === 'published' ? 'success' : 'default'}
+                variant={course.status === 'published' ? 'filled' : 'outlined'}
+              />
+            </Box>
+          )}
 
           {error && (
             <Alert severity='error' sx={{ mb: 2 }} data-testid='error-alert'>
@@ -576,7 +695,7 @@ function CourseContentEditor() {
             <Typography variant='h6' gutterBottom>
               Course Sections
             </Typography>
-            
+
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
               <FormControl sx={{ minWidth: 200 }}>
                 <InputLabel>Select Section</InputLabel>
@@ -592,7 +711,7 @@ function CourseContentEditor() {
                   ))}
                 </Select>
               </FormControl>
-              
+
               <IconButton
                 color='primary'
                 onClick={() => {
@@ -605,7 +724,7 @@ function CourseContentEditor() {
               >
                 <Add />
               </IconButton>
-              
+
               <IconButton
                 color='primary'
                 onClick={() => {
@@ -678,11 +797,19 @@ function CourseContentEditor() {
             >
               <Button
                 variant='contained'
-                color='secondary'
+                color={course?.status === 'published' ? 'warning' : 'secondary'}
                 onClick={publishCourse}
-                disabled={publishing || content.length === 0}
+                disabled={
+                  publishing ||
+                  (course?.status !== 'published' && content.length === 0)
+                }
               >
-                {publishing ? <CircularProgress size={24} /> : 'Publish Course'}
+                {(() => {
+                  if (publishing) return <CircularProgress size={24} />;
+                  return course?.status === 'published'
+                    ? 'Unpublish Course'
+                    : 'Publish Course';
+                })()}
               </Button>
             </Box>
           </Box>
@@ -793,6 +920,77 @@ function CourseContentEditor() {
         error={error}
         isEditing={editIndex >= 0}
       />
+
+      {/* Dialog for editing course details */}
+      <Dialog
+        open={courseEditDialogOpen}
+        onClose={handleCloseCourseEdit}
+        maxWidth='sm'
+        fullWidth
+      >
+        <DialogTitle>Edit Course Details</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin='dense'
+            label='Course Title'
+            fullWidth
+            variant='outlined'
+            value={courseEditData.title}
+            onChange={(e) =>
+              setCourseEditData({ ...courseEditData, title: e.target.value })
+            }
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            margin='dense'
+            label='Description'
+            fullWidth
+            multiline
+            rows={4}
+            variant='outlined'
+            value={courseEditData.description}
+            onChange={(e) =>
+              setCourseEditData({
+                ...courseEditData,
+                description: e.target.value,
+              })
+            }
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            margin='dense'
+            label='Price'
+            fullWidth
+            variant='outlined'
+            value={courseEditData.price}
+            onChange={(e) =>
+              setCourseEditData({ ...courseEditData, price: e.target.value })
+            }
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            margin='dense'
+            label='Duration (hours)'
+            fullWidth
+            variant='outlined'
+            value={courseEditData.duration}
+            onChange={(e) =>
+              setCourseEditData({
+                ...courseEditData,
+                duration: e.target.value,
+              })
+            }
+            sx={{ mb: 2 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseCourseEdit}>Cancel</Button>
+          <Button onClick={handleSaveCourseDetails} variant='contained'>
+            Save Changes
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 }

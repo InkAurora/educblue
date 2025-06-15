@@ -170,7 +170,7 @@ exports.updateCourseSections = async (req, res) => {
           // eslint-disable-next-line no-underscore-dangle
           (existing) => existing._id.toString() === section._id.toString()
         );
-        
+
         if (existingSection) {
           return {
             ...section,
@@ -183,7 +183,7 @@ exports.updateCourseSections = async (req, res) => {
           };
         }
       }
-      
+
       // New section or section not found, create new
       const newSection = { ...section };
       // eslint-disable-next-line no-underscore-dangle
@@ -419,7 +419,7 @@ exports.addContentToSection = async (req, res) => {
 
     // Add the new content to the section
     existingCourse.sections[sectionIndex].content.push(contentData);
-    
+
     // Mark the sections array as modified so MongoDB knows to save it
     existingCourse.markModified('sections');
 
