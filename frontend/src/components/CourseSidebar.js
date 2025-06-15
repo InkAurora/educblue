@@ -34,13 +34,13 @@ function CourseSidebar({ course, progress, progressPercentage, courseId }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navbarHeight = 64; // Standard AppBar height in Material UI
-  const [sidebarToggleContainer, setSidebarToggleContainer] = useState(null);
-
-  // Fetch course content summaries for sidebar
+  const [sidebarToggleContainer, setSidebarToggleContainer] = useState(null);  // Fetch course sections for sidebar
   useEffect(() => {
     const fetchContentList = async () => {
       try {
-        const res = await axiosInstance.get(`/api/courses/${courseId}/content`);
+        const res = await axiosInstance.get(
+          `/api/courses/${courseId}/sections`,
+        );
         setContentList(Array.isArray(res.data) ? res.data : []);
       } catch (err) {
         // ignore load errors
@@ -164,9 +164,7 @@ function CourseSidebar({ course, progress, progressPercentage, courseId }) {
           >
             Instructor: {course?.instructor}
           </Typography>
-        </Box>
-
-        <List
+        </Box>        <List
           sx={{
             flexGrow: 1,
             overflow: 'auto',
@@ -176,48 +174,83 @@ function CourseSidebar({ course, progress, progressPercentage, courseId }) {
             },
           }}
         >
-          {contentList.map((item, index) => {
-            const contentId = getValidContentId(item, index);
-            const completed = isContentCompleted(contentId);
-            const isLastItem = contentList.length > index + 1;
-
-            return (
-              <React.Fragment key={contentId}>
-                <ListItem disablePadding>
-                  <ListItemButton
-                    component={Link}
-                    to={`/courses/${courseId}/content/${contentId}`}
+          {contentList.map((section, sectionIndex) => (
+            <React.Fragment key={section._id || section.id || `section-${sectionIndex}`}>
+              {/* Section Header */}
+              <Box sx={{ px: 2, py: 1, bgcolor: 'rgba(0, 0, 0, 0.05)' }}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    fontWeight: 600,
+                    color: 'text.primary',
+                    fontSize: '0.9rem',
+                  }}
+                >
+                  {section.title}
+                </Typography>
+                {section.description && (
+                  <Typography
+                    variant="caption"
                     sx={{
-                      py: 1.5,
-                      '&:hover': {
-                        backgroundColor: 'rgba(0, 191, 165, 0.08)',
-                      },
+                      color: 'text.secondary',
+                      fontSize: '0.75rem',
                     }}
                   >
-                    <ListItemIcon sx={{ minWidth: 40 }}>
-                      {getContentTypeIcon(item.type)}
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={item.title}
-                      secondary={getContentTypeLabel(item.type)}
-                      primaryTypographyProps={{
-                        fontWeight: 500,
-                        fontSize: '0.95rem',
-                      }}
-                      secondaryTypographyProps={{
-                        fontSize: '0.8rem',
-                        color: 'text.secondary',
-                      }}
-                    />
-                    {completed && (
-                      <CheckCircleIcon color='success' fontSize='small' />
-                    )}
-                  </ListItemButton>
-                </ListItem>
-                {isLastItem && <Divider />}
-              </React.Fragment>
-            );
-          })}
+                    {section.description}
+                  </Typography>
+                )}
+              </Box>
+              
+              {/* Section Content Items */}
+              {section.content && Array.isArray(section.content) && section.content.map((item, index) => {
+                const contentId = getValidContentId(item, index);
+                const completed = isContentCompleted(contentId);
+                const isLastItem = section.content.length > index + 1;
+
+                return (
+                  <React.Fragment key={contentId}>
+                    <ListItem disablePadding sx={{ pl: 2 }}>
+                      <ListItemButton
+                        component={Link}
+                        to={`/courses/${courseId}/sections/${section._id || section.id}/content/${contentId}`}
+                        sx={{
+                          py: 1.5,
+                          '&:hover': {
+                            backgroundColor: 'rgba(0, 191, 165, 0.08)',
+                          },
+                        }}
+                      >
+                        <ListItemIcon sx={{ minWidth: 40 }}>
+                          {getContentTypeIcon(item.type)}
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={item.title}
+                          secondary={getContentTypeLabel(item.type)}
+                          primaryTypographyProps={{
+                            fontWeight: 500,
+                            fontSize: '0.95rem',
+                          }}
+                          secondaryTypographyProps={{
+                            fontSize: '0.8rem',
+                            color: 'text.secondary',
+                          }}
+                        />
+                        {completed && (
+                          <CheckCircleIcon color='success' fontSize='small' />
+                        )}
+                      </ListItemButton>
+                    </ListItem>
+                    {isLastItem && <Divider sx={{ ml: 4 }} />}
+                  </React.Fragment>
+                );
+              })}
+              
+              {/* Divider between sections */}
+              {contentList.length > sectionIndex + 1 && (
+                <Divider sx={{ my: 1, borderStyle: 'dashed' }} />
+              )}
+            </React.Fragment>
+          ))}
         </List>
       </Box>
 

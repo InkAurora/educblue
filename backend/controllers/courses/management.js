@@ -3,7 +3,7 @@ const User = require('../../models/user');
 
 // Create a course (for instructors)
 exports.createCourse = async (req, res) => {
-  const { title, description, markdownDescription, price, duration, content } =
+  const { title, description, markdownDescription, price, duration, sections } =
     req.body;
 
   // Validate markdown description if provided
@@ -16,8 +16,8 @@ exports.createCourse = async (req, res) => {
       .json({ message: 'Markdown description must be a string' });
   }
 
-  // Validate content array if provided
-  if (content) {
+  // Validate sections array if provided
+  if (sections) {
     const validContentTypes = [
       'video',
       'quiz',
@@ -26,31 +26,51 @@ exports.createCourse = async (req, res) => {
       'multipleChoice',
     ];
 
-    // Check if all content items have valid types
-    const hasInvalidContent = content.some(
-      (item) => !item.type || !validContentTypes.includes(item.type)
+    // Check if all sections have required fields
+    const hasInvalidSections = sections.some(
+      (section) =>
+        !section.title ||
+        typeof section.title !== 'string' ||
+        !Array.isArray(section.content)
+    );
+
+    if (hasInvalidSections) {
+      return res.status(400).json({
+        message: 'Each section must have a title (string) and content (array)',
+      });
+    }
+
+    // Check if all content items within sections have valid types
+    const hasInvalidContent = sections.some((section) =>
+      section.content.some(
+        (item) => !item.type || !validContentTypes.includes(item.type)
+      )
     );
 
     // Check if markdown type items have content
-    const hasInvalidMarkdown = content.some(
-      (item) =>
-        item.type === 'markdown' &&
-        (!item.content || typeof item.content !== 'string')
+    const hasInvalidMarkdown = sections.some((section) =>
+      section.content.some(
+        (item) =>
+          item.type === 'markdown' &&
+          (!item.content || typeof item.content !== 'string')
+      )
     );
 
     // Check if multipleChoice type items have required fields
-    const hasInvalidMultipleChoice = content.some(
-      (item) =>
-        item.type === 'multipleChoice' &&
-        (!item.question ||
-          typeof item.question !== 'string' ||
-          !item.options ||
-          !Array.isArray(item.options) ||
-          item.options.length !== 4 ||
-          typeof item.correctOption !== 'number' ||
-          item.correctOption < 0 ||
-          item.correctOption > 3 ||
-          !Number.isInteger(item.correctOption))
+    const hasInvalidMultipleChoice = sections.some((section) =>
+      section.content.some(
+        (item) =>
+          item.type === 'multipleChoice' &&
+          (!item.question ||
+            typeof item.question !== 'string' ||
+            !item.options ||
+            !Array.isArray(item.options) ||
+            item.options.length !== 4 ||
+            typeof item.correctOption !== 'number' ||
+            item.correctOption < 0 ||
+            item.correctOption > 3 ||
+            !Number.isInteger(item.correctOption))
+      )
     );
 
     if (hasInvalidContent) {
@@ -88,7 +108,7 @@ exports.createCourse = async (req, res) => {
       price,
       instructor: user.fullName, // Set instructor to user's fullName
       duration,
-      content,
+      sections,
       status: 'draft', // Setting status to 'draft' by default
     });
     await course.save();

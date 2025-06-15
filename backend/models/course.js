@@ -59,6 +59,27 @@ const contentItemSchema = new mongoose.Schema(
   { _id: true } // Enable auto-generation of _id
 );
 
+// Define a section schema that contains multiple content items
+const sectionSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: true,
+    },
+    description: {
+      type: String,
+      default: '',
+    },
+    order: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    content: [contentItemSchema], // Array of content items within this section
+  },
+  { _id: true } // Enable auto-generation of _id
+);
+
 const courseSchema = new mongoose.Schema({
   title: {
     type: String,
@@ -89,7 +110,12 @@ const courseSchema = new mongoose.Schema({
     enum: ['draft', 'published'],
     default: 'draft',
   },
-  content: [contentItemSchema],
+  sections: [sectionSchema], // Use sections instead of direct content
+  // Keep content for backward compatibility but deprecate it
+  content: {
+    type: [contentItemSchema],
+    default: undefined,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

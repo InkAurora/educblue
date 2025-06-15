@@ -52,8 +52,12 @@ exports.getProgress = async (req, res) => {
 
     const progressRecords = await Progress.find({ userId, courseId });
 
-    // Calculate progress percentage
-    const totalContentItems = course.content.length;
+    // Calculate progress percentage based on sections
+    let totalContentItems = 0;
+    course.sections.forEach((section) => {
+      totalContentItems += section.content.length;
+    });
+
     const completedItems = progressRecords.filter(
       (record) => record.completed
     ).length;
@@ -78,15 +82,18 @@ exports.getProgress = async (req, res) => {
   }
 };
 
-// Update progress for a specific content item in a course
+// Update progress for a specific content item in a course section
 exports.updateProgress = async (req, res) => {
   try {
-    const { courseId, contentId } = req.params;
+    const { courseId, sectionId, contentId } = req.params;
     // Safely access req.body with a default empty object
     const { answer } = req.body || {};
     const userId = req.user.id;
 
-    // Validate contentId early
+    // Validate required parameters
+    if (!sectionId) {
+      return res.status(400).json({ message: 'Section ID is required' });
+    }
     if (!contentId) {
       return res.status(400).json({ message: 'Content ID is required' });
     }
@@ -94,6 +101,10 @@ exports.updateProgress = async (req, res) => {
     // Validate MongoDB ID formats to avoid CastError
     if (!mongoose.Types.ObjectId.isValid(courseId)) {
       return res.status(400).json({ message: 'Invalid course ID format' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(sectionId)) {
+      return res.status(400).json({ message: 'Invalid section ID format' });
     }
 
     if (!mongoose.Types.ObjectId.isValid(contentId)) {
@@ -140,8 +151,14 @@ exports.updateProgress = async (req, res) => {
       });
     }
 
-    // Find the specific content item in the course
-    const contentItem = course.content.id(contentId);
+    // Find the specific section in the course
+    const section = course.sections.id(sectionId);
+    if (!section) {
+      return res.status(404).json({ message: 'Section not found' });
+    }
+
+    // Find the specific content item in the section
+    const contentItem = section.content.id(contentId);
     if (!contentItem) {
       return res.status(404).json({ message: 'Content not found' });
     }
@@ -150,6 +167,7 @@ exports.updateProgress = async (req, res) => {
     const updateData = {
       userId,
       courseId,
+      sectionId,
       contentId,
       completed: true,
       completedAt: new Date(),
@@ -212,7 +230,7 @@ exports.updateProgress = async (req, res) => {
 
     // Find and update or create new progress record
     const updatedProgress = await Progress.findOneAndUpdate(
-      { userId, courseId, contentId },
+      { userId, courseId, sectionId, contentId },
       updateData,
       { new: true, upsert: true, runValidators: true }
     );

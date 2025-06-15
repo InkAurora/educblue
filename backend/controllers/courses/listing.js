@@ -32,8 +32,9 @@ exports.getCourseById = async (req, res) => {
         }
       }
     }
-    // Public or non-enrolled user: return limited course information
+    // Public or non-enrolled user: return limited course information without sections
     const limitedCourse = {
+      // eslint-disable-next-line no-underscore-dangle
       _id: course._id,
       title: course.title,
       description: course.description,
@@ -49,10 +50,10 @@ exports.getCourseById = async (req, res) => {
   }
 };
 
-// Get course content by ID
+// Get course content by ID within a section
 exports.getCourseContentById = async (req, res) => {
   try {
-    const { id, contentId } = req.params;
+    const { id, sectionId, contentId } = req.params;
 
     // Check if user exists in the request (set by auth middleware)
     if (!req.user || !req.user.id) {
@@ -82,8 +83,17 @@ exports.getCourseContentById = async (req, res) => {
         .json({ message: 'Not enrolled in this course and not an admin' });
     }
 
-    // Find the specific content item
-    const contentItem = course.content.find(
+    // Find the specific section
+    const section = (course.sections || []).find(
+      (sect) => sect.id.toString() === sectionId
+    );
+
+    if (!section) {
+      return res.status(404).json({ message: 'Section not found' });
+    }
+
+    // Find the specific content item within the section
+    const contentItem = (section.content || []).find(
       (item) => item.id.toString() === contentId
     );
 
@@ -97,7 +107,7 @@ exports.getCourseContentById = async (req, res) => {
   }
 };
 
-// Get all content items for a course
+// Get all sections and their content items for a course
 exports.getCourseContents = async (req, res) => {
   try {
     const { id } = req.params;
@@ -130,13 +140,136 @@ exports.getCourseContents = async (req, res) => {
         .json({ message: 'Not enrolled in this course and not an admin' });
     }
 
-    // Return only id, title, and type for cleaner response
-    const contentSummary = course.content.map((item) => ({
-      id: item.id,
-      title: item.title,
-      type: item.type,
+    // Return sections with content summary
+    const sectionsSummary = (course.sections || []).map((section) => ({
+      id: section.id,
+      title: section.title,
+      description: section.description,
+      order: section.order,
+      content: (section.content || []).map((item) => ({
+        id: item.id,
+        title: item.title,
+        type: item.type,
+        order: item.order,
+      })),
     }));
-    return res.json(contentSummary);
+
+    return res.json(sectionsSummary);
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Get course sections (without content details)
+exports.getCourseSections = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Ensure the user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    // Find the course
+    const course = await Course.findById(id);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    // Verify the user exists
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check access: instructor, enrolled student, or admin
+    const isInstructor = course.instructor === user.fullName;
+    const isEnrolled = user.enrolledCourses.includes(id);
+    const isAdmin = user.role === 'admin';
+
+    if (!isInstructor && !isEnrolled && !isAdmin) {
+      return res
+        .status(403)
+        .json({ message: 'Not enrolled in this course and not an admin' });
+    }
+
+    // Return sections without content details
+    const sections = (course.sections || []).map((section) => ({
+      id: section.id,
+      title: section.title,
+      description: section.description,
+      order: section.order,
+      contentCount: (section.content || []).length,
+    }));
+
+    return res.json(sections);
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Get contents of a specific section
+exports.getSectionContents = async (req, res) => {
+  try {
+    const { id, sectionId } = req.params;
+
+    // Ensure the user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    // Find the course
+    const course = await Course.findById(id);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    // Verify the user exists
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check access: instructor, enrolled student, or admin
+    const isInstructor = course.instructor === user.fullName;
+    const isEnrolled = user.enrolledCourses.includes(id);
+    const isAdmin = user.role === 'admin';
+
+    if (!isInstructor && !isEnrolled && !isAdmin) {
+      return res
+        .status(403)
+        .json({ message: 'Not enrolled in this course and not an admin' });
+    }
+
+    // Find the specific section
+    const section = (course.sections || []).find(
+      (sect) => sect.id.toString() === sectionId
+    );
+
+    if (!section) {
+      return res.status(404).json({ message: 'Section not found' });
+    }
+
+    // Return section with its content details
+    const sectionWithContent = {
+      id: section.id,
+      title: section.title,
+      description: section.description,
+      order: section.order,
+      content: (section.content || []).map((item) => ({
+        id: item.id,
+        title: item.title,
+        type: item.type,
+        description: item.description,
+        order: item.order,
+        duration: item.duration,
+        url: item.url,
+        content: item.content,
+        questions: item.questions,
+      })),
+    };
+
+    return res.json(sectionWithContent);
   } catch (error) {
     return res.status(500).json({ message: 'Server error' });
   }

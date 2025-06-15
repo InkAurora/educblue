@@ -11,6 +11,10 @@ const progressSchema = new mongoose.Schema({
     ref: 'Course',
     required: true,
   },
+  sectionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+  },
   contentId: {
     type: mongoose.Schema.Types.ObjectId,
     required: true,
@@ -42,7 +46,7 @@ const progressSchema = new mongoose.Schema({
 
 // Create a unique compound index to prevent duplicate progress entries
 progressSchema.index(
-  { userId: 1, courseId: 1, contentId: 1 },
+  { userId: 1, courseId: 1, sectionId: 1, contentId: 1 },
   { unique: true }
 );
 
