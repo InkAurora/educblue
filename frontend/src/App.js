@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import {
   Container,
   Typography,
@@ -22,37 +22,92 @@ import MyCourses from './components/MyCourses';
 import Navbar from './components/Navbar';
 import PersonalInformation from './components/PersonalInformation';
 import AdminDashboard from './components/admin/AdminDashboard';
+import CourseSidebar from './components/CourseSidebar';
 
-function App() {
+// Wrapper component to handle sidebar persistence logic
+function AppWithSidebar() {
+  const location = useLocation();
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [sidebarData, setSidebarData] = useState(null);
+
+  useEffect(() => {
+    // Check if current route is a course content page
+    const isCourseContentPage =
+      location.pathname.includes('/courses/') &&
+      location.pathname.includes('/content/');
+
+    setShowSidebar(isCourseContentPage);
+
+    // Extract course ID from URL for sidebar data
+    if (isCourseContentPage) {
+      const courseIdMatch = location.pathname.match(/\/courses\/([^/]+)/);
+      if (courseIdMatch) {
+        // For now, we'll pass the courseId to the sidebar
+        // The sidebar component will handle fetching its own data
+        setSidebarData({ courseId: courseIdMatch[1] });
+      }
+    } else {
+      setSidebarData(null);
+    }
+  }, [location.pathname]);
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <BrowserRouter>
+      <Box
+        sx={{
+          height: '100vh',
+          width: '100vw',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        {/* Fixed Navbar - Always visible at top */}
+        <Navbar />
+
+        {/* Main layout with conditional sidebar */}
         <Box
           sx={{
-            height: '100vh',
-            width: '100vw',
+            flex: 1,
             overflow: 'hidden',
+            paddingTop: '64px', // Account for fixed navbar
+            backgroundColor: '#f5f5f5',
+            position: 'relative',
             display: 'flex',
-            flexDirection: 'column',
+            /* Mobile app feel with subtle gradients */
+            background: {
+              xs: 'linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%)',
+              md: '#f5f5f5',
+            },
           }}
         >
-          {/* Fixed Navbar - Always visible at top */}
-          <Navbar />
+          {/* Persistent Sidebar - Only show on course content pages */}
+          {showSidebar && sidebarData && (
+            <Box
+              sx={{
+                width: { xs: 0, md: '300px' }, // Hidden on mobile, shown on desktop
+                flexShrink: 0,
+                borderRight: 1,
+                borderColor: 'divider',
+                overflow: 'hidden',
+                position: 'relative',
+                zIndex: 900,
+              }}
+            >
+              <CourseSidebar
+                courseId={sidebarData.courseId}
+                // The sidebar will handle fetching course data internally
+              />
+            </Box>
+          )}
 
           {/* Main content area - scrollable */}
           <Box
             sx={{
               flex: 1,
               overflow: 'auto',
-              paddingTop: '64px', // Account for fixed navbar
-              backgroundColor: '#f5f5f5',
               position: 'relative',
-              /* Mobile app feel with subtle gradients */
-              background: {
-                xs: 'linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%)',
-                md: '#f5f5f5',
-              },
             }}
           >
             <Routes>
@@ -307,8 +362,16 @@ function App() {
             </Routes>
           </Box>
         </Box>
-      </BrowserRouter>
+      </Box>
     </ThemeProvider>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppWithSidebar />
+    </BrowserRouter>
   );
 }
 

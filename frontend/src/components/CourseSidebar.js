@@ -45,9 +45,50 @@ function CourseSidebar({
   const [loadingSections, setLoadingSections] = useState(false);
   const [loadingContent, setLoadingContent] = useState(false);
   const [sidebarToggleContainer, setSidebarToggleContainer] = useState(null);
+  const [courseData, setCourseData] = useState(course);
+  const [progressData, setProgressData] = useState(progress);
+  const [progressPercentageData, setProgressPercentageData] =
+    useState(progressPercentage);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const navbarHeight = 64; // Standard AppBar height in Material UI  const [sidebarToggleContainer, setSidebarToggleContainer] = useState(null);
+  const navbarHeight = 64; // Standard AppBar height in Material UI
+
+  // Fetch course data if not provided (for persistent sidebar use case)
+  useEffect(() => {
+    const fetchCourseData = async () => {
+      if (!courseData && courseId) {
+        try {
+          const response = await axiosInstance.get(`/api/courses/${courseId}`);
+          setCourseData(response.data);
+        } catch (err) {
+          // Handle error silently
+        }
+      }
+    };
+
+    fetchCourseData();
+  }, [courseId, courseData]);
+
+  // Fetch progress data if not provided (for persistent sidebar use case)
+  useEffect(() => {
+    const fetchProgressData = async () => {
+      if (!progressData && courseId) {
+        try {
+          const response = await axiosInstance.get(
+            `/api/courses/${courseId}/progress`,
+          );
+          setProgressData(response.data.progress || []);
+          setProgressPercentageData(response.data.progressPercentage || 0);
+        } catch (err) {
+          // Handle error silently
+          setProgressData([]);
+          setProgressPercentageData(0);
+        }
+      }
+    };
+
+    fetchProgressData();
+  }, [courseId, progressData]);
 
   // Fetch course sections for sidebar
   useEffect(() => {
@@ -176,8 +217,8 @@ function CourseSidebar({
     }
   };
   const isContentCompleted = (contentId) =>
-    Array.isArray(progress) &&
-    progress.some((p) => p.contentId === contentId && p.completed);
+    Array.isArray(progressData) &&
+    progressData.some((p) => p.contentId === contentId && p.completed);
 
   const handleSectionChange = (event) => {
     setSelectedSection(event.target.value);
@@ -214,7 +255,8 @@ function CourseSidebar({
               mb: 1,
             }}
           >
-            {course?.title}
+            {' '}
+            {courseData?.title}
           </Typography>
           <Typography
             variant='body2'
@@ -224,7 +266,8 @@ function CourseSidebar({
               fontWeight: 500,
             }}
           >
-            Instructor: {course?.instructor?.fullName || course?.instructor}
+            Instructor:{' '}
+            {courseData?.instructor?.fullName || courseData?.instructor}
           </Typography>
         </Box>
 
@@ -315,7 +358,7 @@ function CourseSidebar({
 
       {/* Progress bar fixed at the bottom of sidebar */}
       <Box sx={{ mt: 'auto', p: 2, borderTop: 1, borderColor: 'divider' }}>
-        <ProgressBar percentage={progressPercentage || 0} />
+        <ProgressBar percentage={progressPercentageData || 0} />
       </Box>
     </Box>
   );
@@ -380,28 +423,26 @@ function CourseSidebar({
           {drawerContent}
         </Drawer>
       ) : (
-        <Drawer
-          variant='permanent'
-          open
+        // Desktop persistent sidebar - positioned fixed like the navbar
+        <Box
           sx={{
             width: drawerWidth,
-            flexShrink: 0,
-            '& .MuiDrawer-paper': {
-              width: drawerWidth,
-              boxSizing: 'border-box',
-              position: 'fixed',
-              height: `calc(100vh - ${navbarHeight}px)`, // Adjust height to account for navbar
-              top: `${navbarHeight}px`, // Start the sidebar below the navbar
-              display: 'flex',
-              flexDirection: 'column',
-              overflowY: 'hidden', // Hide overflow for the drawer itself
-              zIndex: 900, // Lower z-index than typical AppBar (which is 1100)
-            },
+            height: `calc(100vh - ${navbarHeight}px)`,
+            position: 'fixed',
+            top: `${navbarHeight}px`,
+            left: 0,
+            backgroundColor: 'background.paper',
+            borderRight: 1,
+            borderColor: 'divider',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            zIndex: 900,
           }}
           data-testid='course-sidebar-desktop'
         >
           {drawerContent}
-        </Drawer>
+        </Box>
       )}
     </>
   );
@@ -418,7 +459,7 @@ CourseSidebar.propTypes = {
         type: PropTypes.string.isRequired,
       }),
     ).isRequired,
-  }).isRequired,
+  }), // Made optional since we can fetch it internally
   progress: PropTypes.arrayOf(
     PropTypes.shape({
       contentId: PropTypes.string.isRequired,
@@ -427,11 +468,14 @@ CourseSidebar.propTypes = {
   ),
   progressPercentage: PropTypes.number,
   courseId: PropTypes.string.isRequired,
+  currentSectionId: PropTypes.string,
 };
 
 CourseSidebar.defaultProps = {
+  course: null, // Can be null if we fetch it internally
   progress: [],
   progressPercentage: 0,
+  currentSectionId: null,
 };
 
 export default CourseSidebar;

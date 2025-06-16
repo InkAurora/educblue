@@ -11,7 +11,6 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import axiosInstance from '../../utils/axiosConfig';
-import CourseSidebar from '../CourseSidebar';
 import ContentNavigation from './content/ContentNavigation';
 import ContentRenderer from './content/ContentRenderer';
 import useCourseProgress from '../../hooks/useCourseProgress';
@@ -56,11 +55,9 @@ function CourseContent({ 'data-testid': dataTestId }) {
     // Last resort, just use a placeholder with index
     return `content-item-${index}`;
   };
-
   // Use our custom hook for progress tracking - now with enhanced function and state
   const {
     progress,
-    progressPercentage,
     completing,
     markContentCompleted,
     isContentCompleted,
@@ -289,65 +286,27 @@ function CourseContent({ 'data-testid': dataTestId }) {
       </Container>
     );
   }
-
   // Constants for layout calculations
-  const sidebarWidth = 300;
   const contentNavHeight = 48; // Content navigation height
-
-  // Return the main component structure with proper block divisions
+  // Return the main component structure - simplified layout without sidebar
   return course && content ? (
     <Box
       sx={{
-        display: 'grid',
+        display: 'flex',
+        flexDirection: 'column',
         height: '100%',
         width: '100%',
-        // Desktop: 3-block layout with sidebar (removed progress area)
-        // Mobile: 2-block layout (nav and content)
-        gridTemplateColumns: { xs: '1fr', md: `${sidebarWidth}px 1fr` },
-        gridTemplateRows: {
-          xs: `${contentNavHeight}px 1fr`,
-          md: `${contentNavHeight}px 1fr`,
-        },
-        gridTemplateAreas: {
-          xs: `
-            "topnav"
-            "content"
-          `,
-          md: `
-            "sidebar topnav"
-            "sidebar content"
-          `,
-        },
-        overflow: 'hidden', // Prevent overall container scrolling
+        overflow: 'hidden',
       }}
       data-testid={dataTestId}
     >
-      {/* Sidebar - Desktop only, left side from below navbar to bottom */}
+      {/* Content Navigation Topbar */}
       <Box
         sx={{
-          gridArea: 'sidebar',
-          display: { xs: 'none', md: 'block' },
-          overflow: 'auto',
-          borderRight: 1,
-          borderColor: 'divider',
-          height: '100%',
-        }}
-      >
-        <CourseSidebar
-          course={course}
-          progress={progress}
-          progressPercentage={progressPercentage}
-          courseId={id}
-          currentSectionId={sectionId}
-        />
-      </Box>
-
-      {/* Content Navigation Topbar - Top right in desktop, top in mobile */}
-      <Box
-        sx={{
-          gridArea: 'topnav',
           borderBottom: 1,
           borderColor: 'divider',
+          height: `${contentNavHeight}px`,
+          flexShrink: 0,
         }}
       >
         <ContentNavigation
@@ -358,11 +317,11 @@ function CourseContent({ 'data-testid': dataTestId }) {
         />
       </Box>
 
-      {/* Content Area - Only this block scrolls */}
+      {/* Content Area - This is the main scrollable area */}
       <Box
         sx={{
-          gridArea: 'content',
-          overflow: 'auto', // This is the only scrollable area
+          flex: 1,
+          overflow: 'auto',
           p: { xs: 1, sm: 2, md: 3 },
         }}
       >
