@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   Drawer,
   Typography,
@@ -51,6 +51,7 @@ function CourseSidebar({
   const [progressPercentageData, setProgressPercentageData] =
     useState(progressPercentage);
   const theme = useTheme();
+  const location = useLocation();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navbarHeight = 64; // Standard AppBar height in Material UI
 
@@ -214,9 +215,14 @@ function CourseSidebar({
           : 'Content';
     }
   };
+
   const isContentCompleted = (contentId) =>
     Array.isArray(progressData) &&
     progressData.some((p) => p.contentId === contentId && p.completed);
+
+  // Check if current content is selected based on URL
+  const isContentSelected = (contentId) =>
+    location.pathname.includes(`/content/${contentId}`);
 
   const handleSectionChange = (event) => {
     setSelectedSection(event.target.value);
@@ -315,6 +321,7 @@ function CourseSidebar({
             sectionContent.map((item, index) => {
               const contentId = getValidContentId(item, index);
               const completed = isContentCompleted(contentId);
+              const selected = isContentSelected(contentId);
 
               return (
                 <ListItem key={contentId} disablePadding sx={{ pl: 2 }}>
@@ -323,8 +330,16 @@ function CourseSidebar({
                     to={`/courses/${courseId}/sections/${selectedSection}/content/${contentId}`}
                     sx={{
                       py: 1.5,
+                      borderLeft: selected
+                        ? '4px solid #02e6ef'
+                        : '4px solid transparent',
+                      backgroundColor: selected
+                        ? 'rgba(2, 230, 239, 0.08)'
+                        : 'transparent',
                       '&:hover': {
-                        backgroundColor: 'rgba(0, 191, 165, 0.08)',
+                        backgroundColor: selected
+                          ? 'rgba(2, 230, 239, 0.12)'
+                          : 'rgba(0, 191, 165, 0.08)',
                       },
                     }}
                   >
