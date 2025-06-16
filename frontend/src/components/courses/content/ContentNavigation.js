@@ -1,14 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
-import {
-  Toolbar,
-  Typography,
-  Button,
-  Paper,
-  Box,
-  useTheme,
-} from '@mui/material';
+import { Toolbar, Typography, Button, Paper, Box } from '@mui/material';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 
@@ -18,12 +11,11 @@ import NavigateNextIcon from '@mui/icons-material/NavigateNext';
  */
 function ContentNavigation({
   courseId,
+  sectionId,
   title,
   previousContentId,
   nextContentId,
 }) {
-  const theme = useTheme();
-
   return (
     <Box
       sx={{
@@ -62,7 +54,7 @@ function ContentNavigation({
               component={Link}
               to={
                 previousContentId
-                  ? `/courses/${courseId}/content/${previousContentId}`
+                  ? `/courses/${courseId}/sections/${sectionId}/content/${previousContentId}`
                   : '#'
               }
               disabled={!previousContentId}
@@ -103,7 +95,7 @@ function ContentNavigation({
               component={Link}
               to={
                 nextContentId
-                  ? `/courses/${courseId}/content/${nextContentId}`
+                  ? `/courses/${courseId}/sections/${sectionId}/content/${nextContentId}`
                   : '#'
               }
               disabled={!nextContentId}
@@ -126,6 +118,7 @@ function ContentNavigation({
 
 ContentNavigation.propTypes = {
   courseId: PropTypes.string.isRequired,
+  sectionId: PropTypes.string.isRequired,
   title: PropTypes.string.isRequired,
   previousContentId: PropTypes.string,
   nextContentId: PropTypes.string,

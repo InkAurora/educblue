@@ -130,20 +130,39 @@ function CourseContent({ 'data-testid': dataTestId }) {
           ? listResponse.data
           : [];
 
-        // Flatten sections into a content list for navigation
-        let list = [];
-        sections.forEach((section) => {
-          if (section.content && Array.isArray(section.content)) {
-            list = list.concat(section.content);
-          }
-        });
+        // Get content from the current section for navigation
+        // Note: sections endpoint returns content with basic info, but we need to fetch detailed content
+        const currentSection = sections.find(
+          (section) => section.id === sectionId || section._id === sectionId,
+        );
 
-        // If new summary list is empty, fall back to original courseData.content
+        let sectionContentList = [];
+        if (
+          currentSection &&
+          currentSection.content &&
+          Array.isArray(currentSection.content)
+        ) {
+          sectionContentList = currentSection.content;
+        } else if (currentSection) {
+          // If section exists but has no content array, try to fetch section details
+          try {
+            const sectionResponse = await axiosInstance.get(
+              `/api/courses/${id}/sections/${sectionId}`,
+            );
+            sectionContentList = sectionResponse.data.content || [];
+          } catch (sectionErr) {
+            // Silently continue if section details can't be fetched
+            sectionContentList = [];
+          }
+        }
+
+        // If no section content found, fall back to original courseData.content
+        let list = sectionContentList;
         if (list.length === 0 && Array.isArray(courseData.content)) {
           list = courseData.content;
         }
 
-        // Set course data with sections for sidebar, but use flattened list for navigation
+        // Set course data with sections for sidebar, but use section content list for navigation
         setCourse({ ...courseData, content: list, sections });
 
         // Fetch the single content item by ID using the new section-based endpoint
@@ -155,10 +174,22 @@ function CourseContent({ 'data-testid': dataTestId }) {
 
         // Determine the index of this content in the list for navigation
         const foundIndex = list.findIndex((item, idx) => {
+          // Try multiple ways to match the contentId
+          if (item._id === contentId || item.id === contentId) {
+            return true;
+          }
+          // Also try string comparison
+          if (
+            item._id?.toString() === contentId ||
+            item.id?.toString() === contentId
+          ) {
+            return true;
+          }
+          // Fallback to the original getValidContentId logic
           const validId = getValidContentId(item, idx);
           return validId === contentId || validId?.toString() === contentId;
         });
-        setContentIndex(foundIndex);
+        setContentIndex(foundIndex >= 0 ? foundIndex : null);
 
         // Check if user is enrolled or instructor
         if (user) {
@@ -220,9 +251,12 @@ function CourseContent({ 'data-testid': dataTestId }) {
     }
 
     const prevItem = course.content[contentIndex - 1];
-    return getValidContentId(prevItem, contentIndex - 1);
+    return (
+      prevItem._id ||
+      prevItem.id ||
+      getValidContentId(prevItem, contentIndex - 1)
+    );
   };
-
   // Get next content ID (for navigation)
   const getNextContentId = () => {
     if (
@@ -234,7 +268,11 @@ function CourseContent({ 'data-testid': dataTestId }) {
     }
 
     const nextItem = course.content[contentIndex + 1];
-    return getValidContentId(nextItem, contentIndex + 1);
+    return (
+      nextItem._id ||
+      nextItem.id ||
+      getValidContentId(nextItem, contentIndex + 1)
+    );
   };
 
   // Handle loading state
@@ -312,6 +350,7 @@ function CourseContent({ 'data-testid': dataTestId }) {
       >
         <ContentNavigation
           courseId={id}
+          sectionId={sectionId}
           title={content.title}
           previousContentId={getPreviousContentId()}
           nextContentId={getNextContentId()}
