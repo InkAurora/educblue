@@ -121,7 +121,8 @@ function CourseList(props) {
                     color='text.secondary'
                     sx={{ mt: 1 }}
                   >
-                    Instructor: {course.instructor}
+                    Instructor:{' '}
+                    {course.instructor?.fullName || course.instructor}
                   </Typography>
                   <Typography variant='body2' color='text.secondary'>
                     Duration: {course.duration} hours

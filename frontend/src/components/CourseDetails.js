@@ -123,6 +123,8 @@ function CourseDetails({ 'data-testid': dataTestId, testId = null }) {
         if (user) {
           // Check if user is enrolled or is the instructor
           const userIsInstructor =
+            user._id === courseResponse.data.instructor?._id ||
+            user.fullName === courseResponse.data.instructor?.fullName ||
             user.fullName === courseResponse.data.instructor;
 
           // Check if user is admin (has admin privileges for any course)
@@ -334,7 +336,7 @@ function CourseDetails({ 'data-testid': dataTestId, testId = null }) {
               </Typography>
 
               <Typography variant='body1' color='text.secondary' gutterBottom>
-                Instructor: {course.instructor}
+                Instructor: {course.instructor?.fullName || course.instructor}
               </Typography>
               <Typography variant='body1' paragraph>
                 {course.description}

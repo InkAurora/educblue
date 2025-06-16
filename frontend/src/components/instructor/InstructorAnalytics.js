@@ -95,7 +95,13 @@ function InstructorAnalytics() {
 
   // Check if user is the course instructor
   useEffect(() => {
-    if (user && course && user.fullName !== course.instructor) {
+    if (
+      user &&
+      course &&
+      user.fullName !== course.instructor?.fullName &&
+      user.fullName !== course.instructor &&
+      user._id !== course.instructor?._id
+    ) {
       setError('You are not authorized to view analytics for this course');
       navigate(`/courses/${id}`);
     }

@@ -17,7 +17,7 @@ import ContentRenderer from './content/ContentRenderer';
 import useCourseProgress from '../../hooks/useCourseProgress';
 
 function CourseContent({ 'data-testid': dataTestId }) {
-  const { id, contentId } = useParams();
+  const { id, sectionId, contentId } = useParams();
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -85,7 +85,9 @@ function CourseContent({ 'data-testid': dataTestId }) {
       if (!token) {
         setLoadingUser(false);
         navigate('/login', {
-          state: { from: `/courses/${id}/content/${contentId}` },
+          state: {
+            from: `/courses/${id}/sections/${sectionId}/content/${contentId}`,
+          },
         });
         return;
       }
@@ -100,7 +102,9 @@ function CourseContent({ 'data-testid': dataTestId }) {
           localStorage.removeItem('token');
           localStorage.removeItem('refreshToken');
           navigate('/login', {
-            state: { from: `/courses/${id}/content/${contentId}` },
+            state: {
+              from: `/courses/${id}/sections/${sectionId}/content/${contentId}`,
+            },
           });
         }
         setLoadingUser(false);
@@ -120,20 +124,33 @@ function CourseContent({ 'data-testid': dataTestId }) {
         const courseResponse = await axiosInstance.get(`/api/courses/${id}`);
         const courseData = courseResponse.data;
 
-        // Fetch list of course content items and override course.content for sidebar
+        // Fetch list of course sections for sidebar
         const listResponse = await axiosInstance.get(
-          `/api/courses/${id}/content`,
+          `/api/courses/${id}/sections`,
         );
-        let list = Array.isArray(listResponse.data) ? listResponse.data : [];
+        const sections = Array.isArray(listResponse.data)
+          ? listResponse.data
+          : [];
+
+        // Flatten sections into a content list for navigation
+        let list = [];
+        sections.forEach((section) => {
+          if (section.content && Array.isArray(section.content)) {
+            list = list.concat(section.content);
+          }
+        });
+
         // If new summary list is empty, fall back to original courseData.content
         if (list.length === 0 && Array.isArray(courseData.content)) {
           list = courseData.content;
         }
-        setCourse({ ...courseData, content: list });
 
-        // Fetch the single content item by ID
+        // Set course data with sections for sidebar, but use flattened list for navigation
+        setCourse({ ...courseData, content: list, sections });
+
+        // Fetch the single content item by ID using the new section-based endpoint
         const contentResponse = await axiosInstance.get(
-          `/api/courses/${id}/content/${contentId}`,
+          `/api/courses/${id}/sections/${sectionId}/content/${contentId}`,
         );
         // Use raw response data as the content item
         setContent(contentResponse.data);
@@ -147,8 +164,13 @@ function CourseContent({ 'data-testid': dataTestId }) {
 
         // Check if user is enrolled or instructor
         if (user) {
-          const userIsInstructor = user.fullName === courseData.instructor;
-          const userIsAdmin = user.role === 'admin'; // Check if user is admin
+          // Handle both old string format and new object format for instructor
+          const userIsInstructor =
+            courseData.instructor === user.fullName || // Old format
+            (typeof courseData.instructor === 'object' &&
+              courseData.instructor?.fullName === user.fullName) || // New format
+            (typeof courseData.instructor === 'object' &&
+              courseData.instructor?._id === user._id); // New format by ID
 
           // Check enrollment
           let userIsEnrolled = false;
@@ -176,12 +198,7 @@ function CourseContent({ 'data-testid': dataTestId }) {
           setIsInstructor(userIsInstructor);
           setIsEnrolled(userIsEnrolled);
 
-          // If not authorized, redirect to course details
-          if (!userIsEnrolled && !userIsInstructor && !userIsAdmin) {
-            // Add admin check
-            navigate(`/courses/${id}`);
-            return;
-          }
+          // Authorization will be handled in the component render logic
         }
 
         setLoading(false);
@@ -196,7 +213,7 @@ function CourseContent({ 'data-testid': dataTestId }) {
     if (!loadingUser && user) {
       fetchCourseAndContentData();
     }
-  }, [id, contentId, user, loadingUser, navigate]);
+  }, [id, sectionId, contentId, user, loadingUser, navigate]);
 
   // Get previous content ID (for navigation)
   const getPreviousContentId = () => {
@@ -245,8 +262,14 @@ function CourseContent({ 'data-testid': dataTestId }) {
     );
   }
 
-  // Handle unauthorized access
-  if (!isEnrolled && !isInstructor && user?.role !== 'admin') {
+  // Handle unauthorized access - only check after course data is loaded
+  if (
+    course &&
+    user &&
+    !isEnrolled &&
+    !isInstructor &&
+    user?.role !== 'admin'
+  ) {
     // Add admin check
     return (
       <Container sx={{ py: 4 }}>
@@ -315,6 +338,7 @@ function CourseContent({ 'data-testid': dataTestId }) {
           progress={progress}
           progressPercentage={progressPercentage}
           courseId={id}
+          currentSectionId={sectionId}
         />
       </Box>
 

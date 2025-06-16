@@ -10,11 +10,14 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Divider,
   Box,
   IconButton,
   useTheme,
   useMediaQuery,
+  FormControl,
+  Select,
+  MenuItem,
+  CircularProgress,
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -28,26 +31,82 @@ import axiosInstance from '../utils/axiosConfig';
  * CourseSidebar component displays a persistent sidebar showing course content navigation.
  * It collapses to a toggle button on mobile devices.
  */
-function CourseSidebar({ course, progress, progressPercentage, courseId }) {
+function CourseSidebar({
+  course,
+  progress,
+  progressPercentage,
+  courseId,
+  currentSectionId,
+}) {
   const [open, setOpen] = useState(false);
-  const [contentList, setContentList] = useState(course?.content || []);
+  const [sections, setSections] = useState([]);
+  const [selectedSection, setSelectedSection] = useState(null);
+  const [sectionContent, setSectionContent] = useState([]);
+  const [loadingSections, setLoadingSections] = useState(false);
+  const [loadingContent, setLoadingContent] = useState(false);
+  const [sidebarToggleContainer, setSidebarToggleContainer] = useState(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const navbarHeight = 64; // Standard AppBar height in Material UI
-  const [sidebarToggleContainer, setSidebarToggleContainer] = useState(null); // Fetch course sections for sidebar
+  const navbarHeight = 64; // Standard AppBar height in Material UI  const [sidebarToggleContainer, setSidebarToggleContainer] = useState(null);
+
+  // Fetch course sections for sidebar
   useEffect(() => {
-    const fetchContentList = async () => {
+    const fetchSections = async () => {
       try {
+        setLoadingSections(true);
         const res = await axiosInstance.get(
           `/api/courses/${courseId}/sections`,
         );
-        setContentList(Array.isArray(res.data) ? res.data : []);
+        const sectionsData = Array.isArray(res.data) ? res.data : [];
+        setSections(sectionsData);
+
+        // Auto-select the current section if provided, otherwise select the first section
+        if (sectionsData.length > 0 && !selectedSection) {
+          const sectionToSelect =
+            currentSectionId &&
+            sectionsData.find((s) => s.id === currentSectionId)
+              ? currentSectionId
+              : sectionsData[0].id;
+          setSelectedSection(sectionToSelect);
+        }
       } catch (err) {
-        // ignore load errors
+        // Ignore load errors
+        setSections([]);
+      } finally {
+        setLoadingSections(false);
       }
     };
-    fetchContentList();
-  }, [courseId]);
+    if (courseId) {
+      fetchSections();
+    }
+  }, [courseId, selectedSection, currentSectionId]);
+
+  // Fetch content for selected section
+  useEffect(() => {
+    const fetchSectionContent = async () => {
+      if (!selectedSection) {
+        setSectionContent([]);
+        return;
+      }
+
+      try {
+        setLoadingContent(true);
+        const res = await axiosInstance.get(
+          `/api/courses/${courseId}/sections/${selectedSection}`,
+        );
+        setSectionContent(res.data?.content || []);
+      } catch (err) {
+        // Ignore load errors
+        setSectionContent([]);
+      } finally {
+        setLoadingContent(false);
+      }
+    };
+
+    if (courseId && selectedSection) {
+      fetchSectionContent();
+    }
+  }, [courseId, selectedSection]);
 
   useEffect(() => {
     // Find the container element in the navbar where we'll render the toggle button
@@ -116,10 +175,13 @@ function CourseSidebar({ course, progress, progressPercentage, courseId }) {
           : 'Content';
     }
   };
-
   const isContentCompleted = (contentId) =>
     Array.isArray(progress) &&
     progress.some((p) => p.contentId === contentId && p.completed);
+
+  const handleSectionChange = (event) => {
+    setSelectedSection(event.target.value);
+  };
 
   const drawerWidth = 300;
 
@@ -162,9 +224,38 @@ function CourseSidebar({ course, progress, progressPercentage, courseId }) {
               fontWeight: 500,
             }}
           >
-            Instructor: {course?.instructor}
+            Instructor: {course?.instructor?.fullName || course?.instructor}
           </Typography>
-        </Box>{' '}
+        </Box>
+
+        {/* Section Dropdown */}
+        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+          <FormControl fullWidth size='small'>
+            <Select
+              value={selectedSection || ''}
+              onChange={handleSectionChange}
+              displayEmpty
+              disabled={loadingSections}
+              sx={{
+                '& .MuiSelect-select': {
+                  py: 1,
+                  fontSize: '0.9rem',
+                },
+              }}
+            >
+              <MenuItem value='' disabled>
+                {loadingSections ? 'Loading sections...' : 'Select a section'}
+              </MenuItem>
+              {sections.map((section) => (
+                <MenuItem key={section.id} value={section.id}>
+                  {section.title}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+
+        {/* Content List */}
         <List
           sx={{
             flexGrow: 1,
@@ -175,87 +266,50 @@ function CourseSidebar({ course, progress, progressPercentage, courseId }) {
             },
           }}
         >
-          {contentList.map((section, sectionIndex) => (
-            <React.Fragment
-              key={section._id || section.id || `section-${sectionIndex}`}
-            >
-              {/* Section Header */}
-              <Box sx={{ px: 2, py: 1, bgcolor: 'rgba(0, 0, 0, 0.05)' }}>
-                <Typography
-                  variant='subtitle2'
-                  sx={{
-                    fontWeight: 600,
-                    color: 'text.primary',
-                    fontSize: '0.9rem',
-                  }}
-                >
-                  {section.title}
-                </Typography>
-                {section.description && (
-                  <Typography
-                    variant='caption'
+          {loadingContent ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+              <CircularProgress size={24} />
+            </Box>
+          ) : (
+            sectionContent.map((item, index) => {
+              const contentId = getValidContentId(item, index);
+              const completed = isContentCompleted(contentId);
+
+              return (
+                <ListItem key={contentId} disablePadding sx={{ pl: 2 }}>
+                  <ListItemButton
+                    component={Link}
+                    to={`/courses/${courseId}/sections/${selectedSection}/content/${contentId}`}
                     sx={{
-                      color: 'text.secondary',
-                      fontSize: '0.75rem',
+                      py: 1.5,
+                      '&:hover': {
+                        backgroundColor: 'rgba(0, 191, 165, 0.08)',
+                      },
                     }}
                   >
-                    {section.description}
-                  </Typography>
-                )}
-              </Box>
-
-              {/* Section Content Items */}
-              {section.content &&
-                Array.isArray(section.content) &&
-                section.content.map((item, index) => {
-                  const contentId = getValidContentId(item, index);
-                  const completed = isContentCompleted(contentId);
-                  const isLastItem = section.content.length > index + 1;
-
-                  return (
-                    <React.Fragment key={contentId}>
-                      <ListItem disablePadding sx={{ pl: 2 }}>
-                        <ListItemButton
-                          component={Link}
-                          to={`/courses/${courseId}/sections/${section._id || section.id}/content/${contentId}`}
-                          sx={{
-                            py: 1.5,
-                            '&:hover': {
-                              backgroundColor: 'rgba(0, 191, 165, 0.08)',
-                            },
-                          }}
-                        >
-                          <ListItemIcon sx={{ minWidth: 40 }}>
-                            {getContentTypeIcon(item.type)}
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={item.title}
-                            secondary={getContentTypeLabel(item.type)}
-                            primaryTypographyProps={{
-                              fontWeight: 500,
-                              fontSize: '0.95rem',
-                            }}
-                            secondaryTypographyProps={{
-                              fontSize: '0.8rem',
-                              color: 'text.secondary',
-                            }}
-                          />
-                          {completed && (
-                            <CheckCircleIcon color='success' fontSize='small' />
-                          )}
-                        </ListItemButton>
-                      </ListItem>
-                      {isLastItem && <Divider sx={{ ml: 4 }} />}
-                    </React.Fragment>
-                  );
-                })}
-
-              {/* Divider between sections */}
-              {contentList.length > sectionIndex + 1 && (
-                <Divider sx={{ my: 1, borderStyle: 'dashed' }} />
-              )}
-            </React.Fragment>
-          ))}
+                    <ListItemIcon sx={{ minWidth: 40 }}>
+                      {getContentTypeIcon(item.type)}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={item.title}
+                      secondary={getContentTypeLabel(item.type)}
+                      primaryTypographyProps={{
+                        fontWeight: 500,
+                        fontSize: '0.95rem',
+                      }}
+                      secondaryTypographyProps={{
+                        fontSize: '0.8rem',
+                        color: 'text.secondary',
+                      }}
+                    />
+                    {completed && (
+                      <CheckCircleIcon color='success' fontSize='small' />
+                    )}
+                  </ListItemButton>
+                </ListItem>
+              );
+            })
+          )}
         </List>
       </Box>
 

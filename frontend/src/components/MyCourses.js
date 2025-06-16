@@ -57,7 +57,9 @@ function MyCourses() {
 
         // Filter courses by the instructor's fullName
         const myCourses = response.data.filter(
-          (course) => course.instructor === fullName,
+          (course) =>
+            course.instructor?.fullName === fullName ||
+            course.instructor === fullName,
         );
 
         setCourses(myCourses);

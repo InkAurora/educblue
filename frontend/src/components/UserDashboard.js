@@ -158,7 +158,8 @@ function UserDashboard() {
                             color='text.secondary'
                             sx={{ mt: 1 }}
                           >
-                            Instructor: {course.instructor}
+                            Instructor:{' '}
+                            {course.instructor?.fullName || course.instructor}
                           </Typography>
                           {course.duration && (
                             <Typography variant='body2' color='text.secondary'>

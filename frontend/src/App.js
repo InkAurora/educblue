@@ -62,6 +62,12 @@ function App() {
                 element={<CourseContent data-testid='course-content' />}
               />
 
+              {/* Section-based course content page */}
+              <Route
+                path='/courses/:id/sections/:sectionId/content/:contentId'
+                element={<CourseContent data-testid='course-content' />}
+              />
+
               {/* Home page with special styling */}
               <Route
                 path='/'
