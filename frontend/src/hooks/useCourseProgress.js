@@ -4,10 +4,11 @@ import axiosInstance from '../utils/axiosConfig';
 /**
  * Custom hook for managing course progress
  * @param {string} courseId - The ID of the course
+ * @param {string} sectionId - The ID of the current section
  * @param {string} contentId - The ID of the current content item
  * @returns {Object} Progress data and functions
  */
-const useCourseProgress = (courseId, contentId) => {
+const useCourseProgress = (courseId, sectionId, contentId) => {
   const [progress, setProgress] = useState([]);
   const [progressPercentage, setProgressPercentage] = useState(0);
   const [completing, setCompleting] = useState(false);
@@ -118,7 +119,7 @@ const useCourseProgress = (courseId, contentId) => {
       // If it's not a numeric index, assume it's already a valid ID
       setActualContentId(contentId);
     }
-  }, [courseId, contentId]);
+  }, [courseId, sectionId, contentId]);
 
   // Do a single fetch when component mounts - no polling
   useEffect(() => {
@@ -134,17 +135,17 @@ const useCourseProgress = (courseId, contentId) => {
       isMountedRef.current = false;
     };
   }, [fetchProgressData]);
-
   /**
    * Mark content as completed
    * @returns {Promise<boolean>} Whether the operation was successful
    */
   const markContentCompleted = async () => {
-    if (!courseId || !actualContentId) {
+    if (!courseId || !sectionId || !actualContentId) {
       console.error(
-        'Cannot mark content completed: Missing courseId or contentId',
+        'Cannot mark content completed: Missing courseId, sectionId, or contentId',
         {
           courseId,
+          sectionId,
           actualContentId,
         },
       );
@@ -154,9 +155,9 @@ const useCourseProgress = (courseId, contentId) => {
     try {
       setCompleting(true);
 
-      // Make API call to mark content as completed
+      // Make API call to mark content as completed using the new endpoint format
       const response = await axiosInstance.post(
-        `/api/progress/${courseId}/${actualContentId}`,
+        `/api/progress/${courseId}/${sectionId}/${actualContentId}`,
         { completed: true },
       );
 

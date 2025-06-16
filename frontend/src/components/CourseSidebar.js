@@ -68,16 +68,13 @@ function CourseSidebar({
 
     fetchCourseData();
   }, [courseId, courseData]);
-
   // Fetch progress data if not provided (for persistent sidebar use case)
   useEffect(() => {
     const fetchProgressData = async () => {
       if (!progressData && courseId) {
         try {
-          const response = await axiosInstance.get(
-            `/api/courses/${courseId}/progress`,
-          );
-          setProgressData(response.data.progress || []);
+          const response = await axiosInstance.get(`/api/progress/${courseId}`);
+          setProgressData(response.data.progressRecords || []);
           setProgressPercentageData(response.data.progressPercentage || 0);
         } catch (err) {
           // Handle error silently

@@ -11,7 +11,8 @@ jest.mock('../utils/axiosConfig', () => ({
 
 describe('useCourseProgress Hook', () => {
   const mockCourseId = 'course-123';
-  const mockContentId = 'content-456';
+  const mockSectionId = 'section-456';
+  const mockContentId = 'content-789';
   const mockProgress = [
     { contentId: 'content-123', completed: true },
     { contentId: 'content-789', completed: true },
@@ -27,7 +28,9 @@ describe('useCourseProgress Hook', () => {
     axiosInstance.get.mockResolvedValueOnce({ data: mockProgress });
 
     // Render the hook
-    const { result } = renderHook(() => useCourseProgress(mockCourseId));
+    const { result } = renderHook(() =>
+      useCourseProgress(mockCourseId, mockSectionId),
+    );
 
     // Initially progress should be empty
     expect(result.current.progress).toEqual([]);
@@ -43,7 +46,6 @@ describe('useCourseProgress Hook', () => {
       `/api/progress/${mockCourseId}`,
     );
   });
-
   it('should handle errors when fetching progress', async () => {
     const consoleErrorSpy = jest
       .spyOn(console, 'error')
@@ -51,7 +53,9 @@ describe('useCourseProgress Hook', () => {
 
     axiosInstance.get.mockRejectedValueOnce(new Error('Not found'));
 
-    const { result } = renderHook(() => useCourseProgress(mockCourseId));
+    const { result } = renderHook(() =>
+      useCourseProgress(mockCourseId, mockSectionId),
+    );
 
     // Wait for the error to be processed
     await waitFor(() => {
@@ -72,9 +76,9 @@ describe('useCourseProgress Hook', () => {
       data: { contentId: mockContentId, completed: true },
     });
 
-    // Render the hook with both courseId and contentId
+    // Render the hook with both courseId, sectionId and contentId
     const { result } = renderHook(() =>
-      useCourseProgress(mockCourseId, mockContentId),
+      useCourseProgress(mockCourseId, mockSectionId, mockContentId),
     );
 
     // Wait for the initial data to load
@@ -96,7 +100,7 @@ describe('useCourseProgress Hook', () => {
 
     // Check if API was called correctly
     expect(axiosInstance.post).toHaveBeenCalledWith(
-      `/api/progress/${mockCourseId}/${mockContentId}`,
+      `/api/progress/${mockCourseId}/${mockSectionId}/${mockContentId}`,
       { completed: true },
     );
 
@@ -114,7 +118,7 @@ describe('useCourseProgress Hook', () => {
 
     // Render the hook with the content that exists in the progress data
     const { result } = renderHook(() =>
-      useCourseProgress(mockCourseId, 'content-123'),
+      useCourseProgress(mockCourseId, mockSectionId, 'content-123'),
     );
 
     // Wait for data to be loaded
@@ -130,7 +134,7 @@ describe('useCourseProgress Hook', () => {
     axiosInstance.get.mockResolvedValueOnce({ data: mockProgress });
 
     const { result: result2 } = renderHook(() =>
-      useCourseProgress(mockCourseId, 'content-999'),
+      useCourseProgress(mockCourseId, mockSectionId, 'content-999'),
     );
 
     // Wait for data to be loaded
@@ -141,7 +145,6 @@ describe('useCourseProgress Hook', () => {
     // Should be false for non-existent item
     expect(result2.current.isContentCompleted()).toBe(false);
   });
-
   it('should not fetch progress when courseId is missing', () => {
     // Render hook without courseId
     renderHook(() => useCourseProgress());
@@ -161,7 +164,7 @@ describe('useCourseProgress Hook', () => {
 
     // Render the hook
     const { result } = renderHook(() =>
-      useCourseProgress(mockCourseId, mockContentId),
+      useCourseProgress(mockCourseId, mockSectionId, mockContentId),
     );
 
     // Wait for initial data to be loaded
@@ -184,8 +187,10 @@ describe('useCourseProgress Hook', () => {
   });
 
   it('should not try to mark content as completed when ids are missing', async () => {
-    // Render hook without contentId
-    const { result } = renderHook(() => useCourseProgress(mockCourseId));
+    // Render hook without contentId (and sectionId)
+    const { result } = renderHook(() =>
+      useCourseProgress(mockCourseId, mockSectionId),
+    );
 
     // Try to mark as completed
     await act(async () => {

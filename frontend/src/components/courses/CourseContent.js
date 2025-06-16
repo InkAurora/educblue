@@ -55,6 +55,7 @@ function CourseContent({ 'data-testid': dataTestId }) {
     // Last resort, just use a placeholder with index
     return `content-item-${index}`;
   };
+
   // Use our custom hook for progress tracking - now with enhanced function and state
   const {
     progress,
@@ -62,7 +63,7 @@ function CourseContent({ 'data-testid': dataTestId }) {
     markContentCompleted,
     isContentCompleted,
     refreshProgress,
-  } = useCourseProgress(id, contentId);
+  } = useCourseProgress(id, sectionId, contentId);
 
   // Handler for content completion that also updates the progress bar
   const handleContentCompleted = async () => {
