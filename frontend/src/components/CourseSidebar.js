@@ -20,6 +20,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import MenuIcon from '@mui/icons-material/Menu';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import DescriptionIcon from '@mui/icons-material/Description';
@@ -327,6 +328,16 @@ function CourseSidebar({
                       },
                     }}
                   >
+                    <ListItemIcon sx={{ minWidth: 32, mr: 1 }}>
+                      {completed ? (
+                        <CheckCircleIcon color='success' fontSize='small' />
+                      ) : (
+                        <RadioButtonUncheckedIcon
+                          sx={{ color: 'text.disabled' }}
+                          fontSize='small'
+                        />
+                      )}
+                    </ListItemIcon>
                     <ListItemIcon sx={{ minWidth: 40 }}>
                       {getContentTypeIcon(item.type)}
                     </ListItemIcon>
@@ -342,9 +353,6 @@ function CourseSidebar({
                         color: 'text.secondary',
                       }}
                     />
-                    {completed && (
-                      <CheckCircleIcon color='success' fontSize='small' />
-                    )}
                   </ListItemButton>
                 </ListItem>
               );
