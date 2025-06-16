@@ -6,7 +6,7 @@ applyTo: '**'
 
 ## API Documentation Maintenance
 
-**CRITICAL**: Always update `../API.md` when making ANY API changes (routes, controllers, models, request/response formats).
+**CRITICAL**: Always update `../API.md` (Do not create a new file if you can't find it. Instead try to access it via absolute path) when making ANY API changes (routes, controllers, models, request/response formats).
 
 ### Key Rules:
 

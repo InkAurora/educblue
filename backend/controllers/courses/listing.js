@@ -4,10 +4,20 @@ const User = require('../../models/user');
 // Get all courses
 exports.getCourses = async (req, res) => {
   try {
-    const courses = await Course.find();
+    // Only return basic course information, no sections/content for public access
+    const courses = await Course.find(
+      { status: 'published' },
+      {
+        // Use only exclusion to avoid the projection error
+        sections: 0,
+        content: 0,
+      }
+    ).populate('instructor', 'fullName email');
+
     res.json(courses);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error in getCourses:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
@@ -15,7 +25,10 @@ exports.getCourses = async (req, res) => {
 exports.getCourseById = async (req, res) => {
   try {
     // Fetch the course
-    const course = await Course.findById(req.params.id);
+    const course = await Course.findById(req.params.id).populate(
+      'instructor',
+      'fullName email'
+    );
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
     }
@@ -24,14 +37,18 @@ exports.getCourseById = async (req, res) => {
     if (req.user && req.user.id) {
       const user = await User.findById(req.user.id);
       if (user) {
-        const isInstructor = course.instructor === user.fullName;
+        const isInstructor =
+          course.instructor &&
+          course.instructor.toString() === user._id.toString();
         const isEnrolled = user.enrolledCourses.includes(req.params.id);
         const isAdmin = user.role === 'admin';
+
         if (isInstructor || isEnrolled || isAdmin) {
           return res.json(course);
         }
       }
     }
+
     // Public or non-enrolled user: return limited course information without sections
     const limitedCourse = {
       // eslint-disable-next-line no-underscore-dangle
@@ -73,7 +90,8 @@ exports.getCourseContentById = async (req, res) => {
     }
 
     // Check if user is the course instructor or is enrolled in the course
-    const isInstructor = course.instructor === user.fullName;
+    const isInstructor =
+      course.instructor && course.instructor.toString() === user._id.toString();
     const isEnrolled = user.enrolledCourses.includes(id);
     const isAdmin = user.role === 'admin'; // Check if user is admin
 
@@ -130,7 +148,8 @@ exports.getCourseContents = async (req, res) => {
     }
 
     // Check access: instructor, enrolled student, or admin
-    const isInstructor = course.instructor === user.fullName;
+    const isInstructor =
+      course.instructor && course.instructor.toString() === user._id.toString();
     const isEnrolled = user.enrolledCourses.includes(id);
     const isAdmin = user.role === 'admin';
 
@@ -183,7 +202,8 @@ exports.getCourseSections = async (req, res) => {
     }
 
     // Check access: instructor, enrolled student, or admin
-    const isInstructor = course.instructor === user.fullName;
+    const isInstructor =
+      course.instructor && course.instructor.toString() === user._id.toString();
     const isEnrolled = user.enrolledCourses.includes(id);
     const isAdmin = user.role === 'admin';
 
@@ -231,7 +251,8 @@ exports.getSectionContents = async (req, res) => {
     }
 
     // Check access: instructor, enrolled student, or admin
-    const isInstructor = course.instructor === user.fullName;
+    const isInstructor =
+      course.instructor && course.instructor.toString() === user._id.toString();
     const isEnrolled = user.enrolledCourses.includes(id);
     const isAdmin = user.role === 'admin';
 

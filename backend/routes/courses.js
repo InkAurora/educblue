@@ -26,10 +26,11 @@ const {
   getCourseAnalytics,
 } = require('../controllers/courses/courseAnalytics');
 const auth = require('../middleware/auth');
+const optionalAuth = require('../middleware/optionalAuth');
 const restrictTo = require('../middleware/role');
 
 router.get('/', getCourses);
-router.get('/:id', getCourseById);
+router.get('/:id', optionalAuth, getCourseById);
 // Get sections for a course (without content details)
 router.get('/:id/sections', auth, getCourseSections);
 // Get contents of a specific section

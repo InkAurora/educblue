@@ -18,6 +18,7 @@ describe('Course Endpoints', () => {
   let adminToken;
   let studentToken;
   let instructorUser; // Added to store instructor user object
+  let studentUser; // Added to store student user object
 
   beforeAll(async () => {
     // Create test users with different roles
@@ -38,7 +39,7 @@ describe('Course Endpoints', () => {
       isVerified: true, // Ensure user is verified for login
     });
 
-    const studentUser = await User.create({
+    studentUser = await User.create({
       fullName: 'Test Student',
       email: 'student@test.com',
       password: 'password123',
@@ -89,13 +90,20 @@ describe('Course Endpoints', () => {
     title: 'Test Course',
     description: 'This is a test course',
     price: 99.99,
-    instructor: 'Test Instructor',
     duration: 10,
-    content: [
+    sections: [
       {
-        title: 'Introduction',
-        videoUrl: 'https://example.com/video1',
-        type: 'video',
+        title: 'Section 1',
+        description: 'First section',
+        order: 1,
+        content: [
+          {
+            title: 'Introduction',
+            type: 'video',
+            url: 'https://example.com/video1',
+            order: 1,
+          },
+        ],
       },
     ],
   };
@@ -106,23 +114,32 @@ describe('Course Endpoints', () => {
     markdownDescription:
       '# Main Title\n\nMarkdown course description with **bold** and *italic* text.',
     price: 79.99,
-    instructor: 'Markdown Instructor',
     duration: 8,
-    content: [
+    sections: [
       {
-        title: 'Introduction',
-        videoUrl: 'https://example.com/video1',
-        type: 'video',
-      },
-      {
-        title: 'Markdown Lesson',
-        type: 'markdown',
-        content:
-          '# Lesson 1\n\nThis is a markdown lesson with code:\n```javascript\nconst x = 1;\n```',
-      },
-      {
-        title: 'Quiz',
-        type: 'quiz',
+        title: 'Section 1',
+        description: 'Introduction section',
+        order: 1,
+        content: [
+          {
+            title: 'Introduction',
+            type: 'video',
+            url: 'https://example.com/video1',
+            order: 1,
+          },
+          {
+            title: 'Markdown Lesson',
+            type: 'markdown',
+            content:
+              '# Lesson 1\n\nThis is a markdown lesson with code:\n```javascript\nconst x = 1;\n```',
+            order: 2,
+          },
+          {
+            title: 'Quiz',
+            type: 'quiz',
+            order: 3,
+          },
+        ],
       },
     ],
   };
@@ -157,15 +174,16 @@ describe('Course Endpoints', () => {
         'markdownDescription',
         sampleMarkdownCourse.markdownDescription
       );
-      expect(res.body.course.content).toHaveLength(3);
+      expect(res.body.course.sections).toHaveLength(1);
+      expect(res.body.course.sections[0].content).toHaveLength(3);
 
-      // Check markdown content
-      const markdownContent = res.body.course.content.find(
+      // Check markdown content within sections
+      const markdownContent = res.body.course.sections[0].content.find(
         (c) => c.type === 'markdown'
       );
       expect(markdownContent).toBeDefined();
       expect(markdownContent.content).toBe(
-        sampleMarkdownCourse.content[1].content
+        sampleMarkdownCourse.sections[0].content[1].content
       );
     });
 
@@ -189,10 +207,18 @@ describe('Course Endpoints', () => {
     it('should validate content types', async () => {
       const invalidContentCourse = {
         ...sampleCourse,
-        content: [
+        sections: [
           {
-            title: 'Invalid Content',
-            type: 'invalid_type', // Invalid content type
+            title: 'Test Section',
+            description: 'Test section description',
+            order: 1,
+            content: [
+              {
+                title: 'Invalid Content',
+                type: 'invalid_type', // Invalid content type
+                order: 1,
+              },
+            ],
           },
         ],
       };
@@ -211,11 +237,19 @@ describe('Course Endpoints', () => {
     it('should validate markdown content', async () => {
       const invalidMarkdownCourse = {
         ...sampleCourse,
-        content: [
+        sections: [
           {
-            title: 'Invalid Markdown',
-            type: 'markdown',
-            // Missing content field
+            title: 'Test Section',
+            description: 'Test section description',
+            order: 1,
+            content: [
+              {
+                title: 'Invalid Markdown',
+                type: 'markdown',
+                order: 1,
+                // Missing content field
+              },
+            ],
           },
         ],
       };
@@ -254,10 +288,16 @@ describe('Course Endpoints', () => {
   describe('GET /api/courses', () => {
     it('should get all courses', async () => {
       // Create test courses
-      await Course.create(sampleCourse);
+      await Course.create({
+        ...sampleCourse,
+        instructor: instructorUser._id, // Use ObjectId
+        status: 'published',
+      });
       await Course.create({
         ...sampleCourse,
         title: 'Another Course',
+        instructor: instructorUser._id, // Use ObjectId
+        status: 'published',
       });
 
       const res = await request(app).get('/api/courses');
@@ -267,8 +307,12 @@ describe('Course Endpoints', () => {
       expect(res.body.length).toBe(2);
     });
 
-    it('should include markdown content in course list', async () => {
-      await Course.create(sampleMarkdownCourse);
+    it('should include markdown description but not sections/content in course list', async () => {
+      await Course.create({
+        ...sampleMarkdownCourse,
+        instructor: instructorUser._id, // Use ObjectId
+        status: 'published',
+      });
 
       const res = await request(app).get('/api/courses');
 
@@ -276,30 +320,67 @@ describe('Course Endpoints', () => {
       expect(res.body[0].markdownDescription).toBe(
         sampleMarkdownCourse.markdownDescription
       );
-      expect(
-        res.body[0].content.find((c) => c.type === 'markdown')
-      ).toBeDefined();
+      // Content should not be exposed in public course listing
+      expect(res.body[0].content).toBeUndefined();
+      expect(res.body[0].sections).toBeUndefined();
     });
   });
 
   describe('GET /api/courses/:id', () => {
     it('should get course by id', async () => {
-      const course = await Course.create(sampleCourse);
+      const course = await Course.create({
+        ...sampleCourse,
+        instructor: instructorUser._id, // Use ObjectId
+        status: 'published',
+      });
 
-      // Add authorization if needed
-      const res = await request(app)
-        .get(`/api/courses/${course.id}`)
-        .set('Authorization', `Bearer ${studentToken}`);
+      // Test without enrollment - should return limited info
+      const res = await request(app).get(`/api/courses/${course.id}`);
 
       expect(res.status).toBe(200);
-      expect(res.body._id).toBe(course.id.toString()); // Correct: res.body uses _id
+      expect(res.body._id).toBe(course.id.toString());
       expect(res.body.title).toBe(course.title);
+      expect(res.body.description).toBe(course.description);
+      expect(res.body.price).toBe(course.price);
+      // Should not include sections/content for non-enrolled users
+      expect(res.body.sections).toBeUndefined();
+      expect(res.body.content).toBeUndefined();
     });
 
-    it('should get markdown course by id with all content', async () => {
-      const course = await Course.create(sampleMarkdownCourse);
+    it('should get markdown course by id with limited info for non-enrolled users', async () => {
+      const course = await Course.create({
+        ...sampleMarkdownCourse,
+        instructor: instructorUser._id, // Use ObjectId
+        status: 'published',
+      });
 
-      // Add authorization if needed
+      // Test without enrollment - should return limited info
+      const res = await request(app).get(`/api/courses/${course.id}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.markdownDescription).toBe(
+        sampleMarkdownCourse.markdownDescription
+      );
+      expect(res.body._id).toBe(course.id.toString());
+
+      // Should not include sections/content for non-enrolled users
+      expect(res.body.sections).toBeUndefined();
+      expect(res.body.content).toBeUndefined();
+    });
+
+    it('should get full course details for enrolled users', async () => {
+      const course = await Course.create({
+        ...sampleMarkdownCourse,
+        instructor: instructorUser._id, // Use ObjectId
+        status: 'published',
+      });
+
+      // Enroll the student in the course
+      await User.findByIdAndUpdate(studentUser._id, {
+        $push: { enrolledCourses: course._id },
+      });
+
+      // Test with enrollment - should return full course details
       const res = await request(app)
         .get(`/api/courses/${course.id}`)
         .set('Authorization', `Bearer ${studentToken}`);
@@ -308,20 +389,26 @@ describe('Course Endpoints', () => {
       expect(res.body.markdownDescription).toBe(
         sampleMarkdownCourse.markdownDescription
       );
-      expect(res.body._id).toBe(course.id.toString()); // Correct: res.body uses _id
+      expect(res.body._id).toBe(course.id.toString());
 
-      // Check if content exists before trying to find markdown content
-      if (res.body.content && Array.isArray(res.body.content)) {
-        const markdownContent = res.body.content.find(
-          (c) => c.type === 'markdown'
-        );
-        expect(markdownContent).toBeDefined();
-        if (markdownContent) {
-          expect(markdownContent.content).toBe(
-            sampleMarkdownCourse.content[1].content
-          );
-        }
-      }
+      // Should include sections for enrolled users
+      expect(res.body.sections).toBeDefined();
+      expect(Array.isArray(res.body.sections)).toBe(true);
+      expect(res.body.sections.length).toBe(1);
+
+      // Check section content structure
+      const section = res.body.sections[0];
+      expect(section.content).toBeDefined();
+      expect(Array.isArray(section.content)).toBe(true);
+
+      // Find markdown content in the section
+      const markdownContent = section.content.find(
+        (c) => c.type === 'markdown'
+      );
+      expect(markdownContent).toBeDefined();
+      expect(markdownContent.content).toBe(
+        sampleMarkdownCourse.sections[0].content[1].content
+      );
     });
 
     it('should return 404 for non-existent course', async () => {
@@ -341,22 +428,20 @@ describe('Course Endpoints', () => {
 
     beforeEach(async () => {
       // Create a test course to update
-      const course = await Course.create(sampleCourse);
+      const course = await Course.create({
+        ...sampleCourse,
+        instructor: instructorUser._id, // Use ObjectId
+      });
       courseId = course.id; // Use .id
     });
 
-    it('should update course content successfully as instructor', async () => {
+    it('should return 400 for deprecated endpoint as instructor', async () => {
       const updatedContent = [
         {
           title: 'Updated Introduction',
-          videoUrl: 'https://example.com/updated-video',
           type: 'video',
-        },
-        {
-          title: 'New Module',
-          type: 'markdown',
-          content:
-            '# New Module Content\n\nThis is a new module with markdown.',
+          url: 'https://example.com/updated-video',
+          order: 1,
         },
       ];
 
@@ -365,19 +450,17 @@ describe('Course Endpoints', () => {
         .set('Authorization', `Bearer ${instructorToken}`)
         .send({ content: updatedContent });
 
-      expect(res.status).toBe(200);
-      expect(res.body.message).toContain('updated successfully');
-      expect(res.body.course.content).toHaveLength(2);
-      expect(res.body.course.content[0].title).toBe('Updated Introduction');
-      expect(res.body.course.content[1].type).toBe('markdown');
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('deprecated');
     });
 
-    it('should update course content successfully as admin', async () => {
+    it('should return 400 for deprecated endpoint as admin', async () => {
       const updatedContent = [
         {
           title: 'Admin Updated Content',
-          videoUrl: 'https://example.com/admin-video',
           type: 'video',
+          url: 'https://example.com/admin-video',
+          order: 1,
         },
       ];
 
@@ -386,11 +469,11 @@ describe('Course Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ content: updatedContent });
 
-      expect(res.status).toBe(200);
-      expect(res.body.course.content[0].title).toBe('Admin Updated Content');
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('deprecated');
     });
 
-    it('should return 404 when updating content for non-existent course', async () => {
+    it('should return 400 for deprecated endpoint with non-existent course', async () => {
       const nonExistentId = new mongoose.Types.ObjectId();
       const res = await request(app)
         .put(`/api/courses/${nonExistentId}/content`)
@@ -400,26 +483,26 @@ describe('Course Endpoints', () => {
             {
               title: 'Test Content',
               type: 'video',
-              videoUrl: 'https://example.com/video',
+              url: 'https://example.com/video',
             },
           ],
         });
 
-      expect(res.status).toBe(404);
-      expect(res.body.message).toContain('not found');
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('deprecated');
     });
 
-    it('should validate content array is not empty', async () => {
+    it('should return 400 for deprecated endpoint - empty content validation', async () => {
       const res = await request(app)
         .put(`/api/courses/${courseId}/content`)
         .set('Authorization', `Bearer ${instructorToken}`)
         .send({ content: [] });
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain('non-empty array');
+      expect(res.body.message).toContain('deprecated');
     });
 
-    it('should validate content type', async () => {
+    it('should return 400 for deprecated endpoint - content type validation', async () => {
       const res = await request(app)
         .put(`/api/courses/${courseId}/content`)
         .set('Authorization', `Bearer ${instructorToken}`)
@@ -428,16 +511,16 @@ describe('Course Endpoints', () => {
             {
               title: 'Invalid Type',
               type: 'invalid_type', // Invalid content type
-              videoUrl: 'https://example.com/video',
+              url: 'https://example.com/video',
             },
           ],
         });
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain('valid type');
+      expect(res.body.message).toContain('deprecated');
     });
 
-    it('should validate markdown content has content field', async () => {
+    it('should return 400 for deprecated endpoint - markdown validation', async () => {
       const res = await request(app)
         .put(`/api/courses/${courseId}/content`)
         .set('Authorization', `Bearer ${instructorToken}`)
@@ -452,7 +535,7 @@ describe('Course Endpoints', () => {
         });
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain('content field');
+      expect(res.body.message).toContain('deprecated');
     });
 
     it('should deny access to students', async () => {
@@ -483,7 +566,7 @@ describe('Course Endpoints', () => {
       // Create a test course with content
       const courseWithContentData = {
         ...sampleCourse,
-        instructor: instructorUser.fullName, // Use instructorUser.fullName to match createCourse and publishCourse logic
+        instructor: instructorUser._id, // Use ObjectId instead of fullName
       };
       const courseWithContent = await Course.create(courseWithContentData);
       courseIdWithContent = courseWithContent.id; // Use .id
@@ -526,8 +609,8 @@ describe('Course Endpoints', () => {
         description: 'A course for testing publish without content',
         price: 10,
         duration: 1,
-        instructor: instructorUser.fullName, // Use instructorUser.fullName
-        content: [], // Ensure content is empty
+        instructor: instructorUser._id, // Use ObjectId
+        sections: [], // Ensure sections are empty
       };
       const course = await Course.create(courseWithoutContentData);
 

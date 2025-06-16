@@ -13,6 +13,8 @@ describe('Progress Endpoints', () => {
   let courseId;
   let contentId;
   let quizContentId;
+  let sectionId;
+  let instructorUser;
 
   const testUser = {
     email: 'student@test.com',
@@ -21,31 +23,20 @@ describe('Progress Endpoints', () => {
     fullName: 'Test Student',
   };
 
-  const testCourse = {
-    title: 'Test Course',
-    description: 'This is a test course',
-    price: 99.99,
-    instructor: 'Test Instructor',
-    duration: 10,
-    content: [
-      {
-        title: 'Introduction',
-        videoUrl: 'https://example.com/video1',
-        type: 'video',
-      },
-      {
-        title: 'Quiz 1',
-        type: 'quiz',
-        content: 'This is a quiz question',
-      },
-    ],
-  };
-
   beforeEach(async () => {
     // Clear the database
     await User.deleteMany({});
     await Course.deleteMany({});
     await Progress.deleteMany({});
+
+    // Create an instructor user
+    instructorUser = await User.create({
+      fullName: 'Test Instructor',
+      email: 'instructor@test.com',
+      password: 'password123',
+      role: 'instructor',
+      isVerified: true,
+    });
 
     // Create a test user and get auth token
     const registerRes = await request(app)
@@ -64,16 +55,51 @@ describe('Progress Endpoints', () => {
     } catch (error) {
       // Find the user directly if token parsing fails
       const user = await User.findOne({ email: testUser.email });
+      // eslint-disable-next-line no-underscore-dangle
       userId = user._id.toString();
     }
 
-    // Create a test course
+    // Create a test course with sections
+    const testCourse = {
+      title: 'Test Course',
+      description: 'This is a test course',
+      price: 99.99,
+      instructor: instructorUser._id, // Use ObjectId reference
+      duration: 10,
+      sections: [
+        {
+          title: 'Section 1',
+          description: 'First section',
+          order: 1,
+          content: [
+            {
+              title: 'Introduction',
+              type: 'video',
+              url: 'https://example.com/video1',
+              order: 1,
+            },
+            {
+              title: 'Quiz 1',
+              type: 'quiz',
+              content: 'This is a quiz question',
+              order: 2,
+            },
+          ],
+        },
+      ],
+    };
+
     const course = await Course.create(testCourse);
+    // eslint-disable-next-line no-underscore-dangle
     courseId = course._id;
+    // eslint-disable-next-line no-underscore-dangle
+    sectionId = course.sections[0]._id;
 
     // Get actual content IDs from the created course
-    contentId = course.content[0]._id;
-    quizContentId = course.content[1]._id;
+    // eslint-disable-next-line no-underscore-dangle
+    contentId = course.sections[0].content[0]._id;
+    // eslint-disable-next-line no-underscore-dangle
+    quizContentId = course.sections[0].content[1]._id;
 
     // Enroll the user in the course
     await User.findByIdAndUpdate(userId, {
@@ -87,6 +113,7 @@ describe('Progress Endpoints', () => {
       await Progress.create({
         userId,
         courseId,
+        sectionId,
         contentId,
         completed: true,
         completedAt: new Date(),
@@ -101,6 +128,10 @@ describe('Progress Endpoints', () => {
       expect(Array.isArray(res.body.progressRecords)).toBe(true);
       expect(res.body.progressRecords.length).toBe(1);
       expect(res.body.progressRecords[0]).toHaveProperty('userId', userId);
+      expect(res.body.progressRecords[0]).toHaveProperty(
+        'sectionId',
+        sectionId.toString()
+      );
       expect(res.body.progressRecords[0]).toHaveProperty('completed', true);
       expect(res.body).toHaveProperty('progressPercentage');
     });
@@ -112,6 +143,7 @@ describe('Progress Endpoints', () => {
       await Progress.create({
         userId,
         courseId,
+        sectionId,
         contentId: quizContentId,
         completed: true,
         completedAt: new Date(),
@@ -157,21 +189,27 @@ describe('Progress Endpoints', () => {
     });
   });
 
-  describe('POST /api/progress/:courseId/:contentId', () => {
+  describe('POST /api/progress/:courseId/:sectionId/:contentId', () => {
     it('should create a new progress record successfully', async () => {
       const res = await request(app)
-        .post(`/api/progress/${courseId}/${contentId}`)
+        .post(`/api/progress/${courseId}/${sectionId}/${contentId}`)
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty('userId', userId);
       expect(res.body).toHaveProperty('courseId', courseId.toString());
+      expect(res.body).toHaveProperty('sectionId', sectionId.toString());
       expect(res.body).toHaveProperty('contentId', contentId.toString());
       expect(res.body).toHaveProperty('completed', true);
       expect(res.body).toHaveProperty('completedAt');
 
       // Verify the record was created in the database
-      const record = await Progress.findOne({ userId, courseId, contentId });
+      const record = await Progress.findOne({
+        userId,
+        courseId,
+        sectionId,
+        contentId,
+      });
       expect(record).toBeTruthy();
       expect(record.completed).toBe(true);
     });
@@ -180,13 +218,14 @@ describe('Progress Endpoints', () => {
       const testAnswer = 'My answer to the quiz question';
 
       const res = await request(app)
-        .post(`/api/progress/${courseId}/${quizContentId}`)
+        .post(`/api/progress/${courseId}/${sectionId}/${quizContentId}`)
         .set('Authorization', `Bearer ${authToken}`)
         .send({ answer: testAnswer });
 
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty('userId', userId);
       expect(res.body).toHaveProperty('courseId', courseId.toString());
+      expect(res.body).toHaveProperty('sectionId', sectionId.toString());
       expect(res.body).toHaveProperty('contentId', quizContentId.toString());
       expect(res.body).toHaveProperty('completed', true);
       expect(res.body).toHaveProperty('answer', testAnswer);
@@ -195,6 +234,7 @@ describe('Progress Endpoints', () => {
       const record = await Progress.findOne({
         userId,
         courseId,
+        sectionId,
         contentId: quizContentId,
       });
 
@@ -208,20 +248,26 @@ describe('Progress Endpoints', () => {
       await Progress.create({
         userId,
         courseId,
+        sectionId,
         contentId,
         completed: false,
         completedAt: initialDate,
       });
 
       const res = await request(app)
-        .post(`/api/progress/${courseId}/${contentId}`)
+        .post(`/api/progress/${courseId}/${sectionId}/${contentId}`)
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty('completed', true);
 
       // Verify the record was updated
-      const record = await Progress.findOne({ userId, courseId, contentId });
+      const record = await Progress.findOne({
+        userId,
+        courseId,
+        sectionId,
+        contentId,
+      });
       expect(record.completed).toBe(true);
       expect(new Date(record.completedAt)).not.toEqual(initialDate);
     });
@@ -231,7 +277,7 @@ describe('Progress Endpoints', () => {
       const longAnswer = 'a'.repeat(501);
 
       const res = await request(app)
-        .post(`/api/progress/${courseId}/${quizContentId}`)
+        .post(`/api/progress/${courseId}/${sectionId}/${quizContentId}`)
         .set('Authorization', `Bearer ${authToken}`)
         .send({ answer: longAnswer });
 
@@ -241,7 +287,7 @@ describe('Progress Endpoints', () => {
 
     it('should return 400 for invalid answer (empty string)', async () => {
       const res = await request(app)
-        .post(`/api/progress/${courseId}/${quizContentId}`)
+        .post(`/api/progress/${courseId}/${sectionId}/${quizContentId}`)
         .set('Authorization', `Bearer ${authToken}`)
         .send({ answer: '   ' });
 
@@ -251,7 +297,7 @@ describe('Progress Endpoints', () => {
 
     it('should return 400 for invalid answer (non-string)', async () => {
       const res = await request(app)
-        .post(`/api/progress/${courseId}/${quizContentId}`)
+        .post(`/api/progress/${courseId}/${sectionId}/${quizContentId}`)
         .set('Authorization', `Bearer ${authToken}`)
         .send({ answer: { invalidType: true } });
 
@@ -277,7 +323,7 @@ describe('Progress Endpoints', () => {
 
       // Try to update progress for a course the user is not enrolled in
       const res = await request(app)
-        .post(`/api/progress/${courseId}/${quizContentId}`)
+        .post(`/api/progress/${courseId}/${sectionId}/${quizContentId}`)
         .set('Authorization', `Bearer ${nonEnrolledToken}`)
         .send({ answer: 'This should fail' });
 
@@ -288,7 +334,7 @@ describe('Progress Endpoints', () => {
     it('should require content ID', async () => {
       // Using undefined contentId
       const res = await request(app)
-        .post(`/api/progress/${courseId}/undefined`)
+        .post(`/api/progress/${courseId}/${sectionId}/undefined`)
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.status).toBe(400);
@@ -298,7 +344,7 @@ describe('Progress Endpoints', () => {
     it('should validate content ID format', async () => {
       const invalidContentId = 'invalid-id';
       const res = await request(app)
-        .post(`/api/progress/${courseId}/${invalidContentId}`)
+        .post(`/api/progress/${courseId}/${sectionId}/${invalidContentId}`)
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.status).toBe(400);
@@ -307,7 +353,7 @@ describe('Progress Endpoints', () => {
 
     it('should not allow access without auth token', async () => {
       const res = await request(app).post(
-        `/api/progress/${courseId}/${contentId}`
+        `/api/progress/${courseId}/${sectionId}/${contentId}`
       );
       expect(res.status).toBe(401);
     });
@@ -316,11 +362,20 @@ describe('Progress Endpoints', () => {
       const nonExistentCourseId = new mongoose.Types.ObjectId();
 
       const res = await request(app)
-        .post(`/api/progress/${nonExistentCourseId}/${contentId}`)
+        .post(`/api/progress/${nonExistentCourseId}/${sectionId}/${contentId}`)
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.status).toBe(404);
       expect(res.body.message).toBe('Course not found');
+    });
+
+    it('should test deprecated endpoint returns 400', async () => {
+      const res = await request(app)
+        .post(`/api/progress/${courseId}/${contentId}`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('deprecated');
     });
   });
 });

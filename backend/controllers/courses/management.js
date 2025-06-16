@@ -93,7 +93,6 @@ exports.createCourse = async (req, res) => {
       });
     }
   }
-
   try {
     // Get the user's fullName from database using the ID from JWT token
     const user = await User.findById(req.user.id);
@@ -106,7 +105,7 @@ exports.createCourse = async (req, res) => {
       description,
       markdownDescription,
       price,
-      instructor: user.fullName, // Set instructor to user's fullName
+      instructor: user._id, // Set instructor to user's ObjectId
       duration,
       sections,
       status: 'draft', // Setting status to 'draft' by default
@@ -184,7 +183,9 @@ exports.updateCourse = async (req, res) => {
     );
 
     // Check if user is either an admin or the course instructor
-    const isInstructor = existingCourse.instructor === user.fullName;
+    const isInstructor =
+      existingCourse.instructor &&
+      existingCourse.instructor.toString() === user._id.toString();
     const isAdmin = user.role === 'admin';
     // eslint-disable-next-line no-console
     console.log(
@@ -234,16 +235,30 @@ exports.publishCourse = async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Check if user is either an admin or the course instructor
-    const isInstructor = courseToPublish.instructor === user.fullName;
+    } // Check if user is either an admin or the course instructor
+    const isInstructor =
+      courseToPublish.instructor &&
+      courseToPublish.instructor.toString() === user._id.toString();
     const isAdmin = user.role === 'admin';
 
     // Check if the course is already published
     if (courseToPublish.status === 'published') {
       return res.status(400).json({
         message: 'Course is already published',
+      });
+    }
+
+    // Check if the course has content (sections with content) before publishing
+    const hasContent =
+      courseToPublish.sections &&
+      courseToPublish.sections.length > 0 &&
+      courseToPublish.sections.some(
+        (section) => section.content && section.content.length > 0
+      );
+
+    if (!hasContent) {
+      return res.status(400).json({
+        message: 'Course must have content to be published',
       });
     }
 
@@ -300,7 +315,9 @@ exports.deleteCourse = async (req, res) => {
     );
 
     // Check if user is either an admin or the course instructor
-    const isInstructor = courseToDelete.instructor === user.fullName;
+    const isInstructor =
+      courseToDelete.instructor &&
+      courseToDelete.instructor.toString() === user._id.toString();
     const isAdmin = user.role === 'admin';
     // eslint-disable-next-line no-console
     console.log(

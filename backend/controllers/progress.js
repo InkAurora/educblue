@@ -31,18 +31,9 @@ exports.getProgress = async (req, res) => {
       user.enrolledCourses &&
       user.enrolledCourses.some(
         (id) => id && id.toString() === courseId.toString()
-      );
-
-    // Check if user is instructor
+      ); // Check if user is instructor - simplified ObjectId comparison
     const isInstructor =
-      course.instructor &&
-      (course.instructor === userId ||
-        course.instructor.toString() === userId ||
-        (typeof course.instructor === 'object' &&
-          // eslint-disable-next-line no-underscore-dangle
-          course.instructor._id &&
-          // eslint-disable-next-line no-underscore-dangle
-          course.instructor._id.toString() === userId));
+      course.instructor && course.instructor.toString() === userId.toString();
 
     if (!isEnrolled && !isInstructor) {
       return res.status(403).json({
@@ -132,18 +123,9 @@ exports.updateProgress = async (req, res) => {
       user.enrolledCourses &&
       user.enrolledCourses.some(
         (id) => id && id.toString() === courseId.toString()
-      );
-
-    // Check if user is instructor
+      ); // Check if user is instructor - simplified ObjectId comparison
     const isInstructor =
-      course.instructor &&
-      (course.instructor === userId ||
-        course.instructor.toString() === userId ||
-        (typeof course.instructor === 'object' &&
-          // eslint-disable-next-line no-underscore-dangle
-          course.instructor._id &&
-          // eslint-disable-next-line no-underscore-dangle
-          course.instructor._id.toString() === userId));
+      course.instructor && course.instructor.toString() === userId.toString();
 
     if (!isEnrolled && !isInstructor) {
       return res.status(403).json({

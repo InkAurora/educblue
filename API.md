@@ -20,6 +20,57 @@ All responses are in JSON format. Error responses include a `message` field desc
 
 ---
 
+## Recent Changes
+
+### v2.2 - June 15, 2025
+
+**🔒 SECURITY ENHANCEMENTS:**
+
+1. **Course Data Access Control**
+
+   - Enhanced security for course endpoints to prevent unauthorized data exposure
+   - `GET /courses` - Only returns basic course information (no sections/content)
+   - `GET /courses/:id` - Conditional response based on authentication:
+     - **Public/Unauthenticated**: Basic course info only
+     - **Enrolled/Instructor/Admin**: Full course details including sections and content
+
+2. **Optional Authentication Middleware**
+   - New optional authentication system for course detail endpoint
+   - Supports both public browsing and authenticated access
+   - Automatic access level detection based on user enrollment and role
+
+### v2.1 - December 15, 2025
+
+**⚠️ BREAKING CHANGES:**
+
+1. **Course Model - Instructor Field Updated**
+
+   - `instructor` field changed from `String` (instructor name) to `ObjectId` reference to User model
+   - **Old format**: `"instructor": "Jane Smith"`
+   - **New format**: `"instructor": { "_id": "507f...", "fullName": "Jane Smith", "email": "jane@example.com" }`
+   - Course responses now populate instructor details automatically
+
+2. **Progress Tracking - Enhanced Authentication**
+
+   - Improved instructor access verification using ObjectId comparison
+   - Users can access progress if they are either:
+     - Enrolled in the course (students)
+     - The course instructor (instructors)
+     - Admin users
+
+3. **Section-Based Progress Structure**
+   - Progress tracking now requires `sectionId` in addition to `courseId` and `contentId`
+   - Endpoint: `POST /progress/:courseId/:sectionId/:contentId`
+   - Legacy endpoint `POST /progress/:courseId/:contentId` returns deprecation notice
+
+**Migration Notes:**
+
+- Existing courses with string instructor values need to be updated to ObjectId references
+- Progress records must include sectionId for new submissions
+- Frontend applications should update to use the new progress endpoint structure
+
+---
+
 ## Table of Contents
 
 1. [Authentication Endpoints](#authentication-endpoints)
@@ -367,7 +418,7 @@ Delete a specific user from the system.
 
 **GET** `/courses`
 
-Get a list of all published courses.
+Get a list of all published courses. Returns basic course information only (no sections or content for security).
 
 **Response (200):**
 
@@ -379,29 +430,19 @@ Get a list of all published courses.
     "description": "Learn the basics of JavaScript programming",
     "markdownDescription": "# Course Overview\n\nThis course covers...",
     "price": 99.99,
-    "instructor": "Jane Smith",
+    "instructor": {
+      "_id": "507f1f77bcf86cd799439010",
+      "fullName": "Jane Smith",
+      "email": "jane.smith@example.com"
+    },
     "duration": 40,
     "status": "published",
-    "sections": [
-      {
-        "_id": "507f1f77bcf86cd799439012",
-        "title": "Introduction",
-        "description": "Getting started with JavaScript",
-        "order": 0,
-        "content": [
-          {
-            "_id": "507f1f77bcf86cd799439013",
-            "title": "Welcome Video",
-            "type": "video",
-            "videoUrl": "https://example.com/video1.mp4"
-          }
-        ]
-      }
-    ],
     "createdAt": "2025-01-01T00:00:00.000Z"
   }
 ]
 ```
+
+**Security Note:** This endpoint does not return `sections` or `content` fields to prevent unauthorized access to course materials.
 
 **Error Responses:**
 
@@ -412,10 +453,14 @@ Get a list of all published courses.
 ### Get Course by ID
 
 **GET** `/courses/:id`
+**Authentication Optional**
 
-Get detailed information about a specific course.
+Get detailed information about a specific course. Response varies based on authentication and access level:
 
-**Response (200):**
+- **Public/Unauthenticated users**: Get basic course information only
+- **Enrolled students, course instructors, or admins**: Get full course details including sections and content
+
+**Response (200) - Public Access:**
 
 ```json
 {
@@ -424,7 +469,30 @@ Get detailed information about a specific course.
   "description": "Learn the basics of JavaScript programming",
   "markdownDescription": "# Course Overview\n\nThis course covers...",
   "price": 99.99,
-  "instructor": "Jane Smith",
+  "instructor": {
+    "_id": "507f1f77bcf86cd799439010",
+    "fullName": "Jane Smith",
+    "email": "jane.smith@example.com"
+  },
+  "duration": 40,
+  "status": "published"
+}
+```
+
+**Response (200) - Enrolled/Instructor/Admin Access:**
+
+```json
+{
+  "_id": "507f1f77bcf86cd799439011",
+  "title": "JavaScript Fundamentals",
+  "description": "Learn the basics of JavaScript programming",
+  "markdownDescription": "# Course Overview\n\nThis course covers...",
+  "price": 99.99,
+  "instructor": {
+    "_id": "507f1f77bcf86cd799439010",
+    "fullName": "Jane Smith",
+    "email": "jane.smith@example.com"
+  },
   "duration": 40,
   "status": "published",
   "sections": [
@@ -459,6 +527,14 @@ Get detailed information about a specific course.
   "createdAt": "2025-01-01T00:00:00.000Z"
 }
 ```
+
+**Security Access Control:**
+
+- **Public access**: Returns basic course information without sections/content
+- **Authenticated access**: Full course details only available to:
+  - Students enrolled in the course
+  - Course instructor
+  - Admin users
 
 **Error Responses:**
 
@@ -1046,9 +1122,13 @@ Enroll in a course after successful payment.
 ### Get Course Progress
 
 **GET** `/progress/:courseId`
-**Authentication Required**
+**Authentication Required** (Student enrolled in course, Course Instructor, or Admin)
 
-Get progress information for a specific course.
+Get progress information for a specific course. Users can access progress if they are:
+
+- Enrolled in the course (students)
+- The course instructor
+- Admin users
 
 **Response (200):**
 
@@ -1085,9 +1165,13 @@ Get progress information for a specific course.
 ### Update Progress
 
 **POST** `/progress/:courseId/:sectionId/:contentId`
-**Authentication Required**
+**Authentication Required** (Student enrolled in course, Course Instructor, or Admin)
 
-Update progress for a specific content item.
+Update progress for a specific content item. Users can update progress if they are:
+
+- Enrolled in the course (students)
+- The course instructor
+- Admin users
 
 **Request Body:**
 
@@ -1129,6 +1213,23 @@ Update progress for a specific content item.
 - `404`: Section not found
 - `404`: Content not found
 - `500`: Server error
+
+---
+
+### Update Progress (Deprecated)
+
+**POST** `/progress/:courseId/:contentId`
+**⚠️ DEPRECATED** - Use `/progress/:courseId/:sectionId/:contentId` instead
+
+This endpoint is deprecated and returns a 400 error with migration instructions.
+
+**Response (400):**
+
+```json
+{
+  "message": "This endpoint is deprecated. Please use /progress/:courseId/:sectionId/:contentId to update progress within sections."
+}
+```
 
 ---
 
