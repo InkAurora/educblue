@@ -215,24 +215,46 @@ export const convertMarkdownToHTML = (markdown) => {
       /==(.*?)==/gim,
       '<mark style="background: #ffeb3b; padding: 2px 4px; border-radius: 2px;">$1</mark>',
     );
+
   // Process unordered lists before converting line breaks
   // This ensures list items stay grouped together
-  const processedHtml = html.replace(/((?:^[*-] .+$\n?)+)/gim, (match) => {
-    const listItems = match
-      .trim()
-      .split('\n')
-      .map((line) =>
-        line.replace(
-          /^[*-] (.+)$/,
-          '<li style="margin-bottom: 0.5rem;">$1</li>',
-        ),
-      )
-      .join('');
-    return `<ul style="margin-bottom: 1rem;">${listItems}</ul>`;
-  });
+  const unorderedProcessedHtml = html.replace(
+    /((?:^[*-] .+$\n?)+)/gim,
+    (match) => {
+      const listItems = match
+        .trim()
+        .split('\n')
+        .map((line) =>
+          line.replace(
+            /^[*-] (.+)$/,
+            '<li style="margin-bottom: 0.5rem;">$1</li>',
+          ),
+        )
+        .join('');
+      return `<ul style="margin-bottom: 1rem;">${listItems}</ul>`;
+    },
+  );
+
+  // Process ordered lists
+  const orderedProcessedHtml = unorderedProcessedHtml.replace(
+    /((?:^\d+\. .+$\n?)+)/gim,
+    (match) => {
+      const listItems = match
+        .trim()
+        .split('\n')
+        .map((line) =>
+          line.replace(
+            /^\d+\. (.+)$/,
+            '<li style="margin-bottom: 0.5rem;">$1</li>',
+          ),
+        )
+        .join('');
+      return `<ol style="margin-bottom: 1rem;">${listItems}</ol>`;
+    },
+  );
 
   // Now convert line breaks
-  const finalHtml = processedHtml.replace(/\n/g, '<br>');
+  const finalHtml = orderedProcessedHtml.replace(/\n/g, '<br>');
 
   return finalHtml;
 };
