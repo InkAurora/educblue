@@ -439,7 +439,20 @@ function ContentRenderer({
 
       {/* Markdown content rendering */}
       {type === 'markdown' && content && (
-        <Box sx={getMarkdownStyles()} data-testid='markdown-content'>
+        <Box
+          sx={{
+            ...getMarkdownStyles(),
+            overflow: 'hidden',
+            maxWidth: '100%',
+            width: '100%',
+            wordWrap: 'break-word',
+            '& *': {
+              maxWidth: '100%',
+              boxSizing: 'border-box',
+            },
+          }}
+          data-testid='markdown-content'
+        >
           <ReactMarkdown>{sanitizeMarkdown(content)}</ReactMarkdown>
         </Box>
       )}
