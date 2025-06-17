@@ -1,31 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Container,
-  Box,
   Typography,
+  Box,
   Button,
   Alert,
   Paper,
-  CircularProgress,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   TextField,
+  CircularProgress,
+  Chip,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  Chip,
-  Divider,
   IconButton,
+  Divider,
 } from '@mui/material';
 import { Add, Edit as EditIcon } from '@mui/icons-material';
-
-import ContentItemList from './ContentItemList';
-import ContentItemForm from './ContentItemForm';
+import SimpleMDE from 'react-simplemde-editor';
+import 'easymde/dist/easymde.min.css';
 import axiosInstance from '../../../utils/axiosConfig';
+import ContentItemForm from './ContentItemForm';
+import ContentItemList from './ContentItemList';
 
 function CourseContentEditor() {
   const { id } = useParams();
@@ -69,7 +70,39 @@ function CourseContentEditor() {
     description: '',
     price: '',
     duration: '',
+    markdownDescription: '', // New field for markdown description
   });
+
+  // Memoized SimpleMDE configuration to prevent re-renders
+  const simpleMDEOptions = useMemo(
+    () => ({
+      spellChecker: false,
+      placeholder: 'Write detailed course description with Markdown...',
+      status: ['lines', 'words'],
+      previewClass: ['editor-preview'],
+      autofocus: false,
+      minHeight: '200px',
+      hideIcons: [],
+      showIcons: [
+        'bold',
+        'italic',
+        'heading',
+        'quote',
+        'unordered-list',
+        'ordered-list',
+        'link',
+        'preview',
+      ],
+    }),
+    [],
+  );
+  // Memoized onChange handler to prevent SimpleMDE re-mounting
+  const handleMarkdownChange = useCallback((value) => {
+    setCourseEditData((prev) => ({
+      ...prev,
+      markdownDescription: value,
+    }));
+  }, []);
 
   // Section management functions - defined early to avoid hoisting issues
   const fetchSectionContent = async () => {
@@ -544,6 +577,7 @@ function CourseContentEditor() {
         description: course.description || '',
         price: course.price || '',
         duration: course.duration || '',
+        markdownDescription: course.markdownDescription || '', // Initialize with existing markdownDescription
       });
       setCourseEditDialogOpen(true);
     }
@@ -556,6 +590,7 @@ function CourseContentEditor() {
       description: '',
       price: '',
       duration: '',
+      markdownDescription: '', // Reset markdownDescription on close
     });
     setError('');
   };
@@ -570,6 +605,7 @@ function CourseContentEditor() {
       const updateData = {
         title: courseEditData.title.trim(),
         description: courseEditData.description.trim(),
+        markdownDescription: courseEditData.markdownDescription.trim(), // Include markdownDescription in updates
       };
 
       // Only include price and duration if they have values
@@ -958,6 +994,19 @@ function CourseContentEditor() {
             }
             sx={{ mb: 2 }}
           />
+
+          {/* Markdown Description Editor */}
+          <Box sx={{ mb: 2 }}>
+            <Typography variant='subtitle1' sx={{ mb: 1 }}>
+              Detailed Description (Markdown)
+            </Typography>
+            <SimpleMDE
+              key='course-markdown-editor'
+              value={courseEditData.markdownDescription}
+              onChange={handleMarkdownChange}
+              options={simpleMDEOptions}
+            />
+          </Box>
           <TextField
             margin='dense'
             label='Price'
