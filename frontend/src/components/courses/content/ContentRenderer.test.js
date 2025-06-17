@@ -8,6 +8,7 @@ import axiosInstance from '../../../utils/axiosConfig';
 jest.mock('../../../utils/markdownUtils', () => ({
   sanitizeMarkdown: jest.fn((content) => content),
   getMarkdownStyles: jest.fn(() => ({ color: 'inherit' })),
+  convertMarkdownToHTML: jest.fn((content) => content || ''),
 }));
 
 // Mock react-markdown component

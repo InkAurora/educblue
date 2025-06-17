@@ -5,9 +5,7 @@ import DOMPurify from 'dompurify';
  * @param {string} content - The markdown content to sanitize
  * @returns {string} - The sanitized markdown content
  */
-export const sanitizeMarkdown = (content) => {
-  return DOMPurify.sanitize(content);
-};
+export const sanitizeMarkdown = (content) => DOMPurify.sanitize(content);
 
 /**
  * Returns the styles to be applied to rendered markdown content
@@ -197,9 +195,6 @@ export const convertMarkdownToHTML = (markdown) => {
       /^# (.*$)/gim,
       '<h1 style="color: #333; font-weight: 700; margin: 28px 0 20px 0; font-size: 1.6em;">$1</h1>',
     )
-    // Unordered lists (convert to <li> first, then wrap in <ul>)
-    .replace(/^\* (.+)$/gim, '<li style="margin-bottom: 0.5rem;">$1</li>')
-    .replace(/^- (.+)$/gim, '<li style="margin-bottom: 0.5rem;">$1</li>')
     // Bold text
     .replace(
       /\*\*(.*?)\*\*/g,
@@ -219,14 +214,25 @@ export const convertMarkdownToHTML = (markdown) => {
     .replace(
       /==(.*?)==/gim,
       '<mark style="background: #ffeb3b; padding: 2px 4px; border-radius: 2px;">$1</mark>',
-    )
-    // Line breaks
-    .replace(/\n/g, '<br>');
-  // Wrap consecutive <li> elements in <ul>
-  const finalHtml = html.replace(
-    /(<li[^>]*>.*?<\/li>(?:\s*<li[^>]*>.*?<\/li>)*)/gims,
-    '<ul style="margin-left: 2rem; margin-bottom: 1rem;">$1</ul>',
-  );
+    );
+  // Process unordered lists before converting line breaks
+  // This ensures list items stay grouped together
+  const processedHtml = html.replace(/((?:^[*-] .+$\n?)+)/gim, (match) => {
+    const listItems = match
+      .trim()
+      .split('\n')
+      .map((line) =>
+        line.replace(
+          /^[*-] (.+)$/,
+          '<li style="margin-bottom: 0.5rem;">$1</li>',
+        ),
+      )
+      .join('');
+    return `<ul style="margin-bottom: 1rem;">${listItems}</ul>`;
+  });
+
+  // Now convert line breaks
+  const finalHtml = processedHtml.replace(/\n/g, '<br>');
 
   return finalHtml;
 };
