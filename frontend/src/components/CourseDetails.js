@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import ReactMarkdown from 'react-markdown';
-import DOMPurify from 'dompurify';
 import {
   Container,
   Typography,
@@ -21,14 +19,9 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import QuizIcon from '@mui/icons-material/Quiz';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import axiosInstance from '../utils/axiosConfig';
+import { convertMarkdownToHTML } from '../utils/markdownUtils';
 import CourseSidebar from './CourseSidebar';
 import ProgressBar from './courses/ProgressBar';
-
-// Helper function to sanitize markdown content
-const sanitizeMarkdown = (content) => {
-  if (!content) return '';
-  return DOMPurify.sanitize(content);
-};
 
 // Helper function to get the appropriate icon based on content type
 const getContentTypeIcon = (type) => {
@@ -427,22 +420,22 @@ function CourseDetails({ 'data-testid': dataTestId, testId = null }) {
                   <Typography variant='h6' gutterBottom fontWeight='bold'>
                     About this course
                   </Typography>
+                  
                   <Box
                     sx={{
-                      '& p': { mb: 2 },
-                      '& h1, & h2, & h3, & h4, & h5, & h6': { mt: 3, mb: 2 },
-                      '& ul, & ol': { pl: 4, mb: 2 },
-                      '& code': {
-                        p: 0.5,
-                        backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                        borderRadius: 1,
+                      overflow: 'hidden',
+                      maxWidth: '100%',
+                      width: '100%',
+                      wordWrap: 'break-word',
+                      '& *': {
+                        maxWidth: '100%',
+                        boxSizing: 'border-box',
                       },
                     }}
-                  >
-                    <ReactMarkdown>
-                      {sanitizeMarkdown(course.markdownDescription)}
-                    </ReactMarkdown>
-                  </Box>
+                    dangerouslySetInnerHTML={{
+                      __html: convertMarkdownToHTML(course.markdownDescription),
+                    }}
+                  />
                 </Box>
               </Box>
             )}

@@ -61,7 +61,37 @@ h6 {
 
 code {
   font-family:
+    'Fira Code', 'Cascadia Code', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono',
     source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+/* Enhanced code block styling for better syntax highlighting support */
+pre code {
+  font-family:
+    'Fira Code', 'Cascadia Code', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono',
+    source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+  font-feature-settings: 'liga' 1, 'calt' 1; /* Enable ligatures if font supports them */
+  font-variant-ligatures: common-ligatures;
+}
+
+/* Ensure scrollbars in code blocks are styled consistently */
+pre::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+pre::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+pre::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+pre::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 /* Mobile-first responsive design helpers */

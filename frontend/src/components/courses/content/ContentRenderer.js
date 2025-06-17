@@ -13,14 +13,10 @@ import {
   FormControlLabel,
   FormLabel,
 } from '@mui/material';
-import ReactMarkdown from 'react-markdown';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import SendIcon from '@mui/icons-material/Send';
 import axiosInstance from '../../../utils/axiosConfig';
-import {
-  sanitizeMarkdown,
-  getMarkdownStyles,
-} from '../../../utils/markdownUtils';
+import { convertMarkdownToHTML } from '../../../utils/markdownUtils';
 
 // Helper function to determine if URL is a YouTube URL and extract video ID
 const getYoutubeVideoId = (url) => {
@@ -436,12 +432,11 @@ function ContentRenderer({
             )}
         </Box>
       )}
-
+      
       {/* Markdown content rendering */}
       {type === 'markdown' && content && (
         <Box
           sx={{
-            ...getMarkdownStyles(),
             overflow: 'hidden',
             maxWidth: '100%',
             width: '100%',
@@ -451,10 +446,11 @@ function ContentRenderer({
               boxSizing: 'border-box',
             },
           }}
+          dangerouslySetInnerHTML={{
+            __html: convertMarkdownToHTML(content),
+          }}
           data-testid='markdown-content'
-        >
-          <ReactMarkdown>{sanitizeMarkdown(content)}</ReactMarkdown>
-        </Box>
+        />
       )}
 
       {/* Text-based quiz content rendering */}
