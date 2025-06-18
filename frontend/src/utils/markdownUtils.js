@@ -150,20 +150,34 @@ export const getMarkdownStyles = () => ({
 export const convertMarkdownToHTML = (markdown) => {
   if (!markdown) return '';
 
-  const plainText = sanitizeMarkdown(markdown);
+  // Don't sanitize the raw markdown first - let our conversion handle HTML escaping in code blocks
+  const plainText = markdown;
   // Enhanced markdown-to-HTML conversion with modern dark theme code blocks
   const html = plainText // Code blocks (triple backticks) - enhanced with modern dark theme
     .replace(/```([^`]*?)```/gims, (match, code) => {
       const cleanCode = code.trim();
+      // Escape HTML entities to prevent code from being rendered as HTML
+      const escapedCode = cleanCode
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
       return `<div style="position: relative; margin: 16px 0; border-radius: 8px; background: #1e1e1e; border: 1px solid #333; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);">
-        <pre style="margin: 0; padding: 12px 16px; background: transparent; color: #d4d4d4; font-family: 'Fira Code', 'Cascadia Code', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace; font-size: 14px; line-height: 1.6; overflow-x: auto;"><code>${cleanCode}</code></pre>
+        <pre style="margin: 0; padding: 12px 16px; background: transparent; color: #d4d4d4; font-family: 'Fira Code', 'Cascadia Code', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace; font-size: 14px; line-height: 1.6; overflow-x: auto;"><code>${escapedCode}</code></pre>
       </div>`;
     })
     // Inline code (single backticks)
-    .replace(
-      /`([^`]+)`/g,
-      "<code style=\"background: rgba(2, 230, 239, 0.1); color: #02e6ef; padding: 2px 6px; border-radius: 4px; font-family: 'Fira Code', 'Cascadia Code', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace; font-size: 0.9em;\">$1</code>",
-    )
+    .replace(/`([^`]+)`/g, (match, code) => {
+      // Escape HTML entities to prevent code from being rendered as HTML
+      const escapedCode = code
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+      return `<code style="background: rgba(2, 230, 239, 0.1); color: #02e6ef; padding: 2px 6px; border-radius: 4px; font-family: 'Fira Code', 'Cascadia Code', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace; font-size: 0.9em;">${escapedCode}</code>`;
+    })
     // Images
     .replace(
       /!\[([^\]]*)\]\(([^)]+)\)/gim,
@@ -249,7 +263,6 @@ export const convertMarkdownToHTML = (markdown) => {
       return `<ol style="margin-bottom: 1rem;">${listItems}</ol>`;
     },
   );
-
   // Convert line breaks, but avoid adding <br> tags around block elements
   const finalHtml = orderedProcessedHtml
     // Remove any <br> tags that might be adjacent to code blocks
@@ -261,5 +274,6 @@ export const convertMarkdownToHTML = (markdown) => {
     // Convert remaining single newlines to <br> tags
     .replace(/\n/g, '<br>');
 
-  return finalHtml;
+  // Sanitize the final HTML to prevent XSS, but preserve our escaped code blocks
+  return sanitizeMarkdown(finalHtml);
 };
