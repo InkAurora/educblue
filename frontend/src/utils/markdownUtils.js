@@ -104,7 +104,9 @@ export const getMarkdownStyles = () => ({
       borderLeft: '4px solid #e0e0e0',
       paddingLeft: '1rem',
       fontStyle: 'italic',
-      margin: '1rem 0',
+      margin: '0 1rem',
+      marginBlockStart: '0',
+      marginBlockEnd: '0',
     },
     '& table': {
       borderCollapse: 'collapse',
@@ -191,7 +193,7 @@ export const convertMarkdownToHTML = (markdown) => {
     // Blockquotes
     .replace(
       /^> (.+)$/gim,
-      '<blockquote style="border-left: 4px solid #e0e0e0; padding-left: 1rem; font-style: italic; margin: 1rem 0; color: #666;">$1</blockquote>',
+      '<blockquote style="border-left: 4px solid #e0e0e0; padding-left: 1rem; font-style: italic; margin: 0 1rem; margin-block-start: 0; margin-block-end: 0; color: #666;">$1</blockquote>',
     )
     // Headers
     .replace(
