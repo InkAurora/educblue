@@ -121,9 +121,8 @@ function ContentItemForm({
       currentItem.content.trim().length >= 2 // Ensure question has sufficient content
     );
   };
-
   return (
-    <Dialog open={open} onClose={onClose} maxWidth='md' fullWidth>
+    <Dialog open={open} maxWidth='md' fullWidth>
       <DialogTitle id='content-dialog-title' data-testid='content-dialog-title'>
         {isEditing ? 'Edit Content Item' : 'Add Content Item'}
       </DialogTitle>
