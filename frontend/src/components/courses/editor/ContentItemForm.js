@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import {
   Dialog,
@@ -13,7 +13,6 @@ import {
   Select,
   MenuItem,
   Typography,
-  Box,
   FormHelperText,
 } from '@mui/material';
 import SimpleMDE from 'react-simplemde-editor';
@@ -29,6 +28,18 @@ function ContentItemForm({
   error,
   isEditing,
 }) {
+  // Ref for the dialog content to control scrolling
+  const dialogContentRef = useRef(null);
+
+  // Function to ensure content is visible when scrolling
+  const ensureContentVisible = () => {
+    if (dialogContentRef.current) {
+      const element = dialogContentRef.current;
+      // Scroll to bottom to ensure last content is visible
+      element.scrollTop = element.scrollHeight;
+    }
+  };
+
   // Reset form when changing content type
   useEffect(() => {
     if (currentItem.type === 'video') {
@@ -60,6 +71,16 @@ function ContentItemForm({
       }));
     }
   }, [currentItem.type, setCurrentItem]);
+
+  // Auto-scroll to ensure content is visible when dialog opens or content changes
+  useEffect(() => {
+    if (open && dialogContentRef.current) {
+      // Small delay to ensure DOM is updated
+      setTimeout(() => {
+        ensureContentVisible();
+      }, 100);
+    }
+  }, [open, currentItem.content]);
 
   // Memoize the SimpleMDE options to prevent re-rendering issues
   const editorOptions = useMemo(
@@ -121,12 +142,35 @@ function ContentItemForm({
       currentItem.content.trim().length >= 2 // Ensure question has sufficient content
     );
   };
+
   return (
     <Dialog open={open} maxWidth='md' fullWidth>
       <DialogTitle id='content-dialog-title' data-testid='content-dialog-title'>
         {isEditing ? 'Edit Content Item' : 'Add Content Item'}
       </DialogTitle>
-      <DialogContent>
+      <DialogContent
+        ref={dialogContentRef}
+        sx={{
+          maxHeight: '70vh',
+          minHeight: '200px',
+          overflowY: 'scroll',
+          overflowX: 'hidden',
+          '&::-webkit-scrollbar': {
+            width: '8px',
+          },
+          '&::-webkit-scrollbar-track': {
+            backgroundColor: '#f1f1f1',
+            borderRadius: '4px',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: '#c1c1c1',
+            borderRadius: '4px',
+            '&:hover': {
+              backgroundColor: '#a8a8a8',
+            },
+          },
+        }}
+      >
         {error && (
           <Alert severity='error' sx={{ mb: 2 }}>
             {error}
