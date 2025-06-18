@@ -40,6 +40,7 @@ function ContentRenderer({
   error,
   progress,
   courseId,
+  sectionId,
   isInstructor,
 }) {
   const { type, title, content, videoUrl, options, question } = contentItem;
@@ -206,18 +207,20 @@ function ContentRenderer({
   const handleCloseFeedback = () => {
     setShowFeedback(false);
   };
-
   // Handle quiz answer submission
   const handleQuizAnswerSubmit = async () => {
-    if (!courseId || !contentId) return;
+    if (!courseId || !sectionId || !contentId) return;
 
     try {
       setSubmittingAnswer(true);
 
-      await axiosInstance.post(`/api/progress/${courseId}/${contentId}`, {
-        answer: quizAnswer,
-        completed: true,
-      });
+      await axiosInstance.post(
+        `/api/progress/${courseId}/${sectionId}/${contentId}`,
+        {
+          answer: quizAnswer,
+          completed: true,
+        },
+      );
 
       setFeedbackMessage('Answer saved!');
       setFeedbackType('success');
@@ -247,10 +250,9 @@ function ContentRenderer({
       setSubmittingAnswer(false);
     }
   };
-
   // Handle multiple-choice quiz answer submission
   const handleMultipleChoiceSubmit = async () => {
-    if (!courseId || !contentId || selectedOption === '') return;
+    if (!courseId || !sectionId || !contentId || selectedOption === '') return;
 
     try {
       setSubmittingAnswer(true);
@@ -259,7 +261,7 @@ function ContentRenderer({
       const optionNumber = parseInt(selectedOption, 10);
 
       const response = await axiosInstance.post(
-        `/api/progress/${courseId}/${contentId}`,
+        `/api/progress/${courseId}/${sectionId}/${contentId}`,
         {
           answer: optionNumber,
           completed: true,
@@ -619,6 +621,7 @@ ContentRenderer.propTypes = {
   error: PropTypes.string,
   progress: PropTypes.arrayOf(PropTypes.shape({})), // Changed from PropTypes.array to PropTypes.arrayOf(PropTypes.shape({}))
   courseId: PropTypes.string,
+  sectionId: PropTypes.string,
   isInstructor: PropTypes.bool,
 };
 
@@ -628,6 +631,7 @@ ContentRenderer.defaultProps = {
   error: '',
   progress: [],
   courseId: null,
+  sectionId: null,
   isInstructor: false,
 };
 

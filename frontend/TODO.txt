@@ -1,1 +1,1 @@
-- Fix markdown preview and side-by-side view
+- Fix error message being misaligned in the content area

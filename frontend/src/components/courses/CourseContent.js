@@ -375,6 +375,7 @@ function CourseContent({ 'data-testid': dataTestId }) {
             error={error}
             progress={progress}
             courseId={id}
+            sectionId={sectionId}
             isInstructor={isInstructor}
           />
         ) : (
@@ -388,6 +389,7 @@ function CourseContent({ 'data-testid': dataTestId }) {
               error={error}
               progress={progress}
               courseId={id}
+              sectionId={sectionId}
               isInstructor={isInstructor}
             />
           </Paper>

@@ -30,7 +30,7 @@ jest.mock('./content/ContentNavigation', () => ({ courseId, title }) => (
 jest.mock(
   './content/ContentRenderer',
   () =>
-    ({
+    function MockContentRenderer({
       contentItem,
       isCompleted,
       completing,
@@ -38,16 +38,24 @@ jest.mock(
       error,
       progress,
       courseId,
-    }) => (
-      <div data-testid='content-renderer'>
-        <div data-testid='renderer-content-type'>{contentItem.type}</div>
-        <div data-testid='renderer-content'>{contentItem.content}</div>
-        <div data-testid='renderer-progress-length'>
-          {progress ? progress.length : 0}
+      sectionId,
+    }) {
+      return (
+        <div data-testid='content-renderer'>
+          <div data-testid='renderer-content-type'>{contentItem.type}</div>
+          <div data-testid='renderer-content'>{contentItem.content}</div>
+          <div data-testid='renderer-progress-length'>
+            {progress ? progress.length : 0}
+          </div>
+          <div data-testid='renderer-course-id'>
+            {courseId || 'no-course-id'}
+          </div>
+          <div data-testid='renderer-section-id'>
+            {sectionId || 'no-section-id'}
+          </div>
         </div>
-        <div data-testid='renderer-course-id'>{courseId || 'no-course-id'}</div>
-      </div>
-    ),
+      );
+    },
 );
 
 describe('CourseContent', () => {
