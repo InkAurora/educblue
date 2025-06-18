@@ -5,7 +5,6 @@ import {
   Typography,
   TextField,
   Button,
-  Snackbar,
   Alert,
   RadioGroup,
   Radio,
@@ -149,6 +148,17 @@ function ContentRenderer({
       }
     }
   }, [type, progress, contentId]);
+  // Auto-hide feedback after 6 seconds
+  useEffect(() => {
+    if (showFeedback) {
+      const timer = setTimeout(() => {
+        setShowFeedback(false);
+      }, 6000);
+
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [showFeedback]);
 
   // Handle video end event
   const handleVideoEnd = async () => {
@@ -272,16 +282,7 @@ function ContentRenderer({
       const score = response.data.score !== undefined ? response.data.score : 0;
       setQuizScore(score);
 
-      // Set appropriate feedback based on score
-      if (score === 1) {
-        setFeedbackMessage('Correct! Score: 1');
-        setFeedbackType('success');
-      } else {
-        setFeedbackMessage('Incorrect. Try again!');
-        setFeedbackType('error');
-      }
-
-      setShowFeedback(true);
+      // Don't set general feedback for multiple choice - the quiz score alert handles this
       setSubmittingAnswer(false);
 
       // Update progress after answer submission
@@ -434,7 +435,7 @@ function ContentRenderer({
             )}
         </Box>
       )}
-      
+
       {/* Markdown content rendering */}
       {type === 'markdown' && content && (
         <Box
@@ -585,21 +586,19 @@ function ContentRenderer({
         </Box>
       )}
 
-      {/* Feedback snackbar */}
-      <Snackbar
-        open={showFeedback}
-        autoHideDuration={6000}
-        onClose={handleCloseFeedback}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
+      {/* Feedback alert */}
+      {showFeedback && (
         <Alert
-          onClose={handleCloseFeedback}
           severity={feedbackType}
-          sx={{ width: '100%' }}
+          onClose={handleCloseFeedback}
+          sx={{
+            mt: 2,
+            mb: 2,
+          }}
         >
           {feedbackMessage}
         </Alert>
-      </Snackbar>
+      )}
     </Box>
   );
 }
