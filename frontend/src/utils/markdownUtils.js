@@ -153,9 +153,38 @@ export const convertMarkdownToHTML = (markdown) => {
   if (!markdown) return '';
 
   // Don't sanitize the raw markdown first - let our conversion handle HTML escaping in code blocks
-  const plainText = markdown;
+  let plainText = markdown;
+
+  // First, process tab-indented lines but only outside of code blocks
+  let inCodeBlock = false;
+  const lines = plainText.split('\n');
+  const processedLines = lines.map((line) => {
+    // Check if we're entering or leaving a code block
+    if (line.trim().startsWith('```')) {
+      inCodeBlock = !inCodeBlock;
+      return line;
+    }
+
+    // Process tab-indented lines only when NOT in a code block
+    if (!inCodeBlock && line.startsWith('\t') && line.trim() !== '') {
+      const content = line.substring(1).trim(); // Remove the tab character
+      // Escape HTML entities for the content
+      const escapedContent = content
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+      return `<code style="background: rgba(2, 230, 239, 0.1); color: #02e6ef; padding: 2px 6px; border-radius: 4px; font-family: 'Fira Code', 'Cascadia Code', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace; font-size: 0.9em;">${escapedContent}</code>`;
+    }
+
+    return line;
+  });
+  plainText = processedLines.join('\n');
+
   // Enhanced markdown-to-HTML conversion with modern dark theme code blocks
-  const html = plainText // Code blocks (triple backticks) - enhanced with modern dark theme
+  const html = plainText
+    // Code blocks (triple backticks) - enhanced with modern dark theme
     .replace(/```([^`]*?)```/gims, (match, code) => {
       const cleanCode = code.trim();
       // Escape HTML entities to prevent code from being rendered as HTML
