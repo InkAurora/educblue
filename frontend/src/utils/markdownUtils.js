@@ -151,15 +151,12 @@ export const convertMarkdownToHTML = (markdown) => {
   if (!markdown) return '';
 
   const plainText = sanitizeMarkdown(markdown);
-
   // Enhanced markdown-to-HTML conversion with modern dark theme code blocks
-  const html = plainText
-    // Code blocks (triple backticks) - enhanced with modern dark theme
+  const html = plainText // Code blocks (triple backticks) - enhanced with modern dark theme
     .replace(/```([^`]*?)```/gims, (match, code) => {
       const cleanCode = code.trim();
       return `<div style="position: relative; margin: 16px 0; border-radius: 8px; background: #1e1e1e; border: 1px solid #333; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);">
-        <div style="background: linear-gradient(90deg, #02e6ef, #00bfa5); height: 2px;"></div>
-        <pre style="margin: 0; padding: 24px; background: transparent; color: #d4d4d4; font-family: 'Fira Code', 'Cascadia Code', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace; font-size: 14px; line-height: 1.6; overflow-x: auto;"><code>${cleanCode}</code></pre>
+        <pre style="margin: 0; padding: 12px 16px; background: transparent; color: #d4d4d4; font-family: 'Fira Code', 'Cascadia Code', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace; font-size: 14px; line-height: 1.6; overflow-x: auto;"><code>${cleanCode}</code></pre>
       </div>`;
     })
     // Inline code (single backticks)
@@ -253,8 +250,16 @@ export const convertMarkdownToHTML = (markdown) => {
     },
   );
 
-  // Now convert line breaks
-  const finalHtml = orderedProcessedHtml.replace(/\n/g, '<br>');
+  // Convert line breaks, but avoid adding <br> tags around block elements
+  const finalHtml = orderedProcessedHtml
+    // Remove any <br> tags that might be adjacent to code blocks
+    .replace(
+      /<br><div style="position: relative; margin: 16px 0;/g,
+      '<div style="position: relative; margin: 16px 0;',
+    )
+    .replace(/<\/div><br>/g, '</div>')
+    // Convert remaining single newlines to <br> tags
+    .replace(/\n/g, '<br>');
 
   return finalHtml;
 };
