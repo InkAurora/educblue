@@ -1,11 +1,11 @@
 const request = require('supertest');
 require('../setup'); // Set up in-memory MongoDB for tests
 const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
 const app = require('../../index');
 const User = require('../../models/user');
 const Course = require('../../models/course');
 const Progress = require('../../models/progress');
-const jwt = require('jsonwebtoken');
 
 describe('Analytics Controller', () => {
   let adminToken;

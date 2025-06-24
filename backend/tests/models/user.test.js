@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const { describe, it, expect, afterAll } = require('@jest/globals');
 const User = require('../../models/user');
-require('../../tests/testSetup'); // Import for setup but don't redeclare jest
+require('../testSetup'); // Import for setup but don't redeclare jest
 
 describe('User Model', () => {
   it('should create a valid user with default role as student', async () => {

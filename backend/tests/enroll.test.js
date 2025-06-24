@@ -6,37 +6,35 @@ const Course = require('../models/course');
 require('./setup');
 
 // Mock Stripe since we don't want to make actual API calls in tests
-jest.mock('stripe', () => {
-  return () => ({
-    checkout: {
-      sessions: {
-        retrieve: jest.fn().mockImplementation((sessionId) => {
-          if (sessionId === 'test_paid_session_id') {
-            return Promise.resolve({
-              id: 'test_paid_session_id',
-              payment_status: 'paid',
-              metadata: {
-                courseId: 'courseid123',
-                userId: 'userid123',
-              },
-            });
-          }
-          if (sessionId === 'test_unpaid_session_id') {
-            return Promise.resolve({
-              id: 'test_unpaid_session_id',
-              payment_status: 'unpaid',
-              metadata: {
-                courseId: 'courseid123',
-                userId: 'userid123',
-              },
-            });
-          }
-          return Promise.reject(new Error('Invalid session ID'));
-        }),
-      },
+jest.mock('stripe', () => () => ({
+  checkout: {
+    sessions: {
+      retrieve: jest.fn().mockImplementation((sessionId) => {
+        if (sessionId === 'test_paid_session_id') {
+          return Promise.resolve({
+            id: 'test_paid_session_id',
+            payment_status: 'paid',
+            metadata: {
+              courseId: 'courseid123',
+              userId: 'userid123',
+            },
+          });
+        }
+        if (sessionId === 'test_unpaid_session_id') {
+          return Promise.resolve({
+            id: 'test_unpaid_session_id',
+            payment_status: 'unpaid',
+            metadata: {
+              courseId: 'courseid123',
+              userId: 'userid123',
+            },
+          });
+        }
+        return Promise.reject(new Error('Invalid session ID'));
+      }),
     },
-  });
-});
+  },
+}));
 
 describe('Enrollment Endpoints', () => {
   let authToken;

@@ -151,7 +151,9 @@ exports.updateCourseSections = async (req, res) => {
     }
 
     // Allow both instructors and admins to update sections
-    const isInstructor = existingCourse.instructor && existingCourse.instructor.toString() === user._id.toString();
+    const isInstructor =
+      existingCourse.instructor &&
+      existingCourse.instructor.toString() === user._id.toString();
     const isAdmin = user.role === 'admin';
 
     if (!isInstructor && !isAdmin) {
@@ -252,7 +254,9 @@ exports.addSection = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const isInstructor = existingCourse.instructor && existingCourse.instructor.toString() === user._id.toString();
+    const isInstructor =
+      existingCourse.instructor &&
+      existingCourse.instructor.toString() === user._id.toString();
     const isAdmin = user.role === 'admin';
 
     if (!isInstructor && !isAdmin) {
@@ -321,7 +325,9 @@ exports.deleteSection = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const isInstructor = existingCourse.instructor && existingCourse.instructor.toString() === user._id.toString();
+    const isInstructor =
+      existingCourse.instructor &&
+      existingCourse.instructor.toString() === user._id.toString();
     const isAdmin = user.role === 'admin';
 
     if (!isInstructor && !isAdmin) {
@@ -393,7 +399,9 @@ exports.addContentToSection = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const isInstructor = existingCourse.instructor && existingCourse.instructor.toString() === user._id.toString();
+    const isInstructor =
+      existingCourse.instructor &&
+      existingCourse.instructor.toString() === user._id.toString();
     const isAdmin = user.role === 'admin';
 
     if (!isInstructor && !isAdmin) {
@@ -476,7 +484,9 @@ exports.updateContentInSection = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const isInstructor = existingCourse.instructor && existingCourse.instructor.toString() === user._id.toString();
+    const isInstructor =
+      existingCourse.instructor &&
+      existingCourse.instructor.toString() === user._id.toString();
     const isAdmin = user.role === 'admin';
 
     if (!isInstructor && !isAdmin) {
@@ -554,7 +564,9 @@ exports.deleteContentFromSection = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const isInstructor = existingCourse.instructor && existingCourse.instructor.toString() === user._id.toString();
+    const isInstructor =
+      existingCourse.instructor &&
+      existingCourse.instructor.toString() === user._id.toString();
     const isAdmin = user.role === 'admin';
 
     if (!isInstructor && !isAdmin) {
@@ -625,7 +637,9 @@ exports.updateSection = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const isInstructor = existingCourse.instructor && existingCourse.instructor.toString() === user._id.toString();
+    const isInstructor =
+      existingCourse.instructor &&
+      existingCourse.instructor.toString() === user._id.toString();
     const isAdmin = user.role === 'admin';
 
     if (!isInstructor && !isAdmin) {

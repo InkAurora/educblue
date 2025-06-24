@@ -4,9 +4,13 @@
   "main": "index.js",
   "scripts": {
     "test": "jest --detectOpenHandles",
-    "start": "nodemon index.js",
+    "dev": "nodemon index.js",
+    "start": "node index.js",
+    "build": "npm ci --production",
     "lint": "eslint .",
-    "seed": "node seed.js"
+    "lint:fix": "eslint . --fix",
+    "seed": "node seed.js",
+    "prestart": "npm run lint"
   },
   "keywords": [],
   "author": "",
@@ -14,11 +18,15 @@
   "description": "",
   "dependencies": {
     "bcryptjs": "^3.0.2",
+    "compression": "^1.8.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
+    "express-rate-limit": "^7.5.1",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.13.2",
+    "morgan": "^1.10.0",
     "resend": "^4.5.2",
     "stripe": "^14.25.0"
   },
