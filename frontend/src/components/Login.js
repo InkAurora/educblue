@@ -135,16 +135,6 @@ function Login() {
               onChange={handleChange}
               sx={{
                 mb: 2,
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                  '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 1)',
-                  },
-                  '&.Mui-focused': {
-                    backgroundColor: 'rgba(255, 255, 255, 1)',
-                  },
-                },
               }}
             />
             <TextField

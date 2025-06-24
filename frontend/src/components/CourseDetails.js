@@ -421,7 +421,7 @@ function CourseDetails({ 'data-testid': dataTestId, testId = null }) {
                   <Typography variant='h6' gutterBottom fontWeight='bold'>
                     About this course
                   </Typography>
-                  
+
                   <Box
                     sx={{
                       overflow: 'hidden',
