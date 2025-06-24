@@ -11,9 +11,24 @@ import {
   FormControl,
   FormControlLabel,
   FormLabel,
+  Paper,
+  Chip,
+  LinearProgress,
+  Fade,
+  Card,
+  CardContent,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import SendIcon from '@mui/icons-material/Send';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import PauseIcon from '@mui/icons-material/Pause';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import FullscreenIcon from '@mui/icons-material/Fullscreen';
+import QuizIcon from '@mui/icons-material/Quiz';
+import ArticleIcon from '@mui/icons-material/Article';
+import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
 import axiosInstance from '../../../utils/axiosConfig';
 import { convertMarkdownToHTML } from '../../../utils/markdownUtils';
 
@@ -347,6 +362,7 @@ function ContentRenderer({
         <Box sx={{ mb: 4 }} data-testid='video-content'>
           {isYoutubeVideo && youtubeVideoId ? (
             <>
+              {' '}
               <Box
                 sx={{
                   position: 'relative',
@@ -380,6 +396,8 @@ function ContentRenderer({
                     color='primary'
                     onClick={handleYoutubeManualCompletion}
                     disabled={completing}
+                    size='large'
+                    sx={{ px: 4, py: 2 }}
                   >
                     {completing ? 'Saving Progress...' : 'Mark as Completed'}
                   </Button>
@@ -411,6 +429,8 @@ function ContentRenderer({
                 color='primary'
                 onClick={handleCompletionClick}
                 disabled={completing}
+                size='large'
+                sx={{ px: 4, py: 2 }}
               >
                 {completing ? 'Saving Progress...' : 'Mark Video as Completed'}
               </Button>

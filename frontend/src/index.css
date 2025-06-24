@@ -1,14 +1,42 @@
-/* Reset and base styles for mobile app feel */
-* {
+/* Modern CSS Reset and Base Styles */
+*,
+*::before,
+*::after {
   box-sizing: border-box;
+}
+
+/* CSS Custom Properties for Consistent Theming */
+:root {
+  --primary-color: #02e6ef;
+  --primary-light: #4df0f7;
+  --primary-dark: #01b8c4;
+  --text-primary: #495057;
+  --text-secondary: #6c757d;
+  --background-default: #f8f9fa;
+  --background-paper: #ffffff;
+  --border-color: #e9ecef;
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 6px 20px rgba(0, 0, 0, 0.12);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
 }
 
 html {
   height: 100%;
-  /* Prevent bounce scrolling on mobile */
   position: fixed;
   width: 100%;
   overflow: hidden;
+  scroll-behavior: smooth;
 }
 
 body {
@@ -22,8 +50,9 @@ body {
     'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* Mobile app styling */
-  background-color: #f5f5f5;
+  background-color: var(--background-default);
+  color: var(--text-primary);
+  line-height: 1.6;
   /* Disable text selection on non-text elements for app feel */
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -33,7 +62,7 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Re-enable text selection for input elements and text content */
+/* Re-enable text selection for content elements */
 input,
 textarea,
 [contenteditable='true'],
@@ -44,11 +73,242 @@ h2,
 h3,
 h4,
 h5,
-h6 {
+h6,
+li,
+td,
+th,
+.MuiTypography-root,
+.selectable-text {
   -webkit-user-select: text;
   -moz-user-select: text;
   -ms-user-select: text;
   user-select: text;
+}
+
+/* Better focus styles for accessibility */
+*:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Remove default focus outline for mouse users */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Smooth transitions for interactive elements */
+button,
+a,
+input,
+textarea,
+select,
+.MuiButton-root,
+.MuiCard-root,
+.MuiPaper-root {
+  transition: all var(--transition-fast);
+}
+
+/* Code styling improvements */
+code {
+  font-family:
+    'Fira Code', 'Cascadia Code', 'SF Mono', 'Monaco', 'Inconsolata',
+    'Roboto Mono', monospace;
+  font-feature-settings:
+    'liga' 1,
+    'calt' 1;
+  background: rgba(2, 230, 239, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.875em;
+}
+
+pre code {
+  background: transparent;
+  padding: 0;
+}
+
+/* Improved scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background-default);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Loading animations */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.fade-in {
+  animation: fadeIn var(--transition-normal) ease-out;
+}
+
+/* Utility classes */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text-gradient {
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--primary-dark)
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Enhanced mobile responsiveness */
+@media (max-width: 768px) {
+  :root {
+    --spacing-md: 12px;
+    --spacing-lg: 20px;
+    --spacing-xl: 28px;
+  }
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.fade-in {
+  animation: fadeIn var(--transition-normal) ease-out;
+}
+
+/* Utility classes */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text-gradient {
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--primary-dark)
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Enhanced mobile responsiveness */
+@media (max-width: 768px) {
+  :root {
+    --spacing-md: 12px;
+    --spacing-lg: 20px;
+    --spacing-xl: 28px;
+  }
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 #root {
@@ -61,16 +321,20 @@ h6 {
 
 code {
   font-family:
-    'Fira Code', 'Cascadia Code', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono',
-    source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+    'Fira Code', 'Cascadia Code', 'SF Mono', 'Monaco', 'Inconsolata',
+    'Roboto Mono', source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
 }
 
 /* Enhanced code block styling for better syntax highlighting support */
 pre code {
   font-family:
-    'Fira Code', 'Cascadia Code', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono',
-    source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
-  font-feature-settings: 'liga' 1, 'calt' 1; /* Enable ligatures if font supports them */
+    'Fira Code', 'Cascadia Code', 'SF Mono', 'Monaco', 'Inconsolata',
+    'Roboto Mono', source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+  font-feature-settings:
+    'liga' 1,
+    'calt' 1; /* Enable ligatures if font supports them */
   font-variant-ligatures: common-ligatures;
 }
 

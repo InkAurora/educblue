@@ -134,36 +134,66 @@ function AppWithSidebar() {
                       py: { xs: 3, sm: 4 },
                     }}
                   >
-                    {/* Title Section - Centered with max width */}
+                    {' '}
+                    {/* Hero Section - Modern header with gradient background */}
                     <Box
                       sx={{
                         maxWidth: 'lg',
                         mx: 'auto',
-                        mb: { xs: 3, sm: 4 },
+                        mb: { xs: 4, sm: 6 },
                         textAlign: 'center',
-                        py: { xs: 2, sm: 3 },
+                        py: { xs: 4, sm: 6 },
+                        px: { xs: 2, sm: 3 },
+                        background:
+                          'linear-gradient(145deg, rgba(2, 230, 239, 0.08) 0%, rgba(255, 255, 255, 0.4) 100%)',
+                        borderRadius: 4,
+                        border: '1px solid rgba(2, 230, 239, 0.2)',
+                        backdropFilter: 'blur(10px)',
                       }}
                     >
                       <Typography
-                        variant='h4'
+                        variant='h2'
                         component='h1'
                         sx={{
-                          fontWeight: 'bold',
-                          color: 'primary.main',
+                          fontWeight: 800,
+                          background:
+                            'linear-gradient(135deg, #02e6ef, #01b8c4)',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                          backgroundClip: 'text',
                           mb: 2,
-                          fontSize: { xs: '1.75rem', sm: '2.125rem' },
+                          fontSize: { xs: '2.5rem', sm: '3.5rem', md: '4rem' },
+                          lineHeight: 1.1,
+                          letterSpacing: '-0.02em',
                         }}
                       >
                         Educ Blue
                       </Typography>
                       <Typography
-                        variant='subtitle1'
+                        variant='h5'
+                        sx={{
+                          color: 'text.secondary',
+                          fontSize: { xs: '1.25rem', sm: '1.5rem' },
+                          fontWeight: 400,
+                          mb: 3,
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        Discover. Learn. Excel.
+                      </Typography>
+                      <Typography
+                        variant='body1'
                         sx={{
                           color: 'text.secondary',
                           fontSize: { xs: '1rem', sm: '1.125rem' },
+                          maxWidth: '600px',
+                          mx: 'auto',
+                          lineHeight: 1.6,
                         }}
                       >
-                        Learn. Grow. Succeed.
+                        Transform your skills with our comprehensive learning
+                        platform. Join thousands of learners who have already
+                        started their journey to success.
                       </Typography>
                     </Box>
                     {/* CourseList - Full width without container constraints */}

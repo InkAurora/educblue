@@ -57,24 +57,61 @@ function Login() {
       setLoading(false);
     }
   };
-
   return (
     <Container maxWidth='sm'>
       <Box
         sx={{
-          mt: 8,
+          mt: 4,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
         }}
       >
-        <Paper elevation={3} sx={{ p: 4, width: '100%' }}>
-          <Typography component='h1' variant='h5' align='center' gutterBottom>
-            Log In
-          </Typography>
+        <Paper
+          elevation={0}
+          sx={{
+            p: { xs: 3, sm: 4 },
+            width: '100%',
+            borderRadius: 3,
+            border: '1px solid rgba(0, 0, 0, 0.08)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+            background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+          }}
+        >
+          <Box sx={{ textAlign: 'center', mb: 3 }}>
+            <Typography
+              component='h1'
+              variant='h4'
+              sx={{
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #02e6ef, #01b8c4)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                mb: 1,
+              }}
+            >
+              Welcome Back
+            </Typography>
+            <Typography
+              variant='body1'
+              color='text.secondary'
+              sx={{ fontSize: '1.1rem' }}
+            >
+              Sign in to continue your learning journey
+            </Typography>
+          </Box>
 
           {error && (
-            <Alert severity='error' sx={{ mb: 2 }}>
+            <Alert
+              severity='error'
+              sx={{
+                mb: 3,
+                borderRadius: 2,
+                border: '1px solid rgba(211, 47, 47, 0.2)',
+                backgroundColor: 'rgba(211, 47, 47, 0.05)',
+              }}
+            >
               {error}
             </Alert>
           )}
@@ -96,6 +133,19 @@ function Login() {
               autoFocus
               value={formData.email}
               onChange={handleChange}
+              sx={{
+                mb: 2,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 1)',
+                  },
+                  '&.Mui-focused': {
+                    backgroundColor: 'rgba(255, 255, 255, 1)',
+                  },
+                },
+              }}
             />
             <TextField
               margin='normal'
