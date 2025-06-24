@@ -12,11 +12,13 @@
 ### 1. Environment Setup
 
 1. Copy the environment template:
+
    ```bash
    cp .env.example .env
    ```
 
 2. Configure your environment variables in `.env`:
+
    ```env
    # Database
    MONGO_URI=mongodb://your-mongo-host:27017/educblue
@@ -43,6 +45,7 @@
 ### 2. Production Build
 
 #### Option A: Using Docker Compose (Recommended)
+
 ```bash
 # Build and run in production mode
 docker-compose --profile prod up -d
@@ -55,6 +58,7 @@ docker-compose --profile prod down
 ```
 
 #### Option B: Using Build Scripts
+
 ```bash
 # On Windows (PowerShell)
 .\build.ps1
@@ -65,6 +69,7 @@ chmod +x build.sh
 ```
 
 #### Option C: Manual Build
+
 ```bash
 # Install production dependencies
 npm ci --production
@@ -93,6 +98,7 @@ npm run dev
 ## Production Considerations
 
 ### Security
+
 - [ ] Use strong JWT secrets
 - [ ] Enable HTTPS/TLS
 - [ ] Configure proper CORS origins
@@ -102,6 +108,7 @@ npm run dev
 - [ ] Use environment variables for all secrets
 
 ### Performance
+
 - [ ] Use a process manager (PM2 or Docker)
 - [ ] Configure MongoDB indexes
 - [ ] Set up database connection pooling
@@ -110,6 +117,7 @@ npm run dev
 - [ ] Set up caching (Redis)
 
 ### Monitoring
+
 - [ ] Set up application logs
 - [ ] Configure health checks
 - [ ] Monitor database performance
@@ -117,6 +125,7 @@ npm run dev
 - [ ] Configure uptime monitoring
 
 ### Scaling
+
 - [ ] Use load balancer (Nginx)
 - [ ] Configure database replication
 - [ ] Set up horizontal scaling
@@ -125,9 +134,11 @@ npm run dev
 ## Deployment Options
 
 ### 1. Docker Deployment
+
 Best for containerized environments (AWS ECS, Google Cloud Run, etc.)
 
 ### 2. Traditional Server Deployment
+
 ```bash
 # Install dependencies
 npm ci --production
@@ -146,22 +157,26 @@ pm2 startup
 ### 3. Cloud Platform Deployment
 
 #### AWS ECS
+
 - Use the provided Dockerfile
 - Configure task definition
 - Set up Application Load Balancer
 - Configure RDS for MongoDB or use DocumentDB
 
 #### Google Cloud Run
+
 - Build and push image to Google Container Registry
 - Deploy to Cloud Run
 - Configure Cloud SQL or MongoDB Atlas
 
 #### Azure Container Instances
+
 - Build and push image to Azure Container Registry
 - Deploy to Container Instances
 - Configure Cosmos DB for MongoDB
 
 #### Heroku
+
 1. Create `Procfile`:
    ```
    web: npm start
@@ -175,12 +190,14 @@ pm2 startup
 ### 4. Database Setup
 
 #### MongoDB Atlas (Recommended)
+
 1. Create cluster at mongodb.com
 2. Configure network access
 3. Create database user
 4. Update MONGO_URI in .env
 
 #### Self-hosted MongoDB
+
 1. Install MongoDB
 2. Configure authentication
 3. Set up regular backups
@@ -196,6 +213,7 @@ curl http://localhost:5000/api/health
 ```
 
 Response:
+
 ```json
 {
   "status": "OK",
@@ -209,6 +227,7 @@ Response:
 ### Common Issues
 
 1. **Port already in use**
+
    ```bash
    # Find process using port 5000
    lsof -i :5000
@@ -217,11 +236,13 @@ Response:
    ```
 
 2. **MongoDB connection issues**
+
    - Check MONGO_URI format
    - Verify network connectivity
    - Check authentication credentials
 
 3. **Environment variables not loaded**
+
    - Ensure .env file exists
    - Check file permissions
    - Verify dotenv is loaded in index.js
@@ -247,6 +268,7 @@ journalctl -u your-service-name
 ## Backup and Recovery
 
 ### Database Backup
+
 ```bash
 # MongoDB backup
 mongodump --uri="mongodb://your-mongo-uri" --out=./backup
@@ -256,6 +278,7 @@ mongorestore --uri="mongodb://your-mongo-uri" ./backup
 ```
 
 ### Application Backup
+
 - Environment configuration (.env)
 - Application code
 - SSL certificates

@@ -263,7 +263,9 @@ describe('CourseDetails Component', () => {
     // Use fireEvent instead of userEvent.setup()
     fireEvent.click(screen.getByText('Enroll for Free'));
 
-    expect(axiosInstance.post).toHaveBeenCalledWith('/api/courses/123/enroll');
+    expect(axiosInstance.post).toHaveBeenCalledWith('/api/enroll/free', {
+      courseId: '123',
+    });
 
     await waitFor(() => {
       expect(screen.getByText(/Successfully enrolled/i)).toBeInTheDocument();

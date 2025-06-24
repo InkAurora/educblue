@@ -10,8 +10,6 @@ import {
   Paper,
   InputAdornment,
   CircularProgress,
-  FormControlLabel,
-  Switch,
 } from '@mui/material';
 import SimpleMDE from 'react-simplemde-editor';
 import 'easymde/dist/easymde.min.css';
@@ -25,7 +23,6 @@ function CreateCourse() {
     markdownDescription: '',
     price: '',
     duration: '',
-    acceptPayments: false,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -284,19 +281,6 @@ function CreateCourse() {
                 helperText={validationError.duration}
               />
             </Box>
-
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={course.acceptPayments}
-                  onChange={handleChange}
-                  name='acceptPayments'
-                  color='primary'
-                />
-              }
-              label='Enable Stripe payments for this course'
-              sx={{ mt: 2 }}
-            />
 
             <Button
               type='submit'

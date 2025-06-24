@@ -1115,6 +1115,45 @@ Enroll in a course after successful payment.
 - `404`: User not found
 - `500`: Server error during enrollment process
 
+### Enroll in Free Course
+
+**POST** `/enroll/free`
+**Authentication Required** (Student, Instructor, or Admin)
+
+Enroll in a free course without payment processing. This endpoint is specifically for courses with a price of $0.
+
+**Request Body:**
+
+```json
+{
+  "courseId": "507f1f77bcf86cd799439011"
+}
+```
+
+**Response (200):**
+
+```json
+{
+  "message": "Successfully enrolled in the free course",
+  "course": {
+    "id": "507f1f77bcf86cd799439011",
+    "title": "Introduction to Programming",
+    "price": 0
+  }
+}
+```
+
+**Error Responses:**
+
+- `400`: Course ID is required
+- `400`: This course is not free. Please use the regular enrollment process.
+- `400`: Course is not available for enrollment (unpublished)
+- `400`: Already enrolled in this course
+- `401`: Authentication required
+- `404`: Course not found
+- `404`: User not found
+- `500`: Server error during enrollment process
+
 ---
 
 ## Progress Tracking Endpoints
