@@ -650,7 +650,7 @@ describe('Course Endpoints', () => {
     beforeEach(async () => {
       // Clean up previous test data
       await Course.deleteMany({});
-      
+
       // Create courses for the test instructor
       draftCourse = await Course.create({
         title: 'Draft Course',
@@ -700,7 +700,9 @@ describe('Course Endpoints', () => {
         .set('Authorization', `Bearer ${instructorToken}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.message).toBe('Instructor courses retrieved successfully');
+      expect(res.body.message).toBe(
+        'Instructor courses retrieved successfully'
+      );
       expect(res.body.courses).toHaveLength(2);
       expect(res.body.totalCourses).toBe(2);
 
@@ -719,7 +721,9 @@ describe('Course Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.message).toBe('Instructor courses retrieved successfully');
+      expect(res.body.message).toBe(
+        'Instructor courses retrieved successfully'
+      );
       expect(res.body.courses).toBeDefined();
     });
 
