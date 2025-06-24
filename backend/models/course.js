@@ -17,14 +17,14 @@ const contentItemSchema = new mongoose.Schema(
     content: String, // For markdown content
     question: {
       type: String,
-      required: function () {
+      required() {
         return this.type === 'multipleChoice';
       },
     },
     options: {
       type: [String],
       validate: {
-        validator: function (arr) {
+        validator(arr) {
           return (
             !this.type ||
             this.type !== 'multipleChoice' ||
@@ -33,7 +33,7 @@ const contentItemSchema = new mongoose.Schema(
         },
         message: 'Multiple choice questions must have exactly 4 options',
       },
-      required: function () {
+      required() {
         return this.type === 'multipleChoice';
       },
     },
@@ -42,7 +42,7 @@ const contentItemSchema = new mongoose.Schema(
       min: 0,
       max: 3,
       validate: {
-        validator: function (val) {
+        validator(val) {
           return (
             !this.type ||
             this.type !== 'multipleChoice' ||
@@ -51,7 +51,7 @@ const contentItemSchema = new mongoose.Schema(
         },
         message: 'Correct option must be between 0 and 3',
       },
-      required: function () {
+      required() {
         return this.type === 'multipleChoice';
       },
     },
