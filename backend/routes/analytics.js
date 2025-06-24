@@ -1,5 +1,6 @@
 // filepath: c:\Users\INK\Desktop\educblue\backend\routes\analytics.js
 const express = require('express');
+
 const router = express.Router();
 const analytics = require('../controllers/analytics');
 const auth = require('../middleware/auth');

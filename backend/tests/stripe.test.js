@@ -6,20 +6,18 @@ const Course = require('../models/course');
 require('./setup');
 
 // Mock Stripe since we don't want to make actual API calls in tests
-jest.mock('stripe', () => {
-  return () => ({
-    checkout: {
-      sessions: {
-        create: jest.fn().mockImplementation(() =>
-          Promise.resolve({
-            id: 'test_session_id',
-            url: 'https://stripe.com/test_checkout',
-          })
-        ),
-      },
+jest.mock('stripe', () => () => ({
+  checkout: {
+    sessions: {
+      create: jest.fn().mockImplementation(() =>
+        Promise.resolve({
+          id: 'test_session_id',
+          url: 'https://stripe.com/test_checkout',
+        })
+      ),
     },
-  });
-});
+  },
+}));
 
 describe('Stripe Endpoints', () => {
   let authToken;

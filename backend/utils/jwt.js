@@ -37,13 +37,12 @@ exports.generateRefreshToken = (userId) => {
  * @param {String} refreshToken - Refresh token to save
  * @returns {Promise<Object>} Updated user object
  */
-exports.saveRefreshToken = async (userId, refreshToken) => {
-  return await User.findByIdAndUpdate(
+exports.saveRefreshToken = async (userId, refreshToken) =>
+  await User.findByIdAndUpdate(
     userId,
     { $push: { refreshTokens: refreshToken } },
     { new: true }
   );
-};
 
 /**
  * Remove a refresh token from a user's refreshTokens array
@@ -51,10 +50,9 @@ exports.saveRefreshToken = async (userId, refreshToken) => {
  * @param {String} refreshToken - Refresh token to remove
  * @returns {Promise<Object>} Updated user object
  */
-exports.removeRefreshToken = async (userId, refreshToken) => {
-  return await User.findByIdAndUpdate(
+exports.removeRefreshToken = async (userId, refreshToken) =>
+  await User.findByIdAndUpdate(
     userId,
     { $pull: { refreshTokens: refreshToken } },
     { new: true }
   );
-};
