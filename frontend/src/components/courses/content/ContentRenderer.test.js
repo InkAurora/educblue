@@ -99,7 +99,8 @@ describe('ContentRenderer', () => {
         completing={false}
         onCompleted={mockOnCompleted}
       />,
-    );    expect(screen.getByTestId('video-content')).toBeInTheDocument();
+    );
+    expect(screen.getByTestId('video-content')).toBeInTheDocument();
     expect(screen.getByTestId('video-player')).toBeInTheDocument();
     // Video content doesn't have completion button
     expect(screen.queryByTestId('complete-button')).not.toBeInTheDocument();
