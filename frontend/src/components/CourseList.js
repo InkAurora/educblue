@@ -189,6 +189,7 @@ function CourseList(props) {
                   </Box>
                 </CardContent>
                 <CardActions sx={{ p: 3, pt: 0 }}>
+                  {' '}
                   <Button
                     variant='contained'
                     color='primary'
@@ -197,7 +198,7 @@ function CourseList(props) {
                     sx={{
                       py: 1.5,
                       fontWeight: 600,
-                      borderRadius: 2,
+                      // Remove borderRadius override to use theme default (8px)
                       textTransform: 'none',
                       fontSize: '1rem',
                       boxShadow: 'none',
