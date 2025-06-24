@@ -308,17 +308,9 @@ function ContentRenderer({
       setSubmittingAnswer(false);
     }
   };
-
   // Handle radio option change
   const handleOptionChange = (event) => {
     setSelectedOption(event.target.value);
-  };
-
-  const getContentTypeDisplay = () => {
-    if (type && typeof type === 'string') {
-      return type.charAt(0).toUpperCase() + type.slice(1);
-    }
-    return '';
   };
 
   const renderCompletionButtonText = () => {
@@ -333,15 +325,6 @@ function ContentRenderer({
 
   return (
     <Box sx={{ mt: 3, position: 'relative', pb: 4 }}>
-      <Typography
-        variant='body2'
-        color='text.secondary'
-        sx={{ mb: 2 }}
-        data-testid='content-type'
-      >
-        {getContentTypeDisplay()}
-      </Typography>
-
       {/* Video content rendering */}
       {type === 'video' && videoUrl && (
         <Box sx={{ mb: 4 }} data-testid='video-content'>

@@ -1,1 +1,1 @@
-- Fix draft courses not showing under "My Courses" when they are not published
+✅ Fix draft courses not showing under "My Courses" when they are not published - COMPLETED

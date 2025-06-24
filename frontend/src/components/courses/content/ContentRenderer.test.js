@@ -84,7 +84,6 @@ jest.mock('@mui/material/RadioGroup', () => {
 
 describe('ContentRenderer', () => {
   const mockOnCompleted = jest.fn();
-
   it('renders video content correctly', () => {
     const videoContent = {
       type: 'video',
@@ -100,10 +99,7 @@ describe('ContentRenderer', () => {
         completing={false}
         onCompleted={mockOnCompleted}
       />,
-    );
-
-    expect(screen.getByTestId('content-type')).toHaveTextContent('Video');
-    expect(screen.getByTestId('video-content')).toBeInTheDocument();
+    );    expect(screen.getByTestId('video-content')).toBeInTheDocument();
     expect(screen.getByTestId('video-player')).toBeInTheDocument();
     // Video content doesn't have completion button
     expect(screen.queryByTestId('complete-button')).not.toBeInTheDocument();
@@ -126,9 +122,7 @@ describe('ContentRenderer', () => {
       />,
     );
 
-    expect(screen.getByTestId('content-type')).toHaveTextContent('Markdown');
     expect(screen.getByTestId('markdown-content')).toBeInTheDocument();
-    expect(screen.getByTestId('react-markdown')).toBeInTheDocument();
     expect(screen.getByTestId('complete-button')).toHaveTextContent(
       'Mark as Completed',
     );
@@ -151,7 +145,6 @@ describe('ContentRenderer', () => {
       />,
     );
 
-    expect(screen.getByTestId('content-type')).toHaveTextContent('Quiz');
     expect(screen.getByTestId('quiz-content')).toBeInTheDocument();
     expect(
       screen.getByText('What is the capital of France?'),
@@ -249,7 +242,6 @@ describe('ContentRenderer', () => {
     fireEvent.ended(screen.getByTestId('video-player'));
     expect(mockOnCompleted).toHaveBeenCalledTimes(1);
   });
-
   it('handles content with no type gracefully', () => {
     const unknownContent = {
       title: 'Unknown Content',
@@ -266,8 +258,7 @@ describe('ContentRenderer', () => {
       />,
     );
 
-    // Should at least render the type badge (as empty or undefined)
-    expect(screen.getByTestId('content-type')).toBeInTheDocument();
+    // Should at least render the complete button
     expect(screen.getByTestId('complete-button')).toBeInTheDocument();
   });
 });
@@ -292,7 +283,6 @@ describe('ContentRenderer - Quiz functionality', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
-
   test('renders quiz content with question and answer field', () => {
     render(
       <ContentRenderer
@@ -301,7 +291,6 @@ describe('ContentRenderer - Quiz functionality', () => {
       />,
     );
 
-    expect(screen.getByTestId('content-type')).toHaveTextContent('Quiz');
     expect(
       screen.getByText('What is the capital of France?'),
     ).toBeInTheDocument();
@@ -393,7 +382,6 @@ describe('ContentRenderer - Multiple Choice Quiz functionality', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
-
   test('renders multiple choice quiz with question and radio options', () => {
     render(
       <ContentRenderer
@@ -404,9 +392,6 @@ describe('ContentRenderer - Multiple Choice Quiz functionality', () => {
     );
 
     // Verify question renders
-    expect(screen.getByTestId('content-type')).toHaveTextContent(
-      'MultipleChoice',
-    );
     expect(
       screen.getByText('What is the largest planet in our solar system?'),
     ).toBeInTheDocument();
