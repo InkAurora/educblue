@@ -11,6 +11,7 @@ describe('Progress Controller', () => {
   let authToken;
   let userId;
   let courseId;
+  let sectionId;
   let contentId;
   let quizContentId;
   let multipleChoiceContentId;
@@ -26,30 +27,37 @@ describe('Progress Controller', () => {
     title: 'Test Course',
     description: 'This is a test course',
     price: 99.99,
-    instructor: 'Test Instructor',
+    instructor: null, // Will be set to actual instructor ID in beforeEach
     duration: 10,
-    content: [
+    sections: [
       {
-        title: 'Introduction',
-        type: 'video',
-        videoUrl: 'https://example.com/video1',
-      },
-      {
-        title: 'Text Quiz',
-        type: 'quiz',
-        content: 'This is a quiz question',
-      },
-      {
-        title: 'Multiple Choice Quiz',
-        type: 'multipleChoice',
-        question: 'Which planet is closest to the sun?',
-        options: ['Mercury', 'Venus', 'Earth', 'Mars'],
-        correctOption: 0,
-      },
-      {
-        title: 'Document',
-        type: 'document',
-        content: 'This is a document',
+        title: 'Section 1',
+        description: 'Introduction section',
+        order: 0,
+        content: [
+          {
+            title: 'Introduction',
+            type: 'video',
+            videoUrl: 'https://example.com/video1',
+          },
+          {
+            title: 'Text Quiz',
+            type: 'quiz',
+            content: 'This is a quiz question',
+          },
+          {
+            title: 'Multiple Choice Quiz',
+            type: 'multipleChoice',
+            question: 'Which planet is closest to the sun?',
+            options: ['Mercury', 'Venus', 'Earth', 'Mars'],
+            correctOption: 0,
+          },
+          {
+            title: 'Document',
+            type: 'document',
+            content: 'This is a document',
+          },
+        ],
       },
     ],
   };
@@ -59,6 +67,14 @@ describe('Progress Controller', () => {
     await User.deleteMany({});
     await Course.deleteMany({});
     await Progress.deleteMany({});
+
+    // Create an instructor user
+    const instructorUser = await User.create({
+      email: 'instructor@test.com',
+      password: 'password123',
+      role: 'instructor',
+      fullName: 'Test Instructor',
+    });
 
     // Create a test user and get auth token
     const registerRes = await request(app)
@@ -80,14 +96,18 @@ describe('Progress Controller', () => {
       userId = user._id.toString();
     }
 
+    // Set the instructor ID for the test course
+    testCourse.instructor = instructorUser._id;
+
     // Create a test course
     const course = await Course.create(testCourse);
     courseId = course._id;
 
-    // Get content IDs
-    contentId = course.content[0]._id; // video content
-    quizContentId = course.content[1]._id; // regular quiz content
-    multipleChoiceContentId = course.content[2]._id; // multiple choice quiz content
+    // Get section and content IDs
+    sectionId = course.sections[0]._id;
+    contentId = course.sections[0].content[0]._id; // video content
+    quizContentId = course.sections[0].content[1]._id; // regular quiz content
+    multipleChoiceContentId = course.sections[0].content[2]._id; // multiple choice quiz content
 
     // Enroll the user in the course
     await User.findByIdAndUpdate(userId, {
@@ -102,6 +122,7 @@ describe('Progress Controller', () => {
       await Progress.create({
         userId,
         courseId,
+        sectionId,
         contentId,
         completed: true,
         completedAt: new Date(),
@@ -110,6 +131,7 @@ describe('Progress Controller', () => {
       await Progress.create({
         userId,
         courseId,
+        sectionId,
         contentId: quizContentId,
         completed: true,
         completedAt: new Date(),
@@ -138,12 +160,20 @@ describe('Progress Controller', () => {
     });
 
     it('should return 0% for a course with no content items', async () => {
+      // Create an instructor user for the empty course
+      const emptyInstructor = await User.create({
+        email: 'empty@test.com',
+        password: 'password123',
+        role: 'instructor',
+        fullName: 'Empty Instructor',
+      });
+
       // Create an empty course
       const emptyCourse = await Course.create({
         title: 'Empty Course',
         description: 'This course has no content',
         price: 29.99,
-        instructor: 'Test Instructor',
+        instructor: emptyInstructor._id,
         duration: 1,
         content: [],
       });
@@ -197,10 +227,12 @@ describe('Progress Controller', () => {
     });
   });
 
-  describe('POST /api/progress/:courseId/:contentId - Multiple Choice Quiz', () => {
+  describe('POST /api/progress/:courseId/:sectionId/:contentId - Multiple Choice Quiz', () => {
     it('should save answer and score for multiple choice quiz with correct answer', async () => {
       const res = await request(app)
-        .post(`/api/progress/${courseId}/${multipleChoiceContentId}`)
+        .post(
+          `/api/progress/${courseId}/${sectionId}/${multipleChoiceContentId}`
+        )
         .set('Authorization', `Bearer ${authToken}`)
         .send({ answer: 0 }); // Correct answer is 0 (Mercury)
 
@@ -229,7 +261,9 @@ describe('Progress Controller', () => {
 
     it('should save answer and score for multiple choice quiz with incorrect answer', async () => {
       const res = await request(app)
-        .post(`/api/progress/${courseId}/${multipleChoiceContentId}`)
+        .post(
+          `/api/progress/${courseId}/${sectionId}/${multipleChoiceContentId}`
+        )
         .set('Authorization', `Bearer ${authToken}`)
         .send({ answer: 1 }); // Incorrect answer (Venus)
 
@@ -258,7 +292,9 @@ describe('Progress Controller', () => {
 
     it('should return 400 for invalid multiple choice answers (out of range)', async () => {
       const res = await request(app)
-        .post(`/api/progress/${courseId}/${multipleChoiceContentId}`)
+        .post(
+          `/api/progress/${courseId}/${sectionId}/${multipleChoiceContentId}`
+        )
         .set('Authorization', `Bearer ${authToken}`)
         .send({ answer: 5 }); // Out of range (0-3)
 
@@ -270,7 +306,9 @@ describe('Progress Controller', () => {
 
     it('should return 400 for invalid multiple choice answers (non-numeric)', async () => {
       const res = await request(app)
-        .post(`/api/progress/${courseId}/${multipleChoiceContentId}`)
+        .post(
+          `/api/progress/${courseId}/${sectionId}/${multipleChoiceContentId}`
+        )
         .set('Authorization', `Bearer ${authToken}`)
         .send({ answer: 'abc' });
 
@@ -283,13 +321,17 @@ describe('Progress Controller', () => {
     it('should allow resubmission to update answer and score', async () => {
       // First submission - incorrect answer
       await request(app)
-        .post(`/api/progress/${courseId}/${multipleChoiceContentId}`)
+        .post(
+          `/api/progress/${courseId}/${sectionId}/${multipleChoiceContentId}`
+        )
         .set('Authorization', `Bearer ${authToken}`)
         .send({ answer: 1 }); // Incorrect answer (Venus)
 
       // Second submission - correct answer
       const res = await request(app)
-        .post(`/api/progress/${courseId}/${multipleChoiceContentId}`)
+        .post(
+          `/api/progress/${courseId}/${sectionId}/${multipleChoiceContentId}`
+        )
         .set('Authorization', `Bearer ${authToken}`)
         .send({ answer: 0 }); // Correct answer (Mercury)
 
@@ -316,6 +358,7 @@ describe('Progress Controller', () => {
       await Progress.create({
         userId,
         courseId,
+        sectionId,
         contentId: multipleChoiceContentId,
         completed: true,
         completedAt: new Date(),
@@ -356,7 +399,9 @@ describe('Progress Controller', () => {
 
       // Try to update progress for a course the user is not enrolled in
       const res = await request(app)
-        .post(`/api/progress/${courseId}/${multipleChoiceContentId}`)
+        .post(
+          `/api/progress/${courseId}/${sectionId}/${multipleChoiceContentId}`
+        )
         .set('Authorization', `Bearer ${nonEnrolledToken}`)
         .send({ answer: 0 });
 
@@ -370,7 +415,9 @@ describe('Progress Controller', () => {
       const nonExistentCourseId = new mongoose.Types.ObjectId();
 
       const res = await request(app)
-        .post(`/api/progress/${nonExistentCourseId}/${multipleChoiceContentId}`)
+        .post(
+          `/api/progress/${nonExistentCourseId}/${sectionId}/${multipleChoiceContentId}`
+        )
         .set('Authorization', `Bearer ${authToken}`)
         .send({ answer: 0 });
 
@@ -382,7 +429,7 @@ describe('Progress Controller', () => {
       const nonExistentContentId = new mongoose.Types.ObjectId();
 
       const res = await request(app)
-        .post(`/api/progress/${courseId}/${nonExistentContentId}`)
+        .post(`/api/progress/${courseId}/${sectionId}/${nonExistentContentId}`)
         .set('Authorization', `Bearer ${authToken}`)
         .send({ answer: 0 });
 

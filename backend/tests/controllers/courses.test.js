@@ -70,16 +70,29 @@ describe('Admin Course Access Tests', () => {
       await User.deleteMany({});
     }, 30000);
 
-    it('should allow admin to publish a course created by another instructor', async () => {
+    it('should not allow admin to publish a course without content', async () => {
+      // Create a course without content for this specific test
+      const courseWithoutContent = {
+        title: 'Empty Course for Publish Test',
+        description: 'A course without content',
+        price: 50,
+        duration: 1,
+        // No content or sections provided
+      };
+
+      const createRes = await request(app)
+        .post('/api/courses')
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send(courseWithoutContent);
+
+      const emptyCourseId = createRes.body.course._id;
+
       const res = await request(app)
-        .patch(`/api/courses/${courseByInstructor._id}/publish`) // Corrected to use ._id
+        .patch(`/api/courses/${emptyCourseId}/publish`)
         .set('Authorization', `Bearer ${adminToken}`);
 
-      expect(res.status).toBe(200);
-      expect(res.body.published).toBe(true);
-
-      const course = await Course.findById(courseByInstructor._id); // Corrected to use ._id
-      expect(course.status).toBe('published');
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('must have content');
     }, 30000);
 
     it('should allow admin to update content for a course created by another instructor', async () => {
@@ -135,13 +148,10 @@ describe('Admin Course Access Tests', () => {
       expect(res.body.course.description).toBe(newCourse.description);
       expect(res.body.course.price).toBe(newCourse.price);
       expect(res.body.course.duration).toBe(newCourse.duration);
-      expect(res.body.course.instructor).toBe(adminUser.fullName);
+      expect(res.body.course.instructor).toBe(adminUser._id.toString());
       expect(res.body.course.status).toBe('draft');
-      expect(res.body.course.content[0].title).toBe(newCourse.content[0].title);
-      expect(res.body.course.content[0].type).toBe(newCourse.content[0].type);
-      expect(res.body.course.content[0].videoUrl).toBe(
-        newCourse.content[0].videoUrl
-      );
+      expect(res.body.course.sections).toEqual([]);
+      // Note: Content is now handled via sections and managed separately
     });
   });
 });

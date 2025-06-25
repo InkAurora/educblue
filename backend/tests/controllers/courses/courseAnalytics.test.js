@@ -1,6 +1,5 @@
 const { describe, it, expect, beforeEach } = require('@jest/globals');
 const mongoose = require('mongoose');
-const jwt = require('jsonwebtoken'); // Import jsonwebtoken
 const request = require('supertest');
 const app = require('../../../index'); // Changed from ../../../app to ../../../index.js
 const User = require('../../../models/user');
@@ -18,13 +17,7 @@ describe('Course Analytics API', () => {
   let quizContentId;
   let mcContentId;
   let videoContentId;
-
-  const instructor = {
-    email: 'instructor@test.com',
-    password: 'password123',
-    role: 'instructor',
-    fullName: 'Test Instructor',
-  };
+  let instructorUser; // Add instructor user variable
 
   const student1 = {
     email: 'student1@test.com',
@@ -52,23 +45,33 @@ describe('Course Analytics API', () => {
     description: 'Course for testing analytics',
     price: 99.99,
     duration: 10,
-    content: [
+    sections: [
       {
-        title: 'Video Lecture',
-        type: 'video',
-        videoUrl: 'https://example.com/video',
-      },
-      {
-        title: 'Quiz Question',
-        type: 'quiz',
-        content: 'This is a quiz question',
-      },
-      {
-        title: 'Multiple Choice Question',
-        type: 'multipleChoice',
-        question: 'Which is the correct answer?',
-        options: ['Option A', 'Option B', 'Option C', 'Option D'],
-        correctOption: 2,
+        _id: new mongoose.Types.ObjectId(),
+        title: 'Section 1',
+        order: 0,
+        content: [
+          {
+            _id: new mongoose.Types.ObjectId(),
+            title: 'Video Lecture',
+            type: 'video',
+            videoUrl: 'https://example.com/video',
+          },
+          {
+            _id: new mongoose.Types.ObjectId(),
+            title: 'Quiz Question',
+            type: 'quiz',
+            content: 'This is a quiz question',
+          },
+          {
+            _id: new mongoose.Types.ObjectId(),
+            title: 'Multiple Choice Question',
+            type: 'multipleChoice',
+            question: 'Which is the correct answer?',
+            options: ['Option A', 'Option B', 'Option C', 'Option D'],
+            correctOption: 2,
+          },
+        ],
       },
     ],
   };
@@ -79,52 +82,69 @@ describe('Course Analytics API', () => {
     await Course.deleteMany({});
     await Progress.deleteMany({});
 
-    // Create instructor user and get auth token
-    const instructorRes = await request(app)
-      .post('/api/auth/register')
-      .send(instructor);
+    // Create an instructor user directly
+    instructorUser = await User.create({
+      email: 'instructor@test.com',
+      password: 'password123',
+      role: 'instructor',
+      fullName: 'Test Instructor',
+    });
 
-    instructorToken =
-      instructorRes.body.token || instructorRes.body.accessToken;
+    // Create instructor token by logging in
+    const instructorLoginRes = await request(app).post('/api/auth/login').send({
+      email: 'instructor@test.com',
+      password: 'password123',
+    });
+
+    instructorToken = instructorLoginRes.body.accessToken;
 
     // Create student users
     const student1Res = await request(app)
       .post('/api/auth/register')
       .send(student1);
-    studentToken = student1Res.body.accessToken; // Assign the student token
+    studentToken = student1Res.body.accessToken;
 
-    // eslint-disable-next-line no-console
-    // console.log('student1Res.body:', student1Res.body);
-    const decodedStudent1 = jwt.decode(student1Res.body.accessToken);
+    const decodedStudent1 = JSON.parse(
+      Buffer.from(
+        student1Res.body.accessToken.split('.')[1],
+        'base64'
+      ).toString()
+    );
     studentId = decodedStudent1.id;
 
     const student2Res = await request(app)
       .post('/api/auth/register')
       .send(student2);
 
-    // eslint-disable-next-line no-console
-    // console.log('student2Res.body:', student2Res.body);
-    const decodedStudent2 = jwt.decode(student2Res.body.accessToken);
+    const decodedStudent2 = JSON.parse(
+      Buffer.from(
+        student2Res.body.accessToken.split('.')[1],
+        'base64'
+      ).toString()
+    );
     student2Id = decodedStudent2.id;
 
     const student3Res = await request(app)
       .post('/api/auth/register')
       .send(student3);
 
-    // eslint-disable-next-line no-console
-    // console.log('student3Res.body:', student3Res.body);
-    const decodedStudent3 = jwt.decode(student3Res.body.accessToken);
+    const decodedStudent3 = JSON.parse(
+      Buffer.from(
+        student3Res.body.accessToken.split('.')[1],
+        'base64'
+      ).toString()
+    );
     student3Id = decodedStudent3.id;
 
     // Create test course with the instructor as the creator
-    testCourse.instructor = instructor.fullName;
+    testCourse.instructor = instructorUser._id;
     const course = await Course.create(testCourse);
     courseId = course.id;
 
     // Get content IDs
-    videoContentId = course.content[0].id;
-    quizContentId = course.content[1].id;
-    mcContentId = course.content[2].id;
+    videoContentId = course.sections[0].content[0].id;
+    quizContentId = course.sections[0].content[1].id;
+    mcContentId = course.sections[0].content[2].id;
 
     // Enroll all students in the course
     await User.findByIdAndUpdate(studentId, {
@@ -144,6 +164,7 @@ describe('Course Analytics API', () => {
     await Progress.create({
       userId: studentId,
       courseId,
+      sectionId: course.sections[0]._id,
       contentId: videoContentId,
       completed: true,
       completedAt: new Date(),
@@ -152,6 +173,7 @@ describe('Course Analytics API', () => {
     await Progress.create({
       userId: studentId,
       courseId,
+      sectionId: course.sections[0]._id,
       contentId: quizContentId,
       completed: true,
       completedAt: new Date(),
@@ -162,6 +184,7 @@ describe('Course Analytics API', () => {
     await Progress.create({
       userId: studentId,
       courseId,
+      sectionId: course.sections[0]._id,
       contentId: mcContentId,
       completed: true,
       completedAt: new Date(),
@@ -173,6 +196,7 @@ describe('Course Analytics API', () => {
     await Progress.create({
       userId: student2Id,
       courseId,
+      sectionId: course.sections[0]._id,
       contentId: videoContentId,
       completed: true,
       completedAt: new Date(),
@@ -182,6 +206,7 @@ describe('Course Analytics API', () => {
     await Progress.create({
       userId: student3Id,
       courseId,
+      sectionId: course.sections[0]._id,
       contentId: quizContentId,
       completed: true,
       completedAt: new Date(),
@@ -192,6 +217,7 @@ describe('Course Analytics API', () => {
     await Progress.create({
       userId: student3Id,
       courseId,
+      sectionId: course.sections[0]._id,
       contentId: mcContentId,
       completed: true,
       completedAt: new Date(),
@@ -241,12 +267,18 @@ describe('Course Analytics API', () => {
         description: 'No progress yet',
         price: 49.99,
         duration: 5,
-        instructor: instructor.fullName,
-        content: [
+        instructor: instructorUser._id,
+        sections: [
           {
-            title: 'Quiz',
-            type: 'quiz',
-            content: 'Empty quiz',
+            title: 'Section 1',
+            order: 0,
+            content: [
+              {
+                title: 'Quiz',
+                type: 'quiz',
+                content: 'Empty quiz',
+              },
+            ],
           },
         ],
       };
@@ -271,17 +303,23 @@ describe('Course Analytics API', () => {
         description: 'No quizzes in this course',
         price: 29.99,
         duration: 2,
-        instructor: instructor.fullName,
-        content: [
+        instructor: instructorUser._id,
+        sections: [
           {
-            title: 'Video 1',
-            type: 'video',
-            videoUrl: 'https://example.com/video1',
-          },
-          {
-            title: 'Video 2',
-            type: 'video',
-            videoUrl: 'https://example.com/video2',
+            title: 'Section 1',
+            order: 0,
+            content: [
+              {
+                title: 'Video 1',
+                type: 'video',
+                videoUrl: 'https://example.com/video1',
+              },
+              {
+                title: 'Video 2',
+                type: 'video',
+                videoUrl: 'https://example.com/video2',
+              },
+            ],
           },
         ],
       };
@@ -318,20 +356,23 @@ describe('Course Analytics API', () => {
     });
 
     it('should return 403 when a different instructor tries to access analytics', async () => {
-      // Create another instructor
-      const otherInstructor = {
+      // Create another instructor directly in database (not via registration endpoint)
+      await User.create({
         email: 'other@test.com',
         password: 'password123',
         role: 'instructor',
         fullName: 'Other Instructor',
-      };
+      });
 
-      const otherInstructorRes = await request(app)
-        .post('/api/auth/register')
-        .send(otherInstructor);
+      // Login as the other instructor to get a token
+      const otherInstructorLoginRes = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: 'other@test.com',
+          password: 'password123',
+        });
 
-      const otherInstructorToken =
-        otherInstructorRes.body.token || otherInstructorRes.body.accessToken;
+      const otherInstructorToken = otherInstructorLoginRes.body.accessToken;
 
       const res = await request(app)
         .get(`/api/courses/${courseId}/analytics`)

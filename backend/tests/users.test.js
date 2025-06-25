@@ -22,13 +22,19 @@ describe('User Profile Endpoints', () => {
     title: 'Test Course',
     description: 'This is a test course',
     price: 99.99,
-    instructor: 'Test Instructor',
+    instructor: new mongoose.Types.ObjectId(),
     duration: 10,
-    content: [
+    sections: [
       {
-        title: 'Introduction',
-        videoUrl: 'https://example.com/video1',
-        type: 'video',
+        title: 'Section 1',
+        order: 1,
+        content: [
+          {
+            title: 'Introduction',
+            videoUrl: 'https://example.com/video1',
+            type: 'video',
+          },
+        ],
       },
     ],
   };
@@ -124,6 +130,139 @@ describe('User Profile Endpoints', () => {
         .set('Authorization', 'Bearer invalidtoken');
 
       expect(res.status).toBe(401);
+    });
+  });
+
+  describe('PUT /api/users/me', () => {
+    it('should update user profile successfully', async () => {
+      if (!authToken) {
+        console.log('Skipping test due to missing token');
+        return;
+      }
+
+      const updateData = {
+        fullName: 'Updated User Name',
+        bio: 'This is my bio',
+        phoneNumber: '+1234567890',
+      };
+
+      const res = await request(app)
+        .put('/api/users/me')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(updateData);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('fullName', updateData.fullName);
+      expect(res.body).toHaveProperty('bio', updateData.bio);
+      expect(res.body).toHaveProperty('phoneNumber', updateData.phoneNumber);
+    });
+
+    it('should update only provided fields', async () => {
+      if (!authToken) {
+        console.log('Skipping test due to missing token');
+        return;
+      }
+
+      const updateData = {
+        fullName: 'Partially Updated Name',
+      };
+
+      const res = await request(app)
+        .put('/api/users/me')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(updateData);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('fullName', updateData.fullName);
+    });
+
+    it('should require fullName', async () => {
+      if (!authToken) {
+        console.log('Skipping test due to missing token');
+        return;
+      }
+
+      const updateData = {
+        bio: 'Just updating bio',
+      };
+
+      const res = await request(app)
+        .put('/api/users/me')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(updateData);
+
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty('message', 'Full name is required');
+    });
+
+    it('should reject empty fullName', async () => {
+      if (!authToken) {
+        console.log('Skipping test due to missing token');
+        return;
+      }
+
+      const updateData = {
+        fullName: '',
+      };
+
+      const res = await request(app)
+        .put('/api/users/me')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(updateData);
+
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty('message', 'Full name is required');
+    });
+
+    it('should reject non-string fullName', async () => {
+      if (!authToken) {
+        console.log('Skipping test due to missing token');
+        return;
+      }
+
+      const updateData = {
+        fullName: 123,
+      };
+
+      const res = await request(app)
+        .put('/api/users/me')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(updateData);
+
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty('message', 'Full name is required');
+    });
+
+    it('should not allow access without auth token', async () => {
+      const updateData = {
+        fullName: 'Test Name',
+      };
+
+      const res = await request(app).put('/api/users/me').send(updateData);
+
+      expect(res.status).toBe(401);
+    });
+
+    it('should return 404 if user does not exist', async () => {
+      if (!authToken) {
+        console.log('Skipping test due to missing token');
+        return;
+      }
+
+      // Delete the user to simulate non-existent user
+      await User.findByIdAndDelete(userId);
+
+      const updateData = {
+        fullName: 'Test Name',
+      };
+
+      const res = await request(app)
+        .put('/api/users/me')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(updateData);
+
+      expect(res.status).toBe(404);
+      expect(res.body).toHaveProperty('message', 'User not found');
     });
   });
 });

@@ -9,7 +9,7 @@ describe('Course Model', () => {
       title: 'Test Course',
       description: 'This is a test course',
       price: 99.99,
-      instructor: 'Test Instructor',
+      instructor: new mongoose.Types.ObjectId(),
       duration: 10,
     };
 
@@ -30,7 +30,7 @@ describe('Course Model', () => {
       title: 'Full Course',
       description: 'Course with various content types',
       price: 149.99,
-      instructor: 'Test Instructor',
+      instructor: new mongoose.Types.ObjectId(),
       duration: 20,
       content: [
         {
@@ -81,7 +81,7 @@ describe('Course Model', () => {
         title: 'Invalid Course',
         description: 'Course with invalid multiple choice options',
         price: 49.99,
-        instructor: 'Test Instructor',
+        instructor: new mongoose.Types.ObjectId(),
         duration: 5,
         content: [
           {
@@ -112,7 +112,7 @@ describe('Course Model', () => {
         title: 'Invalid Course',
         description: 'Course with invalid correct option',
         price: 49.99,
-        instructor: 'Test Instructor',
+        instructor: new mongoose.Types.ObjectId(),
         duration: 5,
         content: [
           {
@@ -143,7 +143,7 @@ describe('Course Model', () => {
         title: 'Invalid Course',
         description: 'Course with missing multiple choice fields',
         price: 49.99,
-        instructor: 'Test Instructor',
+        instructor: new mongoose.Types.ObjectId(),
         duration: 5,
         content: [
           {
@@ -175,7 +175,7 @@ describe('Course Model', () => {
       title: 'Regular Course',
       description: 'Course with regular content',
       price: 79.99,
-      instructor: 'Test Instructor',
+      instructor: new mongoose.Types.ObjectId(),
       duration: 15,
       content: [
         {

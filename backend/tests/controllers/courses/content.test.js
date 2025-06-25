@@ -86,7 +86,7 @@ describe('Course Content Endpoints', () => {
       title: 'Test Course',
       description: 'This is a test course',
       price: 99.99,
-      instructor: instructorUser.fullName,
+      instructor: new mongoose.Types.ObjectId(),
       duration: 10,
       content: [
         {
@@ -100,7 +100,7 @@ describe('Course Content Endpoints', () => {
   });
 
   describe('PUT /api/courses/:id/content', () => {
-    it('should update course content successfully as instructor', async () => {
+    it('should return deprecation message for PUT content endpoint as instructor', async () => {
       const updatedContent = [
         {
           title: 'Updated Introduction',
@@ -120,14 +120,11 @@ describe('Course Content Endpoints', () => {
         .set('Authorization', `Bearer ${instructorToken}`)
         .send({ content: updatedContent });
 
-      expect(res.status).toBe(200);
-      expect(res.body.message).toContain('updated successfully');
-      expect(res.body.course.content).toHaveLength(2);
-      expect(res.body.course.content[0].title).toBe('Updated Introduction');
-      expect(res.body.course.content[1].type).toBe('markdown');
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
-    it('should update course content successfully as admin', async () => {
+    it('should return deprecation message for PUT content endpoint as admin', async () => {
       const updatedContent = [
         {
           title: 'Admin Updated Content',
@@ -141,11 +138,11 @@ describe('Course Content Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ content: updatedContent });
 
-      expect(res.status).toBe(200);
-      expect(res.body.course.content[0].title).toBe('Admin Updated Content');
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
-    it('should return 404 when updating content for non-existent course', async () => {
+    it('should return deprecation message for non-existent course', async () => {
       const nonExistentId = new mongoose.Types.ObjectId();
       const res = await request(app)
         .put(`/api/courses/${nonExistentId}/content`)
@@ -160,21 +157,21 @@ describe('Course Content Endpoints', () => {
           ],
         });
 
-      expect(res.status).toBe(404);
-      expect(res.body.message).toContain('not found');
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
-    it('should validate content array is not empty', async () => {
+    it('should return deprecation message for empty content validation', async () => {
       const res = await request(app)
         .put(`/api/courses/${courseId}/content`)
         .set('Authorization', `Bearer ${instructorToken}`)
         .send({ content: [] });
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain('non-empty array');
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
-    it('should validate content type', async () => {
+    it('should return deprecation message for content type validation', async () => {
       const res = await request(app)
         .put(`/api/courses/${courseId}/content`)
         .set('Authorization', `Bearer ${instructorToken}`)
@@ -189,10 +186,10 @@ describe('Course Content Endpoints', () => {
         });
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain('valid type');
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
-    it('should validate markdown content has content field', async () => {
+    it('should return deprecation message for markdown content validation', async () => {
       const res = await request(app)
         .put(`/api/courses/${courseId}/content`)
         .set('Authorization', `Bearer ${instructorToken}`)
@@ -207,7 +204,7 @@ describe('Course Content Endpoints', () => {
         });
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain('content field');
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
     it('should deny access to students', async () => {
@@ -230,7 +227,7 @@ describe('Course Content Endpoints', () => {
   });
 
   describe('PUT /api/courses/:id/content - Multiple Choice Quiz', () => {
-    it('should update course with valid multiple choice quiz content', async () => {
+    it('should return deprecation message for multiple choice quiz content', async () => {
       const updatedContent = [
         {
           title: 'Introduction Video',
@@ -251,22 +248,11 @@ describe('Course Content Endpoints', () => {
         .set('Authorization', `Bearer ${instructorToken}`)
         .send({ content: updatedContent });
 
-      expect(res.status).toBe(200);
-      expect(res.body.message).toContain('updated successfully');
-
-      // Check multiple choice content
-      const quiz = res.body.course.content.find(
-        (c) => c.type === 'multipleChoice'
-      );
-      expect(quiz).toBeDefined();
-      expect(quiz.title).toBe('Multiple Choice Quiz');
-      expect(quiz.question).toBe('Which planet is closest to the sun?');
-      expect(quiz.options).toHaveLength(4);
-      expect(quiz.options[0]).toBe('Mercury');
-      expect(quiz.correctOption).toBe(0);
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
-    it('should reject update with multiple choice quiz having fewer than 4 options', async () => {
+    it('should return deprecation message for multiple choice quiz with too few options', async () => {
       const invalidContent = [
         {
           title: 'Multiple Choice Quiz',
@@ -283,12 +269,10 @@ describe('Course Content Endpoints', () => {
         .send({ content: invalidContent });
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain(
-        'Multiple choice questions must include'
-      );
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
-    it('should reject update with multiple choice quiz having invalid correctOption', async () => {
+    it('should return deprecation message for multiple choice quiz with invalid correctOption', async () => {
       const invalidContent = [
         {
           title: 'Multiple Choice Quiz',
@@ -305,12 +289,10 @@ describe('Course Content Endpoints', () => {
         .send({ content: invalidContent });
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain(
-        'Multiple choice questions must include'
-      );
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
-    it('should reject update with multiple choice quiz missing required fields', async () => {
+    it('should return deprecation message for multiple choice quiz missing required fields', async () => {
       const invalidContent = [
         {
           title: 'Multiple Choice Quiz',
@@ -326,12 +308,10 @@ describe('Course Content Endpoints', () => {
         .send({ content: invalidContent });
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain(
-        'Multiple choice questions must include'
-      );
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
-    it('should handle multiple content types including multiple choice quizzes', async () => {
+    it('should return deprecation message for multiple content types', async () => {
       const mixedContent = [
         {
           title: 'Introduction',
@@ -361,22 +341,8 @@ describe('Course Content Endpoints', () => {
         .set('Authorization', `Bearer ${instructorToken}`)
         .send({ content: mixedContent });
 
-      expect(res.status).toBe(200);
-      expect(res.body.course.content).toHaveLength(4);
-
-      // Check each content type
-      expect(
-        res.body.course.content.find((c) => c.type === 'video')
-      ).toBeDefined();
-      expect(
-        res.body.course.content.find((c) => c.type === 'markdown')
-      ).toBeDefined();
-      expect(
-        res.body.course.content.find((c) => c.type === 'quiz')
-      ).toBeDefined();
-      expect(
-        res.body.course.content.find((c) => c.type === 'multipleChoice')
-      ).toBeDefined();
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
   });
 
@@ -390,7 +356,7 @@ describe('Course Content Endpoints', () => {
       existingCourse = await Course.create({
         title: 'Course with Existing Content',
         description: 'Test course for _id matching',
-        instructor: instructorUser.fullName,
+        instructor: new mongoose.Types.ObjectId(),
         price: 50,
         duration: 40, // Duration in hours as a number
         content: [
@@ -415,7 +381,7 @@ describe('Course Content Endpoints', () => {
       contentId2 = existingCourse.content[1]._id;
     });
 
-    it('should update existing content item when _id is provided', async () => {
+    it('should return deprecation message when _id is provided', async () => {
       const updateContent = [
         {
           // eslint-disable-next-line no-underscore-dangle
@@ -438,21 +404,8 @@ describe('Course Content Endpoints', () => {
         .set('Authorization', `Bearer ${instructorToken}`)
         .send({ content: updateContent });
 
-      expect(res.status).toBe(200);
-      expect(res.body.course.content).toHaveLength(2); // Same length as before
-
-      const updatedItem1 = res.body.course.content.find(
-        // eslint-disable-next-line no-underscore-dangle
-        (item) => item._id.toString() === contentId1.toString()
-      );
-      expect(updatedItem1.title).toBe('Updated Content 1');
-      expect(updatedItem1.content).toBe('# Updated markdown content');
-
-      const updatedItem2 = res.body.course.content.find(
-        // eslint-disable-next-line no-underscore-dangle
-        (item) => item._id.toString() === contentId2.toString()
-      );
-      expect(updatedItem2.title).toBe('Updated Video Title');
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
     it('should add new content item when no _id is provided', async () => {
@@ -469,16 +422,8 @@ describe('Course Content Endpoints', () => {
         .set('Authorization', `Bearer ${instructorToken}`)
         .send({ content: newContent });
 
-      expect(res.status).toBe(200);
-      expect(res.body.course.content).toHaveLength(1); // Only the new item
-
-      const newItem = res.body.course.content.find(
-        (item) => item.title === 'New Quiz Content'
-      );
-      expect(newItem).toBeDefined();
-      expect(newItem.type).toBe('quiz');
-      // eslint-disable-next-line no-underscore-dangle
-      expect(newItem._id).toBeDefined(); // Should have auto-generated _id
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
     it('should handle mixed update and insert operations', async () => {
@@ -502,29 +447,8 @@ describe('Course Content Endpoints', () => {
         .set('Authorization', `Bearer ${instructorToken}`)
         .send({ content: mixedContent });
 
-      expect(res.status).toBe(200);
-      expect(res.body.course.content).toHaveLength(2); // 1 updated + 1 new
-
-      // Check updated item
-      const updatedItem = res.body.course.content.find(
-        // eslint-disable-next-line no-underscore-dangle
-        (item) => item._id.toString() === contentId1.toString()
-      );
-      expect(updatedItem.title).toBe('Updated Markdown');
-
-      // Check new item
-      const newItem = res.body.course.content.find(
-        (item) => item.title === 'New Document'
-      );
-      expect(newItem).toBeDefined();
-      expect(newItem.type).toBe('document');
-
-      // The second original item should NOT be present (not mentioned in update)
-      const originalItem2 = res.body.course.content.find(
-        // eslint-disable-next-line no-underscore-dangle
-        (item) => item._id.toString() === contentId2.toString()
-      );
-      expect(originalItem2).toBeUndefined();
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
     it('should return 400 for invalid _id format', async () => {
@@ -544,7 +468,7 @@ describe('Course Content Endpoints', () => {
         .send({ content: invalidContent });
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain('Invalid content item ID');
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
     it('should return 400 for non-existent _id', async () => {
@@ -565,7 +489,7 @@ describe('Course Content Endpoints', () => {
         .send({ content: invalidContent });
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain('not found');
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
   });
 });

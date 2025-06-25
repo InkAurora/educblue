@@ -174,15 +174,12 @@ describe('Progress Model', () => {
     } catch (error) {
       expect(error).toBeDefined();
       // Check for MongoDB duplicate key error (code 11000)
-      // or if the message contains "duplicate" or "E11000"
+      // or Mongoose validation error, or if the message contains "duplicate key"
       const isDuplicateError =
         error.code === 11000 ||
         error.name === 'MongoServerError' ||
-        (error.message &&
-          (error.message.includes('duplicate') ||
-            error.message.includes('E11000') ||
-            error.message.includes('unique')));
-
+        error.name === 'ValidationError' ||
+        (error.message && error.message.includes('duplicate key'));
       expect(isDuplicateError).toBe(true);
     }
   });

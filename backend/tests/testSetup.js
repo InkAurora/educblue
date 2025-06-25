@@ -25,6 +25,9 @@ async function setupUsers() {
     isVerified: true, // Ensure user is verified for login
   });
   await instructorUser.save();
+
+  // Return user objects for use in tests
+  return { adminUser, instructorUser };
 }
 
 module.exports = { setupUsers };

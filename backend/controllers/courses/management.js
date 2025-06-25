@@ -3,8 +3,15 @@ const User = require('../../models/user');
 
 // Create a course (for instructors)
 exports.createCourse = async (req, res) => {
-  const { title, description, markdownDescription, price, duration, sections } =
-    req.body;
+  const {
+    title,
+    description,
+    markdownDescription,
+    price,
+    duration,
+    sections,
+    content,
+  } = req.body;
 
   // Validate markdown description if provided
   if (
@@ -14,6 +21,65 @@ exports.createCourse = async (req, res) => {
     return res
       .status(400)
       .json({ message: 'Markdown description must be a string' });
+  }
+
+  // Handle legacy content field (backward compatibility)
+  if (content && !sections) {
+    // Validate legacy content array
+    const validContentTypes = [
+      'video',
+      'quiz',
+      'document',
+      'markdown',
+      'multipleChoice',
+    ];
+
+    // Check if all content items have valid types
+    const hasInvalidContent = content.some(
+      (item) => !item.type || !validContentTypes.includes(item.type)
+    );
+
+    // Check if markdown type items have content
+    const hasInvalidMarkdown = content.some(
+      (item) =>
+        item.type === 'markdown' &&
+        (!item.content || typeof item.content !== 'string')
+    );
+
+    // Check if multipleChoice type items have required fields
+    const hasInvalidMultipleChoice = content.some(
+      (item) =>
+        item.type === 'multipleChoice' &&
+        (!item.question ||
+          typeof item.question !== 'string' ||
+          !item.options ||
+          !Array.isArray(item.options) ||
+          item.options.length !== 4 ||
+          typeof item.correctOption !== 'number' ||
+          item.correctOption < 0 ||
+          item.correctOption > 3 ||
+          !Number.isInteger(item.correctOption))
+    );
+
+    if (hasInvalidContent) {
+      return res.status(400).json({
+        message: `Content items must have a valid type: ${validContentTypes.join(', ')}`,
+      });
+    }
+
+    if (hasInvalidMarkdown) {
+      return res.status(400).json({
+        message:
+          'Markdown content items must include a content field with string value',
+      });
+    }
+
+    if (hasInvalidMultipleChoice) {
+      return res.status(400).json({
+        message:
+          'Multiple choice questions must include a question (string), options (array of 4 strings), and correctOption (number 0-3)',
+      });
+    }
   }
 
   // Validate sections array if provided
@@ -105,9 +171,10 @@ exports.createCourse = async (req, res) => {
       description,
       markdownDescription,
       price,
-      instructor: user._id, // Set instructor to user's ObjectId
+      instructor: user.id, // Set instructor to user's ObjectId
       duration,
       sections,
+      content: content || undefined, // Include legacy content if provided
       status: 'draft', // Setting status to 'draft' by default
     });
     await course.save();
@@ -185,7 +252,7 @@ exports.updateCourse = async (req, res) => {
     // Check if user is either an admin or the course instructor
     const isInstructor =
       existingCourse.instructor &&
-      existingCourse.instructor.toString() === user._id.toString();
+      existingCourse.instructor.toString() === user.id.toString();
     const isAdmin = user.role === 'admin';
     // eslint-disable-next-line no-console
     console.log(
@@ -238,7 +305,7 @@ exports.publishCourse = async (req, res) => {
     } // Check if user is either an admin or the course instructor
     const isInstructor =
       courseToPublish.instructor &&
-      courseToPublish.instructor.toString() === user._id.toString();
+      courseToPublish.instructor.toString() === user.id.toString();
     const isAdmin = user.role === 'admin';
 
     // Check if the course is already published
@@ -248,13 +315,18 @@ exports.publishCourse = async (req, res) => {
       });
     }
 
-    // Check if the course has content (sections with content) before publishing
-    const hasContent =
+    // Check if the course has content (sections with content or legacy content) before publishing
+    const hasSections =
       courseToPublish.sections &&
       courseToPublish.sections.length > 0 &&
       courseToPublish.sections.some(
         (section) => section.content && section.content.length > 0
       );
+
+    const hasLegacyContent =
+      courseToPublish.content && courseToPublish.content.length > 0;
+
+    const hasContent = hasSections || hasLegacyContent;
 
     if (!hasContent) {
       return res.status(400).json({
@@ -317,7 +389,7 @@ exports.deleteCourse = async (req, res) => {
     // Check if user is either an admin or the course instructor
     const isInstructor =
       courseToDelete.instructor &&
-      courseToDelete.instructor.toString() === user._id.toString();
+      courseToDelete.instructor.toString() === user.id.toString();
     const isAdmin = user.role === 'admin';
     // eslint-disable-next-line no-console
     console.log(

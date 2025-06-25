@@ -1,5 +1,6 @@
 const { describe, it, expect, beforeEach } = require('@jest/globals');
 const request = require('supertest');
+const mongoose = require('mongoose');
 const app = require('../index');
 const User = require('../models/user');
 const Course = require('../models/course');
@@ -51,13 +52,19 @@ describe('Enrollment Endpoints', () => {
     title: 'Test Course',
     description: 'This is a test course',
     price: 99.99,
-    instructor: 'Test Instructor',
+    instructor: new mongoose.Types.ObjectId(),
     duration: 10,
-    content: [
+    sections: [
       {
-        title: 'Introduction',
-        videoUrl: 'https://example.com/video1',
-        type: 'video',
+        title: 'Section 1',
+        order: 1,
+        content: [
+          {
+            title: 'Introduction',
+            videoUrl: 'https://example.com/video1',
+            type: 'video',
+          },
+        ],
       },
     ],
   };

@@ -67,13 +67,20 @@ describe('Course Listing Endpoints', () => {
     title: 'Test Course',
     description: 'This is a test course',
     price: 99.99,
-    instructor: 'Test Instructor',
+    instructor: new mongoose.Types.ObjectId(),
     duration: 10,
-    content: [
+    status: 'published', // Add published status so it appears in course listing
+    sections: [
       {
-        title: 'Introduction',
-        videoUrl: 'https://example.com/video1',
-        type: 'video',
+        title: 'Section 1',
+        order: 1,
+        content: [
+          {
+            title: 'Introduction',
+            videoUrl: 'https://example.com/video1',
+            type: 'video',
+          },
+        ],
       },
     ],
   };
@@ -84,19 +91,26 @@ describe('Course Listing Endpoints', () => {
     markdownDescription:
       '# Main Title\n\nMarkdown course description with **bold** and *italic* text.',
     price: 79.99,
-    instructor: 'Markdown Instructor',
+    instructor: new mongoose.Types.ObjectId(),
     duration: 8,
-    content: [
+    status: 'published', // Add published status so it appears in course listing
+    sections: [
       {
-        title: 'Introduction',
-        videoUrl: 'https://example.com/video1',
-        type: 'video',
-      },
-      {
-        title: 'Markdown Lesson',
-        type: 'markdown',
-        content:
-          '# Lesson 1\n\nThis is a markdown lesson with code:\n```javascript\nconst x = 1;\n```',
+        title: 'Section 1',
+        order: 1,
+        content: [
+          {
+            title: 'Introduction',
+            videoUrl: 'https://example.com/video1',
+            type: 'video',
+          },
+          {
+            title: 'Markdown Lesson',
+            type: 'markdown',
+            content:
+              '# Lesson 1\n\nThis is a markdown lesson with code:\n```javascript\nconst x = 1;\n```',
+          },
+        ],
       },
     ],
   };
@@ -126,9 +140,9 @@ describe('Course Listing Endpoints', () => {
       expect(res.body[0].markdownDescription).toBe(
         sampleMarkdownCourse.markdownDescription
       );
-      expect(
-        res.body[0].content.find((c) => c.type === 'markdown')
-      ).toBeDefined();
+      // Note: content and sections are excluded from course listing for performance
+      expect(res.body[0].content).toBeUndefined();
+      expect(res.body[0].sections).toBeUndefined();
     });
   });
 
@@ -167,7 +181,7 @@ describe('Course Listing Endpoints', () => {
         expect(markdownContent).toBeDefined();
         if (markdownContent) {
           expect(markdownContent.content).toBe(
-            sampleMarkdownCourse.content[1].content
+            sampleMarkdownCourse.sections[0].content[1].content
           );
         }
       }
@@ -184,21 +198,27 @@ describe('Course Listing Endpoints', () => {
     });
   });
 
-  describe('GET /api/courses/:id/content/:contentId', () => {
+  describe('GET /api/courses/:id/sections/:sectionId/content/:contentId', () => {
     it('should get specific content by id', async () => {
       // Create a course with multiple content items
       const course = await Course.create({
         ...sampleCourse,
-        content: [
+        sections: [
           {
-            title: 'Introduction',
-            type: 'video',
-            videoUrl: 'https://example.com/video1',
-          },
-          {
-            title: 'Chapter 1',
-            type: 'markdown',
-            content: '# Chapter 1\n\nThis is chapter 1 content.',
+            title: 'Section 1',
+            order: 1,
+            content: [
+              {
+                title: 'Introduction',
+                type: 'video',
+                videoUrl: 'https://example.com/video1',
+              },
+              {
+                title: 'Chapter 1',
+                type: 'markdown',
+                content: '# Chapter 1\n\nThis is chapter 1 content.',
+              },
+            ],
           },
         ],
       });
@@ -208,11 +228,14 @@ describe('Course Listing Endpoints', () => {
         $push: { enrolledCourses: course._id },
       });
 
-      // Get the content ID from the created course
-      const contentId = course.content[1].id;
+      // Get the section and content IDs from the created course
+      const sectionId = course.sections[0]._id;
+      const contentId = course.sections[0].content[1]._id;
 
       const res = await request(app)
-        .get(`/api/courses/${course._id}/content/${contentId}`)
+        .get(
+          `/api/courses/${course._id}/sections/${sectionId}/content/${contentId}`
+        )
         .set('Authorization', `Bearer ${studentToken}`);
 
       expect(res.status).toBe(200);
@@ -226,11 +249,14 @@ describe('Course Listing Endpoints', () => {
     it('should deny access to non-enrolled users', async () => {
       // Create a course
       const course = await Course.create(sampleCourse);
-      const contentId = course.content[0].id;
+      const sectionId = course.sections[0]._id;
+      const contentId = course.sections[0].content[0]._id;
 
       // Try to access as a student who is not enrolled
       const res = await request(app)
-        .get(`/api/courses/${course._id}/content/${contentId}`)
+        .get(
+          `/api/courses/${course._id}/sections/${sectionId}/content/${contentId}`
+        )
         .set('Authorization', `Bearer ${studentToken}`);
 
       expect(res.status).toBe(403);
@@ -246,10 +272,13 @@ describe('Course Listing Endpoints', () => {
       });
 
       // Use a non-existent content ID
+      const sectionId = course.sections[0]._id;
       const nonExistentContentId = new mongoose.Types.ObjectId();
 
       const res = await request(app)
-        .get(`/api/courses/${course._id}/content/${nonExistentContentId}`)
+        .get(
+          `/api/courses/${course._id}/sections/${sectionId}/content/${nonExistentContentId}`
+        )
         .set('Authorization', `Bearer ${studentToken}`);
 
       expect(res.status).toBe(404);

@@ -89,24 +89,30 @@ describe('Course Content Endpoints', () => {
       title: 'Test Course',
       description: 'This is a test course',
       price: 99.99,
-      instructor: 'Test Instructor',
+      instructor: new mongoose.Types.ObjectId(),
       duration: 10,
-      content: [
+      sections: [
         {
-          title: 'Introduction',
-          videoUrl: 'https://example.com/video1',
-          type: 'video',
-        },
-        {
-          title: 'Markdown Lesson',
-          type: 'markdown',
-          content:
-            '# Lesson 1\n\nThis is a markdown lesson with code:\n```javascript\nconst x = 1;\n```',
+          title: 'Section 1',
+          order: 1,
+          content: [
+            {
+              title: 'Introduction',
+              videoUrl: 'https://example.com/video1',
+              type: 'video',
+            },
+            {
+              title: 'Markdown Lesson',
+              type: 'markdown',
+              content:
+                '# Lesson 1\n\nThis is a markdown lesson with code:\n```javascript\nconst x = 1;\n```',
+            },
+          ],
         },
       ],
     });
     courseId = course.id;
-    contentId = course.content[0].id; // Get the ID of the first content item
+    contentId = course.sections[0].content[0].id; // Get the ID of the first content item
 
     // Enroll the student in the course
     await User.findByIdAndUpdate(studentId, {
@@ -119,54 +125,51 @@ describe('Course Content Endpoints', () => {
   });
 
   describe('GET /api/courses/:id/content/:contentId', () => {
-    it('should return content item for enrolled student', async () => {
+    it('should return deprecation message for enrolled student', async () => {
       const res = await request(app)
         .get(`/api/courses/${courseId}/content/${contentId}`)
         .set('Authorization', `Bearer ${studentToken}`);
 
-      expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('title', 'Introduction');
-      expect(res.body).toHaveProperty('type', 'video');
-      expect(res.body).toHaveProperty('videoUrl', 'https://example.com/video1');
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
-    it('should return content item for instructor of the course', async () => {
+    it('should return deprecation message for instructor', async () => {
       const res = await request(app)
         .get(`/api/courses/${courseId}/content/${contentId}`)
         .set('Authorization', `Bearer ${instructorToken}`);
 
-      expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('title', 'Introduction');
-      expect(res.body).toHaveProperty('type', 'video');
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
-    it('should return 403 for non-enrolled user', async () => {
+    it('should return deprecation message for non-enrolled user', async () => {
       const res = await request(app)
         .get(`/api/courses/${courseId}/content/${contentId}`)
         .set('Authorization', `Bearer ${nonEnrolledToken}`);
 
-      expect(res.status).toBe(403);
-      expect(res.body).toHaveProperty('message', 'Not enrolled in this course');
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
-    it('should return 404 for invalid course ID', async () => {
+    it('should return deprecation message for invalid course ID', async () => {
       const invalidCourseId = new mongoose.Types.ObjectId();
       const res = await request(app)
         .get(`/api/courses/${invalidCourseId}/content/${contentId}`)
         .set('Authorization', `Bearer ${studentToken}`);
 
-      expect(res.status).toBe(404);
-      expect(res.body).toHaveProperty('message', 'Course not found');
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
-    it('should return 404 for invalid content ID', async () => {
+    it('should return deprecation message for invalid content ID', async () => {
       const invalidContentId = new mongoose.Types.ObjectId();
       const res = await request(app)
         .get(`/api/courses/${courseId}/content/${invalidContentId}`)
         .set('Authorization', `Bearer ${studentToken}`);
 
-      expect(res.status).toBe(404);
-      expect(res.body).toHaveProperty('message', 'Content not found');
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
     it('should return 401 when no authentication token provided', async () => {

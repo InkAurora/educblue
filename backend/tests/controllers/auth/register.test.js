@@ -124,11 +124,12 @@ describe('User Registration Endpoints', () => {
       const userData = {
         email: 'tokeninfo@test.com',
         password: 'password123',
-        role: 'instructor',
         fullName: 'Token User',
       };
 
       const res = await request(app).post('/api/auth/register').send(userData);
+
+      expect(res.status).toBe(201);
 
       // Decode the token and check its contents
       const decoded = jwt.verify(
@@ -138,7 +139,7 @@ describe('User Registration Endpoints', () => {
 
       expect(decoded).toHaveProperty('id');
       expect(decoded).toHaveProperty('email', userData.email);
-      expect(decoded).toHaveProperty('role', userData.role);
+      expect(decoded).toHaveProperty('role', 'student'); // Role defaults to student
       expect(decoded).toHaveProperty('fullName', userData.fullName);
     });
   });
