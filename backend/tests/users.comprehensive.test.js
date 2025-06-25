@@ -338,13 +338,10 @@ describe('User Comprehensive Tests', () => {
     });
 
     it('should handle database error in updateUser', async () => {
-      const originalFindById = User.findById;
-      User.findById = jest
-        .fn()
-        .mockResolvedValueOnce(studentUser)
-        .mockImplementationOnce(() => {
-          throw new Error('Database error');
-        });
+      const originalFindByIdAndUpdate = User.findByIdAndUpdate;
+      User.findByIdAndUpdate = jest.fn().mockImplementation(() => {
+        throw new Error('Database error');
+      });
 
       const res = await request(app)
         .put(`/api/users/${studentUser._id}`)
@@ -354,7 +351,7 @@ describe('User Comprehensive Tests', () => {
       expect(res.status).toBe(500);
       expect(res.body).toHaveProperty('message', 'Server error');
 
-      User.findById = originalFindById;
+      User.findByIdAndUpdate = originalFindByIdAndUpdate;
     });
   });
 });

@@ -1,5 +1,11 @@
 // filepath: c:\Users\INK\Desktop\educblue\backend\tests\models\progress.test.js
-const { describe, it, expect } = require('@jest/globals');
+const {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  beforeEach,
+} = require('@jest/globals');
 const mongoose = require('mongoose');
 const Progress = require('../../models/progress');
 require('../setup');
@@ -10,7 +16,15 @@ describe('Progress Model', () => {
   let contentId;
   let sectionId;
 
-  beforeEach(() => {
+  beforeAll(async () => {
+    // Ensure indexes are created
+    await Progress.createIndexes();
+  });
+
+  beforeEach(async () => {
+    // Clear the Progress collection before each test
+    await Progress.deleteMany({});
+
     // Create fresh IDs for each test
     userId = new mongoose.Types.ObjectId();
     courseId = new mongoose.Types.ObjectId();
