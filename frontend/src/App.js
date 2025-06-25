@@ -191,9 +191,9 @@ function AppWithSidebar() {
                           lineHeight: 1.6,
                         }}
                       >
-                        Transform your skills with our comprehensive learning
-                        platform. Join thousands of learners who have already
-                        started their journey to success.
+                        Start your learning journey with our growing platform.
+                        Explore courses, develop new skills, and achieve your
+                        goals at your own pace.
                       </Typography>
                     </Box>
                     {/* CourseList - Full width without container constraints */}
