@@ -668,7 +668,9 @@ describe('Course Content Endpoints', () => {
         .send(invalidContent);
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain('Content items must have a valid type');
+      expect(res.body.message).toContain(
+        'Content items must have a valid type'
+      );
     });
 
     it('should validate required fields for multiple choice quiz', async () => {
@@ -689,7 +691,9 @@ describe('Course Content Endpoints', () => {
         .send(invalidQuiz);
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain('Multiple choice questions must include');
+      expect(res.body.message).toContain(
+        'Multiple choice questions must include'
+      );
     });
 
     it('should return 404 for non-existent course', async () => {
@@ -704,7 +708,9 @@ describe('Course Content Endpoints', () => {
       };
 
       const res = await request(app)
-        .post(`/api/courses/${nonExistentCourseId}/sections/${sectionId}/content`)
+        .post(
+          `/api/courses/${nonExistentCourseId}/sections/${sectionId}/content`
+        )
         .set('Authorization', `Bearer ${instructorToken}`)
         .send(newContent);
 
@@ -722,7 +728,9 @@ describe('Course Content Endpoints', () => {
       };
 
       const res = await request(app)
-        .post(`/api/courses/${sectionCourseId}/sections/${nonExistentSectionId}/content`)
+        .post(
+          `/api/courses/${sectionCourseId}/sections/${nonExistentSectionId}/content`
+        )
         .set('Authorization', `Bearer ${instructorToken}`)
         .send(newContent);
 
@@ -763,7 +771,9 @@ describe('Course Content Endpoints', () => {
       };
 
       const res = await request(app)
-        .put(`/api/courses/${sectionCourseId}/sections/${sectionId}/content/${contentId}`)
+        .put(
+          `/api/courses/${sectionCourseId}/sections/${sectionId}/content/${contentId}`
+        )
         .set('Authorization', `Bearer ${instructorToken}`)
         .send(updatedContent);
 
@@ -784,7 +794,9 @@ describe('Course Content Endpoints', () => {
       };
 
       const res = await request(app)
-        .put(`/api/courses/${sectionCourseId}/sections/${sectionId}/content/${contentId}`)
+        .put(
+          `/api/courses/${sectionCourseId}/sections/${sectionId}/content/${contentId}`
+        )
         .set('Authorization', `Bearer ${instructorToken}`)
         .send(updatedContent);
 
@@ -807,7 +819,9 @@ describe('Course Content Endpoints', () => {
       };
 
       const res = await request(app)
-        .put(`/api/courses/${sectionCourseId}/sections/${sectionId}/content/${contentId}`)
+        .put(
+          `/api/courses/${sectionCourseId}/sections/${sectionId}/content/${contentId}`
+        )
         .set('Authorization', `Bearer ${instructorToken}`)
         .send(updatedContent);
 
@@ -827,12 +841,16 @@ describe('Course Content Endpoints', () => {
       };
 
       const res = await request(app)
-        .put(`/api/courses/${sectionCourseId}/sections/${sectionId}/content/${contentId}`)
+        .put(
+          `/api/courses/${sectionCourseId}/sections/${sectionId}/content/${contentId}`
+        )
         .set('Authorization', `Bearer ${instructorToken}`)
         .send(invalidContent);
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain('Content items must have a valid type');
+      expect(res.body.message).toContain(
+        'Content items must have a valid type'
+      );
     });
 
     it('should return 404 for non-existent content', async () => {
@@ -847,7 +865,9 @@ describe('Course Content Endpoints', () => {
       };
 
       const res = await request(app)
-        .put(`/api/courses/${sectionCourseId}/sections/${sectionId}/content/${nonExistentContentId}`)
+        .put(
+          `/api/courses/${sectionCourseId}/sections/${sectionId}/content/${nonExistentContentId}`
+        )
         .set('Authorization', `Bearer ${instructorToken}`)
         .send(updatedContent);
 
@@ -867,7 +887,9 @@ describe('Course Content Endpoints', () => {
       };
 
       const res = await request(app)
-        .put(`/api/courses/${sectionCourseId}/sections/${sectionId}/content/${contentId}`)
+        .put(
+          `/api/courses/${sectionCourseId}/sections/${sectionId}/content/${contentId}`
+        )
         .set('Authorization', `Bearer ${studentToken}`)
         .send(updatedContent);
 
@@ -883,7 +905,9 @@ describe('Course Content Endpoints', () => {
       const contentId = course.sections[0].content[0]._id;
 
       const res = await request(app)
-        .delete(`/api/courses/${sectionCourseId}/sections/${sectionId}/content/${contentId}`)
+        .delete(
+          `/api/courses/${sectionCourseId}/sections/${sectionId}/content/${contentId}`
+        )
         .set('Authorization', `Bearer ${instructorToken}`);
 
       expect(res.status).toBe(200);
@@ -896,7 +920,9 @@ describe('Course Content Endpoints', () => {
       const contentId = course.sections[0].content[0]._id;
 
       const res = await request(app)
-        .delete(`/api/courses/${sectionCourseId}/sections/${sectionId}/content/${contentId}`)
+        .delete(
+          `/api/courses/${sectionCourseId}/sections/${sectionId}/content/${contentId}`
+        )
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(res.status).toBe(200);
@@ -910,7 +936,9 @@ describe('Course Content Endpoints', () => {
       const contentId = course.sections[0].content[0]._id;
 
       const res = await request(app)
-        .delete(`/api/courses/${nonExistentCourseId}/sections/${sectionId}/content/${contentId}`)
+        .delete(
+          `/api/courses/${nonExistentCourseId}/sections/${sectionId}/content/${contentId}`
+        )
         .set('Authorization', `Bearer ${instructorToken}`);
 
       expect(res.status).toBe(404);
@@ -923,7 +951,9 @@ describe('Course Content Endpoints', () => {
       const contentId = course.sections[0].content[0]._id;
 
       const res = await request(app)
-        .delete(`/api/courses/${sectionCourseId}/sections/${nonExistentSectionId}/content/${contentId}`)
+        .delete(
+          `/api/courses/${sectionCourseId}/sections/${nonExistentSectionId}/content/${contentId}`
+        )
         .set('Authorization', `Bearer ${instructorToken}`);
 
       expect(res.status).toBe(404);
@@ -936,7 +966,9 @@ describe('Course Content Endpoints', () => {
       const nonExistentContentId = new mongoose.Types.ObjectId();
 
       const res = await request(app)
-        .delete(`/api/courses/${sectionCourseId}/sections/${sectionId}/content/${nonExistentContentId}`)
+        .delete(
+          `/api/courses/${sectionCourseId}/sections/${sectionId}/content/${nonExistentContentId}`
+        )
         .set('Authorization', `Bearer ${instructorToken}`);
 
       expect(res.status).toBe(404);
@@ -949,7 +981,9 @@ describe('Course Content Endpoints', () => {
       const contentId = course.sections[0].content[0]._id;
 
       const res = await request(app)
-        .delete(`/api/courses/${sectionCourseId}/sections/${sectionId}/content/${contentId}`)
+        .delete(
+          `/api/courses/${sectionCourseId}/sections/${sectionId}/content/${contentId}`
+        )
         .set('Authorization', `Bearer ${studentToken}`);
 
       expect(res.status).toBe(403);
@@ -976,7 +1010,9 @@ describe('Course Content Endpoints', () => {
       expect(res.status).toBe(200);
       expect(res.body.message).toBe('Section updated successfully');
       expect(res.body.section.title).toBe('Updated Chapter Title');
-      expect(res.body.section.description).toBe('This is an updated description');
+      expect(res.body.section.description).toBe(
+        'This is an updated description'
+      );
       expect(res.body.section.order).toBe(2);
     });
 
