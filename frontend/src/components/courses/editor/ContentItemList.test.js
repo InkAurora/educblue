@@ -34,8 +34,8 @@ describe('ContentItemList', () => {
 
     expect(screen.getByText('Introduction Video')).toBeInTheDocument();
     expect(screen.getByText('Course Description')).toBeInTheDocument();
-    expect(screen.getByText('Type: video')).toBeInTheDocument();
-    expect(screen.getByText('Type: markdown')).toBeInTheDocument();
+    expect(screen.getByText('Type: Video Lesson')).toBeInTheDocument();
+    expect(screen.getByText('Type: Reading Material')).toBeInTheDocument();
   });
 
   it('renders an info message when no content exists', () => {
@@ -95,5 +95,47 @@ describe('ContentItemList', () => {
     const deleteButtons = screen.getAllByLabelText('delete');
     fireEvent.click(deleteButtons[0]);
     expect(mockOnDelete).toHaveBeenCalledWith(0);
+  });
+
+  it('displays correct content type labels for different content types', () => {
+    const diverseContent = [
+      { type: 'quiz', title: 'Test Quiz', content: '' },
+      { type: 'document', title: 'Test Document', content: '' },
+      { type: 'multiplechoice', title: 'MC Quiz', content: '' },
+      { type: 'custom_type', title: 'Custom Content', content: '' },
+      { type: '', title: 'No Type', content: '' },
+    ];
+
+    render(
+      <ContentItemList
+        content={diverseContent}
+        onEdit={mockOnEdit}
+        onDelete={mockOnDelete}
+        onAdd={mockOnAdd}
+      />,
+    );
+
+    expect(screen.getByText('Type: Quiz')).toBeInTheDocument();
+    expect(screen.getByText('Type: Document')).toBeInTheDocument();
+    expect(screen.getByText('Type: Multiple Choice Quiz')).toBeInTheDocument();
+    expect(screen.getByText('Type: Custom type')).toBeInTheDocument();
+    expect(screen.getByText('Type: Content')).toBeInTheDocument();
+  });
+
+  it('handles content with undefined type gracefully', () => {
+    const contentWithUndefinedType = [
+      { title: 'Test Content', content: '' }, // No type property
+    ];
+
+    render(
+      <ContentItemList
+        content={contentWithUndefinedType}
+        onEdit={mockOnEdit}
+        onDelete={mockOnDelete}
+        onAdd={mockOnAdd}
+      />,
+    );
+
+    expect(screen.getByText('Type: Content')).toBeInTheDocument();
   });
 });

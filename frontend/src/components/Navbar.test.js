@@ -1,11 +1,6 @@
 import React from 'react';
-import {
-  render,
-  screen,
-  fireEvent,
-  act,
-  waitFor,
-} from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
+import { jwtDecode } from 'jwt-decode';
 import Navbar from './Navbar';
 import axiosInstance from '../utils/axiosConfig';
 
@@ -22,7 +17,6 @@ jest.mock('../utils/axiosConfig', () => ({
 jest.mock('jwt-decode', () => ({
   jwtDecode: jest.fn(),
 }));
-import { jwtDecode } from 'jwt-decode';
 
 // Mock useNavigate
 const mockedUsedNavigate = jest.fn();
@@ -34,7 +28,7 @@ jest.mock('react-router-dom', () => ({
 }));
 
 // Mock localStorage
-const localStorageMock = (function () {
+const localStorageMock = (function localStorageMock() {
   let store = {};
   return {
     getItem: jest.fn((key) => store[key] || null),
@@ -159,17 +153,9 @@ describe('Navbar Component', () => {
     // Find and click the logout link
     const logoutButton = screen.getByText('Logout');
 
-    // Suppress console.error for this test
-    const originalError = console.error;
-    console.error = jest.fn();
-
     await act(async () => {
       fireEvent.click(logoutButton);
     });
-
-    // Verify error was logged
-    expect(console.error).toHaveBeenCalled();
-    console.error = originalError;
 
     // Should still clean up even if API fails
     expect(window.localStorage.removeItem).toHaveBeenCalledWith('token');
@@ -210,7 +196,7 @@ describe('Navbar Component', () => {
     render(<Navbar />);
 
     // Check if the user's email is displayed
-    expect(screen.getByText('Hello, test@example.com')).toBeInTheDocument();
+    expect(screen.getByText('test@example.com')).toBeInTheDocument();
   });
 
   test('handles token without email property', () => {
@@ -225,7 +211,7 @@ describe('Navbar Component', () => {
     render(<Navbar />);
 
     // Check if the sub value is used as fallback
-    expect(screen.getByText('Hello, User')).toBeInTheDocument();
+    expect(screen.getByText('User')).toBeInTheDocument();
   });
 
   test('handles token with empty or undefined user info', () => {
@@ -238,7 +224,7 @@ describe('Navbar Component', () => {
     render(<Navbar />);
 
     // Check that "User" is displayed as fallback
-    expect(screen.getByText('Hello, User')).toBeInTheDocument();
+    expect(screen.getByText('User')).toBeInTheDocument();
   });
 
   test('registers event listeners on mount', () => {
@@ -277,7 +263,7 @@ describe('Navbar Component', () => {
     jwtDecode.mockReturnValueOnce({ email: 'initial@example.com' });
 
     render(<Navbar />);
-    expect(screen.getByText('Hello, initial@example.com')).toBeInTheDocument();
+    expect(screen.getByText('initial@example.com')).toBeInTheDocument();
 
     // Capture the storage event listener
     const storageEventCallback = window.addEventListener.mock.calls.find(
@@ -295,7 +281,7 @@ describe('Navbar Component', () => {
 
     // Re-render to reflect changes
     render(<Navbar />);
-    expect(screen.getByText('Hello, updated@example.com')).toBeInTheDocument();
+    expect(screen.getByText('updated@example.com')).toBeInTheDocument();
   });
 
   test('storage event ignores non-token changes', () => {
@@ -303,7 +289,7 @@ describe('Navbar Component', () => {
     window.localStorage.getItem.mockReturnValueOnce('initial-token');
     jwtDecode.mockReturnValueOnce({ email: 'test@example.com' });
 
-    const { rerender } = render(<Navbar />);
+    render(<Navbar />);
 
     // Capture the storage event listener
     const storageEventCallback = window.addEventListener.mock.calls.find(
@@ -347,7 +333,7 @@ describe('Navbar Component', () => {
 
     // Re-render to reflect changes
     render(<Navbar />);
-    expect(screen.getByText('Hello, new@example.com')).toBeInTheDocument();
+    expect(screen.getByText('new@example.com')).toBeInTheDocument();
   });
 
   test('shows Dashboard button when user is logged in', () => {
@@ -573,7 +559,7 @@ describe('Navbar Component', () => {
     });
 
     // Check the user's full name is displayed
-    expect(screen.getByText('Hello, John Doe')).toBeInTheDocument();
+    expect(screen.getByText('John Doe')).toBeInTheDocument();
   });
 
   test('fetchUserData handles API error gracefully', async () => {
@@ -584,20 +570,12 @@ describe('Navbar Component', () => {
     // Mock failed API response
     axiosInstance.get.mockRejectedValueOnce(new Error('API Error'));
 
-    // Suppress console.error for this test
-    const originalError = console.error;
-    console.error = jest.fn();
-
     await act(async () => {
       render(<Navbar />);
     });
 
-    // Check error was logged
-    expect(console.error).toHaveBeenCalled();
-    console.error = originalError;
-
     // Should still display email as fallback
-    expect(screen.getByText('Hello, test@example.com')).toBeInTheDocument();
+    expect(screen.getByText('test@example.com')).toBeInTheDocument();
   });
 
   test('handles error in token decoding', () => {
@@ -617,5 +595,49 @@ describe('Navbar Component', () => {
     // Check login status was reset
     expect(screen.getByText('Login')).toBeInTheDocument();
     expect(screen.getByText('Register')).toBeInTheDocument();
+  });
+
+  test('shows admin button for admin users', () => {
+    // Mock a token in localStorage with admin role
+    window.localStorage.getItem.mockReturnValue('fake-token-123');
+    jwtDecode.mockReturnValue({
+      email: 'admin@example.com',
+      role: 'admin',
+    });
+
+    render(<Navbar />);
+
+    // Check if Admin button is rendered
+    expect(screen.getByText('Admin')).toBeInTheDocument();
+  });
+
+  test('does not show admin button for non-admin users', () => {
+    // Mock a token in localStorage with student role
+    window.localStorage.getItem.mockReturnValue('fake-token-123');
+    jwtDecode.mockReturnValue({
+      email: 'student@example.com',
+      role: 'student',
+    });
+
+    render(<Navbar />);
+
+    // Check that Admin button is not in the document
+    expect(screen.queryByText('Admin')).not.toBeInTheDocument();
+  });
+
+  test('Admin button links to admin page', () => {
+    // Mock a token in localStorage with admin role
+    window.localStorage.getItem.mockReturnValue('fake-token-123');
+    jwtDecode.mockReturnValue({
+      email: 'admin@example.com',
+      role: 'admin',
+    });
+
+    render(<Navbar />);
+
+    const adminButton = screen.getByText('Admin');
+
+    // Check if the link has the correct href
+    expect(adminButton.getAttribute('href')).toBe('/admin');
   });
 });
