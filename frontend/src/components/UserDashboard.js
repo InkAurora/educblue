@@ -35,9 +35,30 @@ function UserDashboard() {
         const response = await axiosInstance.get('/api/users/me');
         setUserData(response.data);
 
-        // Assuming enrolled courses are included in the user data response
-        if (response.data.enrolledCourses) {
-          setEnrolledCourses(response.data.enrolledCourses);
+        // Fetch full course details for each enrolled course
+        if (
+          response.data.enrolledCourses &&
+          response.data.enrolledCourses.length > 0
+        ) {
+          const coursePromises = response.data.enrolledCourses.map(
+            async (course) => {
+              try {
+                const courseId = course._id || course.id || course.courseId;
+                const courseDetailResponse = await axiosInstance.get(
+                  `/api/courses/${courseId}`,
+                );
+                return courseDetailResponse.data;
+              } catch (err) {
+                // Return original course data if fetch fails
+                return course;
+              }
+            },
+          );
+
+          const detailedCourses = await Promise.all(coursePromises);
+          setEnrolledCourses(detailedCourses);
+        } else {
+          setEnrolledCourses([]);
         }
 
         setLoading(false);
@@ -161,7 +182,14 @@ function UserDashboard() {
                           },
                         }}
                       >
-                        <CardContent sx={{ flexGrow: 1, p: 3 }}>
+                        <CardContent
+                          sx={{
+                            flexGrow: 1,
+                            p: 3,
+                            display: 'flex',
+                            flexDirection: 'column',
+                          }}
+                        >
                           <Typography
                             gutterBottom
                             variant='h5'
@@ -184,32 +212,31 @@ function UserDashboard() {
                               WebkitLineClamp: 3,
                               WebkitBoxOrient: 'vertical',
                               overflow: 'hidden',
+                              flexGrow: 1,
                             }}
                           >
                             {course.description}
                           </Typography>
-                          {course.price && (
+
+                          <Box sx={{ mt: 'auto' }}>
                             <Typography
-                              variant='h6'
-                              color='primary'
-                              sx={{ mt: 2 }}
+                              variant='body2'
+                              color='text.secondary'
+                              sx={{ mb: 1 }}
                             >
-                              ${course.price}
+                              Instructor:{' '}
+                              {course.instructor?.fullName ||
+                                'Unknown Instructor'}
                             </Typography>
-                          )}
-                          <Typography
-                            variant='body2'
-                            color='text.secondary'
-                            sx={{ mt: 1 }}
-                          >
-                            Instructor:{' '}
-                            {course.instructor?.fullName || course.instructor}
-                          </Typography>
-                          {course.duration && (
-                            <Typography variant='body2' color='text.secondary'>
-                              Duration: {course.duration} hours
-                            </Typography>
-                          )}
+                            {course.duration && (
+                              <Typography
+                                variant='body2'
+                                color='text.secondary'
+                              >
+                                Duration: {course.duration} hours
+                              </Typography>
+                            )}
+                          </Box>
                         </CardContent>
                         <CardActions sx={{ p: 3, pt: 0 }}>
                           <Button

@@ -44,18 +44,39 @@ describe('UserDashboard Component', () => {
     name: 'Test User',
     enrolledCourses: [
       {
-        id: 'course1',
+        _id: 'course1',
         title: 'JavaScript Basics',
-        description: 'Learn the fundamentals of JavaScript programming.',
-        instructor: 'John Smith',
       },
       {
-        id: 'course2',
+        _id: 'course2',
         title: 'React Mastery',
-        description: 'Advanced React concepts and patterns.',
-        instructor: 'Jane Doe',
       },
     ],
+  };
+
+  const mockCourseDetails = {
+    course1: {
+      _id: 'course1',
+      title: 'JavaScript Basics',
+      description: 'Learn the fundamentals of JavaScript programming.',
+      instructor: {
+        _id: 'instructor1',
+        fullName: 'John Smith',
+        email: 'john@example.com',
+      },
+      duration: 8,
+    },
+    course2: {
+      _id: 'course2',
+      title: 'React Mastery',
+      description: 'Advanced React concepts and patterns.',
+      instructor: {
+        _id: 'instructor2',
+        fullName: 'Jane Doe',
+        email: 'jane@example.com',
+      },
+      duration: 12,
+    },
   };
 
   beforeEach(() => {
@@ -108,8 +129,19 @@ describe('UserDashboard Component', () => {
     // Mock a token in localStorage
     window.localStorage.getItem.mockReturnValueOnce('fake-token');
 
-    // Mock successful API response
-    axiosInstance.get.mockResolvedValueOnce({ data: mockUserData });
+    // Mock successful API responses
+    axiosInstance.get.mockImplementation((url) => {
+      if (url === '/api/users/me') {
+        return Promise.resolve({ data: mockUserData });
+      }
+      if (url === '/api/courses/course1') {
+        return Promise.resolve({ data: mockCourseDetails.course1 });
+      }
+      if (url === '/api/courses/course2') {
+        return Promise.resolve({ data: mockCourseDetails.course2 });
+      }
+      return Promise.reject(new Error('Unknown URL'));
+    });
 
     render(<UserDashboard />);
 
@@ -120,8 +152,10 @@ describe('UserDashboard Component', () => {
       ).toBeInTheDocument();
     });
 
-    // Check if both courses are displayed
-    expect(screen.getByText('JavaScript Basics')).toBeInTheDocument();
+    // Check if both courses are displayed with proper instructor names
+    await waitFor(() => {
+      expect(screen.getByText('JavaScript Basics')).toBeInTheDocument();
+    });
     expect(
       screen.getByText('Learn the fundamentals of JavaScript programming.'),
     ).toBeInTheDocument();
@@ -160,8 +194,19 @@ describe('UserDashboard Component', () => {
     // Mock a token in localStorage
     window.localStorage.getItem.mockReturnValueOnce('fake-token');
 
-    // Mock successful API response
-    axiosInstance.get.mockResolvedValueOnce({ data: mockUserData });
+    // Mock successful API responses
+    axiosInstance.get.mockImplementation((url) => {
+      if (url === '/api/users/me') {
+        return Promise.resolve({ data: mockUserData });
+      }
+      if (url === '/api/courses/course1') {
+        return Promise.resolve({ data: mockCourseDetails.course1 });
+      }
+      if (url === '/api/courses/course2') {
+        return Promise.resolve({ data: mockCourseDetails.course2 });
+      }
+      return Promise.reject(new Error('Unknown URL'));
+    });
 
     render(<UserDashboard />);
 
@@ -176,7 +221,7 @@ describe('UserDashboard Component', () => {
 
     // Check if navigate was called with the correct course ID
     expect(mockedNavigate).toHaveBeenCalledWith(
-      `/courses/${mockUserData.enrolledCourses[0].id}`,
+      `/courses/${mockUserData.enrolledCourses[0]._id}`,
     );
   });
 
@@ -225,21 +270,37 @@ describe('UserDashboard Component', () => {
     // Mock a token in localStorage
     window.localStorage.getItem.mockReturnValueOnce('fake-token');
 
-    // Mock API response with course using courseId instead of id
+    // Mock API response with course using courseId instead of _id
     const userWithAlternateCourseIds = {
       ...mockUserData,
       enrolledCourses: [
         {
           courseId: 'alt-course-id',
           title: 'Course with courseId',
-          description: 'This course uses courseId property',
-          instructor: 'Alice Johnson',
         },
       ],
     };
 
-    axiosInstance.get.mockResolvedValueOnce({
-      data: userWithAlternateCourseIds,
+    const courseDetail = {
+      _id: 'alt-course-id',
+      title: 'Course with courseId',
+      description: 'This course uses courseId property',
+      instructor: {
+        _id: 'instructor3',
+        fullName: 'Alice Johnson',
+        email: 'alice@example.com',
+      },
+      duration: 6,
+    };
+
+    axiosInstance.get.mockImplementation((url) => {
+      if (url === '/api/users/me') {
+        return Promise.resolve({ data: userWithAlternateCourseIds });
+      }
+      if (url === '/api/courses/alt-course-id') {
+        return Promise.resolve({ data: courseDetail });
+      }
+      return Promise.reject(new Error('Unknown URL'));
     });
 
     render(<UserDashboard />);
@@ -270,13 +331,31 @@ describe('UserDashboard Component', () => {
         {
           _id: 'mongo-id-format',
           title: 'MongoDB Course',
-          description: 'This course uses MongoDB-style _id property',
-          instructor: 'Bob Smith',
         },
       ],
     };
 
-    axiosInstance.get.mockResolvedValueOnce({ data: userWithUnderscoreIds });
+    const courseDetail = {
+      _id: 'mongo-id-format',
+      title: 'MongoDB Course',
+      description: 'This course uses MongoDB-style _id property',
+      instructor: {
+        _id: 'instructor4',
+        fullName: 'Bob Smith',
+        email: 'bob@example.com',
+      },
+      duration: 10,
+    };
+
+    axiosInstance.get.mockImplementation((url) => {
+      if (url === '/api/users/me') {
+        return Promise.resolve({ data: userWithUnderscoreIds });
+      }
+      if (url === '/api/courses/mongo-id-format') {
+        return Promise.resolve({ data: courseDetail });
+      }
+      return Promise.reject(new Error('Unknown URL'));
+    });
 
     render(<UserDashboard />);
 
@@ -306,17 +385,22 @@ describe('UserDashboard Component', () => {
         {
           // No id, courseId, or _id property
           title: 'Invalid Course',
-          description: 'This course has no ID property',
-          instructor: 'Unknown',
         },
       ],
     };
 
-    axiosInstance.get.mockResolvedValueOnce({ data: userWithInvalidCourse });
+    // Mock the user data response but no course detail response since there's no valid ID
+    axiosInstance.get.mockImplementation((url) => {
+      if (url === '/api/users/me') {
+        return Promise.resolve({ data: userWithInvalidCourse });
+      }
+      // No valid course ID to call
+      return Promise.reject(new Error('Unknown URL'));
+    });
 
     render(<UserDashboard />);
 
-    // Wait for course to be displayed
+    // Wait for course to be displayed (it should still show the basic title)
     await waitFor(() => {
       expect(screen.getByText('Invalid Course')).toBeInTheDocument();
     });

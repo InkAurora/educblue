@@ -121,7 +121,14 @@ function CourseList(props) {
                   },
                 }}
               >
-                <CardContent sx={{ flexGrow: 1, p: 3 }}>
+                <CardContent
+                  sx={{
+                    flexGrow: 1,
+                    p: 3,
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
                   <Typography
                     gutterBottom
                     variant='h5'
@@ -144,48 +151,52 @@ function CourseList(props) {
                       WebkitLineClamp: 3,
                       WebkitBoxOrient: 'vertical',
                       overflow: 'hidden',
+                      flexGrow: 1,
                     }}
                   >
                     {course.description}
                   </Typography>
 
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Chip
-                      label={`$${course.price}`}
-                      color='primary'
-                      variant='filled'
-                      sx={{
-                        fontWeight: 600,
-                        fontSize: '0.875rem',
-                        background: 'linear-gradient(135deg, #02e6ef, #01b8c4)',
-                      }}
-                    />
-                  </Box>
+                  <Box sx={{ mt: 'auto' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <Chip
+                        label={`$${course.price}`}
+                        color='primary'
+                        variant='filled'
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: '0.875rem',
+                          background:
+                            'linear-gradient(135deg, #02e6ef, #01b8c4)',
+                        }}
+                      />
+                    </Box>
 
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <PersonIcon
-                      sx={{ fontSize: 16, color: 'text.secondary', mr: 1 }}
-                    />
-                    <Typography
-                      variant='body2'
-                      color='text.secondary'
-                      sx={{ fontSize: '0.875rem' }}
-                    >
-                      {course.instructor?.fullName || course.instructor}
-                    </Typography>
-                  </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                      <PersonIcon
+                        sx={{ fontSize: 16, color: 'text.secondary', mr: 1 }}
+                      />
+                      <Typography
+                        variant='body2'
+                        color='text.secondary'
+                        sx={{ fontSize: '0.875rem' }}
+                      >
+                        {course.instructor?.fullName || course.instructor}
+                      </Typography>
+                    </Box>
 
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <AccessTimeIcon
-                      sx={{ fontSize: 16, color: 'text.secondary', mr: 1 }}
-                    />
-                    <Typography
-                      variant='body2'
-                      color='text.secondary'
-                      sx={{ fontSize: '0.875rem' }}
-                    >
-                      {course.duration} hours
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <AccessTimeIcon
+                        sx={{ fontSize: 16, color: 'text.secondary', mr: 1 }}
+                      />
+                      <Typography
+                        variant='body2'
+                        color='text.secondary'
+                        sx={{ fontSize: '0.875rem' }}
+                      >
+                        {course.duration} hours
+                      </Typography>
+                    </Box>
                   </Box>
                 </CardContent>
                 <CardActions sx={{ p: 3, pt: 0 }}>
