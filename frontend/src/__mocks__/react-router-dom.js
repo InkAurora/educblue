@@ -1,24 +1,19 @@
 const mockNavigate = jest.fn();
-const mockUseNavigate = () => mockNavigate;
-const mockUseParams = jest.fn().mockReturnValue({});
-const mockUseLocation = jest.fn().mockReturnValue({
-  pathname: '/test',
-  search: '',
-  hash: '',
-  state: null,
-});
 
-module.exports = {
-  BrowserRouter: ({ children }) => children,
-  Routes: ({ children }) => children,
-  Route: ({ children }) => children,
+const reactRouterDom = {
+  useNavigate: () => mockNavigate,
+  useParams: () => ({ id: '123' }),
+  useLocation: () => ({ pathname: '/instructor/analytics/123' }),
   Link: ({ children, to, ...props }) => (
     <a href={to} {...props}>
       {children}
     </a>
   ),
-  useNavigate: mockUseNavigate,
-  useParams: mockUseParams,
-  useLocation: mockUseLocation,
-  MemoryRouter: ({ children }) => children,
+  BrowserRouter: ({ children }) => <div>{children}</div>,
+  Routes: ({ children }) => <div>{children}</div>,
+  Route: ({ children }) => <div>{children}</div>,
+  Navigate: ({ to }) => <div>Navigate to {to}</div>,
+  mockNavigate,
 };
+
+module.exports = reactRouterDom;

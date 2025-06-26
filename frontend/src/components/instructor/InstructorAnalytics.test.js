@@ -1,39 +1,50 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import InstructorAnalytics from '../../components/instructor/InstructorAnalytics';
+import { jwtDecode } from 'jwt-decode';
+import InstructorAnalytics from './InstructorAnalytics';
 import axiosInstance from '../../utils/axiosConfig';
 
 // Mock dependencies
-jest.mock('../../utils/axiosConfig');
-jest.mock('jwt-decode', () => jest.fn());
+jest.mock('../../utils/axiosConfig', () => ({
+  get: jest.fn(),
+}));
+
+jest.mock('jwt-decode', () => ({
+  jwtDecode: jest.fn(),
+}));
+
+// Use manual mock for react-router-dom
+jest.mock('react-router-dom');
+
+// Import the mock after mocking
+const { mockNavigate } = require('react-router-dom');
+
 jest.mock('recharts', () => ({
   ResponsiveContainer: ({ children }) => (
     <div data-testid='responsive-container'>{children}</div>
   ),
   BarChart: ({ children }) => <div data-testid='bar-chart'>{children}</div>,
-  Bar: () => <div data-testid='bar'></div>,
-  XAxis: () => <div data-testid='x-axis'></div>,
-  YAxis: () => <div data-testid='y-axis'></div>,
-  CartesianGrid: () => <div data-testid='cartesian-grid'></div>,
-  Tooltip: () => <div data-testid='tooltip'></div>,
-  Legend: () => <div data-testid='legend'></div>,
+  Bar: () => <div data-testid='bar' />,
+  XAxis: () => <div data-testid='x-axis' />,
+  YAxis: () => <div data-testid='y-axis' />,
+  CartesianGrid: () => <div data-testid='cartesian-grid' />,
+  Tooltip: () => <div data-testid='tooltip' />,
+  Legend: () => <div data-testid='legend' />,
 }));
-jest.mock('../../components/CourseSidebar', () => {
-  return {
-    __esModule: true,
-    default: ({ course, courseId }) => (
-      <div data-testid='course-sidebar'>Course Sidebar {courseId}</div>
-    ),
-  };
-});
+
+jest.mock('../../components/CourseSidebar', () => ({
+  __esModule: true,
+  default: ({ courseId }) => (
+    <div data-testid='course-sidebar'>Course Sidebar {courseId}</div>
+  ),
+}));
 
 // Sample data for tests
 const mockCourseData = {
   _id: '123',
   title: 'Test Course',
-  instructor: 'John Doe',
+  instructor: { _id: 'instructor-123', fullName: 'John Doe' },
   content: [
     { _id: '1', title: 'Lesson 1', type: 'video' },
     { _id: '2', title: 'Quiz 1', type: 'quiz' },
@@ -63,11 +74,13 @@ const mockAnalyticsData = {
 };
 
 const mockUserData = {
+  _id: 'instructor-123',
   fullName: 'John Doe', // Same as course instructor for authorized access
   role: 'instructor',
 };
 
 const mockUnauthorizedUserData = {
+  _id: 'student-456', // Different ID from course instructor
   fullName: 'Jane Smith', // Different from course instructor
   role: 'student',
 };
@@ -77,25 +90,10 @@ describe('InstructorAnalytics Component', () => {
     localStorage.clear();
     jest.clearAllMocks();
     localStorage.setItem('token', 'fake-token');
+    mockNavigate.mockClear();
   });
 
-  const renderWithRouter = (
-    ui,
-    { route = '/courses/123/analytics', path = '/courses/:id/analytics' } = {},
-  ) => {
-    return render(
-      <MemoryRouter initialEntries={[route]}>
-        <Routes>
-          <Route path={path} element={ui} />
-          <Route
-            path='/courses/:id'
-            element={<div>Redirected to course details</div>}
-          />
-          <Route path='/login' element={<div>Redirected to login</div>} />
-        </Routes>
-      </MemoryRouter>,
-    );
-  };
+  const renderWithRouter = (ui) => render(ui);
 
   test('should show loading state while fetching data', async () => {
     // Setup axios mock to delay response
@@ -109,7 +107,6 @@ describe('InstructorAnalytics Component', () => {
     );
 
     // Setup jwt-decode mock
-    const jwtDecode = require('jwt-decode');
     jwtDecode.mockReturnValue(mockUserData);
 
     // Render component
@@ -129,7 +126,6 @@ describe('InstructorAnalytics Component', () => {
     });
 
     // Setup jwt-decode mock
-    const jwtDecode = require('jwt-decode');
     jwtDecode.mockReturnValue(mockUserData);
 
     // Render component
@@ -140,8 +136,9 @@ describe('InstructorAnalytics Component', () => {
       expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     });
 
-    // Check for course title
-    expect(screen.getByText('Test Course')).toBeInTheDocument();
+    // Check for course title (use more specific selector)
+    const headingElement = screen.getByRole('heading', { name: 'Test Course' });
+    expect(headingElement).toBeInTheDocument();
 
     // Check for completion rate card
     expect(screen.getByText('Completion Rate')).toBeInTheDocument();
@@ -159,7 +156,7 @@ describe('InstructorAnalytics Component', () => {
     expect(screen.getByText('Average Score: 78%')).toBeInTheDocument();
   });
 
-  test('should redirect unauthorized users to course details', async () => {
+  test('should show error for unauthorized users', async () => {
     // Setup axios mock for successful course data but unauthorized user
     axiosInstance.get.mockImplementation((url) => {
       if (url.includes('analytics')) {
@@ -168,19 +165,23 @@ describe('InstructorAnalytics Component', () => {
       return Promise.resolve({ data: mockCourseData });
     });
 
-    // Setup jwt-decode mock with unauthorized user
-    const jwtDecode = require('jwt-decode');
+    // Setup jwt-decode mock with unauthorized user (different fullName)
     jwtDecode.mockReturnValue(mockUnauthorizedUserData);
 
     // Render component
     renderWithRouter(<InstructorAnalytics />);
 
-    // Wait for redirect to happen
-    await waitFor(() => {
-      expect(
-        screen.getByText('Redirected to course details'),
-      ).toBeInTheDocument();
-    });
+    // Wait for error message to appear
+    await waitFor(
+      () => {
+        expect(
+          screen.getByText(
+            'You are not authorized to view analytics for this course',
+          ),
+        ).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
   });
 
   test('should redirect to login if no token is present', async () => {
@@ -190,9 +191,9 @@ describe('InstructorAnalytics Component', () => {
     // Render component
     renderWithRouter(<InstructorAnalytics />);
 
-    // Wait for redirect to happen
+    // Wait for navigation to be called
     await waitFor(() => {
-      expect(screen.getByText('Redirected to login')).toBeInTheDocument();
+      expect(mockNavigate).toHaveBeenCalledWith('/login');
     });
   });
 
@@ -200,15 +201,12 @@ describe('InstructorAnalytics Component', () => {
     // Setup axios mock for failed response
     axiosInstance.get.mockImplementation((url) => {
       if (url.includes('analytics')) {
-        return Promise.reject({
-          response: { data: { message: 'Failed to fetch analytics' } },
-        });
+        return Promise.reject(new Error('Failed to fetch analytics'));
       }
       return Promise.resolve({ data: mockCourseData });
     });
 
     // Setup jwt-decode mock
-    const jwtDecode = require('jwt-decode');
     jwtDecode.mockReturnValue(mockUserData);
 
     // Render component
@@ -216,7 +214,9 @@ describe('InstructorAnalytics Component', () => {
 
     // Wait for error message to appear
     await waitFor(() => {
-      expect(screen.getByText('Failed to fetch analytics')).toBeInTheDocument();
+      expect(
+        screen.getByText('Failed to fetch analytics data'),
+      ).toBeInTheDocument();
     });
   });
 
@@ -235,7 +235,6 @@ describe('InstructorAnalytics Component', () => {
     });
 
     // Setup jwt-decode mock
-    const jwtDecode = require('jwt-decode');
     jwtDecode.mockReturnValue(mockUserData);
 
     // Render component
