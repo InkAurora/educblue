@@ -38,7 +38,7 @@ describe('useCourseContent Hook', () => {
       title: 'Test Course',
       content: [{ _id: 'content1', title: 'Content 1' }],
     };
-    
+
     // Mock the content endpoints that the hook actually calls
     axiosInstance.get.mockImplementation((url) => {
       if (url === '/api/courses/course123') {
@@ -136,7 +136,7 @@ describe('useCourseContent Hook', () => {
         content: 'Test content',
       },
     ];
-    
+
     axiosInstance.get.mockImplementation((url) => {
       if (url === '/api/courses/course123') {
         return Promise.resolve({ data: { _id: 'course123' } });
@@ -149,7 +149,7 @@ describe('useCourseContent Hook', () => {
       }
       return Promise.reject(new Error('Not found'));
     });
-    
+
     axiosInstance.put.mockRejectedValue(new Error('Save failed')); // Mock failed PUT
 
     const { result } = renderHook(() => useCourseContent('course123'));
@@ -181,7 +181,7 @@ describe('useCourseContent Hook', () => {
         content: 'Test content',
       },
     ];
-    
+
     axiosInstance.get.mockImplementation((url) => {
       if (url === '/api/courses/course123') {
         return Promise.resolve({ data: { _id: 'course123' } });
@@ -194,7 +194,7 @@ describe('useCourseContent Hook', () => {
       }
       return Promise.reject(new Error('Not found'));
     });
-    
+
     axiosInstance.put.mockResolvedValue({ data: { success: true } }); // For saving before publish
     axiosInstance.patch.mockResolvedValue({ data: { success: true } }); // For publishing
 
@@ -229,7 +229,7 @@ describe('useCourseContent Hook', () => {
         content: 'Test content',
       },
     ];
-    
+
     axiosInstance.get.mockImplementation((url) => {
       if (url === '/api/courses/course123') {
         return Promise.resolve({ data: { _id: 'course123' } });
@@ -242,7 +242,7 @@ describe('useCourseContent Hook', () => {
       }
       return Promise.reject(new Error('Not found'));
     });
-    
+
     axiosInstance.put.mockResolvedValue({ data: { success: true } }); // For saving before publish
     axiosInstance.patch.mockRejectedValue(new Error('Publish failed')); // Mock failed PATCH
 
@@ -378,7 +378,7 @@ describe('useCourseContent Hook', () => {
         content: 'Test content',
       },
     ];
-    
+
     axiosInstance.get.mockImplementation((url) => {
       if (url === '/api/courses/course123') {
         return Promise.resolve({ data: { _id: 'course123' } });
@@ -391,7 +391,7 @@ describe('useCourseContent Hook', () => {
       }
       return Promise.reject(new Error('Not found'));
     });
-    
+
     axiosInstance.put.mockRejectedValue({ response: { status: 403 } });
 
     const { result } = renderHook(() => useCourseContent('course123'));
@@ -423,7 +423,7 @@ describe('useCourseContent Hook', () => {
         content: 'Test content',
       },
     ];
-    
+
     axiosInstance.get.mockImplementation((url) => {
       if (url === '/api/courses/course123') {
         return Promise.resolve({ data: { _id: 'course123' } });
@@ -436,7 +436,7 @@ describe('useCourseContent Hook', () => {
       }
       return Promise.reject(new Error('Not found'));
     });
-    
+
     axiosInstance.patch.mockRejectedValue({ response: { status: 403 } });
 
     const { result } = renderHook(() => useCourseContent('course123'));
@@ -469,7 +469,7 @@ describe('useCourseContent Hook', () => {
         content: 'Test content',
       },
     ];
-    
+
     axiosInstance.get.mockImplementation((url) => {
       if (url === '/api/courses/course123') {
         return Promise.resolve({ data: { _id: 'course123' } });
@@ -482,7 +482,7 @@ describe('useCourseContent Hook', () => {
       }
       return Promise.reject(new Error('Not found'));
     });
-    
+
     axiosInstance.put.mockRejectedValue({
       response: { data: { message: errorMessage } },
     });
@@ -514,7 +514,7 @@ describe('useCourseContent Hook', () => {
         content: 'Test content',
       },
     ];
-    
+
     axiosInstance.get.mockImplementation((url) => {
       if (url === '/api/courses/course123') {
         return Promise.resolve({ data: { _id: 'course123' } });
@@ -527,7 +527,7 @@ describe('useCourseContent Hook', () => {
       }
       return Promise.reject(new Error('Not found'));
     });
-    
+
     axiosInstance.patch.mockRejectedValue({
       response: { status: 400, data: { message: errorMessage } },
     });
