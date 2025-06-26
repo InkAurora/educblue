@@ -9,8 +9,7 @@
     "build": "npm ci --production",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "seed": "node seed.js",
-    "prestart": "npm run lint"
+    "seed": "node seed.js"
   },
   "keywords": [],
   "author": "",

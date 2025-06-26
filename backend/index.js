@@ -85,7 +85,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/enroll', enrollRoutes);
 app.use('/api/stripe', stripeRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/progress', progressRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api', setupRoutes);
 
@@ -96,6 +95,14 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
   });
+});
+
+// Custom 404 middleware (should be after all route handlers)
+app.use((req, res, next) => {
+  if (!req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'Not Found' });
+  }
+  next();
 });
 
 // Connect to MongoDB
