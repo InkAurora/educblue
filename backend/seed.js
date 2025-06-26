@@ -114,15 +114,18 @@ const seedDatabase = async () => {
   try {
     // Connect to database
     await connectDB();
+    // eslint-disable-next-line no-console
     console.log('Connected to database for seeding');
 
     // Clear existing data
     await User.deleteMany({});
     await Course.deleteMany({});
+    // eslint-disable-next-line no-console
     console.log('Cleared existing data');
 
     // Insert courses
     await Course.insertMany(coursesData);
+    // eslint-disable-next-line no-console
     console.log('Courses seeded successfully');
 
     // Hash passwords and insert users
@@ -138,11 +141,14 @@ const seedDatabase = async () => {
     );
 
     await User.insertMany(hashedUsers);
+    // eslint-disable-next-line no-console
     console.log('Users seeded successfully');
 
+    // eslint-disable-next-line no-console
     console.log('Database seeding completed');
     process.exit(0);
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Error seeding database:', error);
     process.exit(1);
   }

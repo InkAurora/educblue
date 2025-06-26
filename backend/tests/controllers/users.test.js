@@ -55,7 +55,7 @@ describe('User Controller', () => {
     });
     testUserId = testUser.id;
 
-    const regularUserForTest = await User.create({
+    await User.create({
       fullName: 'Regular User For Test',
       email: 'regularfortest@example.com',
       password: 'password123',

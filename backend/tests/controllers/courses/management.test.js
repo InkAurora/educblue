@@ -419,6 +419,17 @@ describe('Course Management Endpoints', () => {
       expect(updatedCourse.status).toBe('published');
     });
 
+    it('should not allow publishing a course without content', async () => {
+      const res = await request(app)
+        .patch(`/api/courses/${courseIdWithoutContent}/publish`)
+        .set('Authorization', `Bearer ${instructorToken}`);
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain(
+        'Course must have content to be published'
+      );
+    });
+
     it('should not allow publishing a course that is already published', async () => {
       const course = await Course.create({
         title: 'Already Published Course',
@@ -459,7 +470,6 @@ describe('Course Management Endpoints', () => {
 
   describe('PUT /api/courses/:id', () => {
     let courseId;
-    let courseCreatedByInstructor;
 
     beforeEach(async () => {
       // Create a test course
@@ -485,7 +495,6 @@ describe('Course Management Endpoints', () => {
         ],
       });
       courseId = course._id;
-      courseCreatedByInstructor = course;
     });
 
     it('should update course details as instructor', async () => {

@@ -643,16 +643,12 @@ describe('Course Endpoints', () => {
   });
 
   describe('GET /instructor', () => {
-    let draftCourse;
-    let publishedCourse;
-    let otherInstructorCourse;
-
     beforeEach(async () => {
       // Clean up previous test data
       await Course.deleteMany({});
 
       // Create courses for the test instructor
-      draftCourse = await Course.create({
+      await Course.create({
         title: 'Draft Course',
         description: 'A draft course',
         price: 29.99,
@@ -662,7 +658,7 @@ describe('Course Endpoints', () => {
         sections: [],
       });
 
-      publishedCourse = await Course.create({
+      await Course.create({
         title: 'Published Course',
         description: 'A published course',
         price: 49.99,
@@ -683,7 +679,7 @@ describe('Course Endpoints', () => {
         });
       }
 
-      otherInstructorCourse = await Course.create({
+      await Course.create({
         title: 'Other Instructor Course',
         description: 'A course by another instructor',
         price: 39.99,

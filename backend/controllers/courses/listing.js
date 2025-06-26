@@ -16,6 +16,7 @@ exports.getCourses = async (req, res) => {
 
     res.json(courses);
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Error in getCourses:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }

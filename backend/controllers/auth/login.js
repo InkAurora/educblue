@@ -25,6 +25,7 @@ exports.login = async (req, res) => {
 
     res.json({ accessToken, refreshToken });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Login error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -52,6 +53,7 @@ exports.refreshToken = async (req, res) => {
 
     res.json({ token });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Refresh token error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -72,6 +74,7 @@ exports.logout = async (req, res) => {
 
     res.json({ message: 'Logged out' });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Logout error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }

@@ -48,6 +48,7 @@ exports.setupAdmin = async (req, res) => {
       },
     });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Error setting up admin:', error);
     return res.status(500).json({ message: 'Server error' });
   }

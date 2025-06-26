@@ -42,6 +42,7 @@ describe('Test Files Existence Verification', () => {
     expect(testFiles.length).toBeGreaterThan(0);
 
     // Log all test files found for verification
+    // eslint-disable-next-line no-console
     console.log(`Found ${testFiles.length} test files`);
 
     // Make sure each file exists and is readable

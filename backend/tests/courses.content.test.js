@@ -18,9 +18,7 @@ describe('Course Content Endpoints', () => {
   let instructorToken;
   let studentToken;
   let nonEnrolledToken;
-  let instructorId;
   let studentId;
-  let nonEnrolledId;
   let courseId;
   let contentId;
 
@@ -32,7 +30,6 @@ describe('Course Content Endpoints', () => {
       password: 'password123',
       role: 'instructor',
     });
-    instructorId = instructorUser.id;
 
     const studentUser = await User.create({
       fullName: 'Test Student',
@@ -48,7 +45,6 @@ describe('Course Content Endpoints', () => {
       password: 'password123',
       role: 'student',
     });
-    nonEnrolledId = nonEnrolledUser.id;
 
     // Generate tokens
     instructorToken = jwt.sign(

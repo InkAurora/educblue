@@ -87,6 +87,7 @@ describe('User Profile Endpoints', () => {
     it('should get the user profile successfully', async () => {
       // Skip test if no token
       if (!authToken) {
+        // eslint-disable-next-line no-console
         console.log('Skipping test due to missing token');
         return;
       }
@@ -110,6 +111,7 @@ describe('User Profile Endpoints', () => {
     it('should return 404 if user does not exist', async () => {
       // Skip test if no token
       if (!authToken) {
+        // eslint-disable-next-line no-console
         console.log('Skipping test due to missing token');
         return;
       }
@@ -136,6 +138,7 @@ describe('User Profile Endpoints', () => {
   describe('PUT /api/users/me', () => {
     it('should update user profile successfully', async () => {
       if (!authToken) {
+        // eslint-disable-next-line no-console
         console.log('Skipping test due to missing token');
         return;
       }
@@ -159,6 +162,7 @@ describe('User Profile Endpoints', () => {
 
     it('should update only provided fields', async () => {
       if (!authToken) {
+        // eslint-disable-next-line no-console
         console.log('Skipping test due to missing token');
         return;
       }
@@ -178,6 +182,7 @@ describe('User Profile Endpoints', () => {
 
     it('should require fullName', async () => {
       if (!authToken) {
+        // eslint-disable-next-line no-console
         console.log('Skipping test due to missing token');
         return;
       }
@@ -197,6 +202,7 @@ describe('User Profile Endpoints', () => {
 
     it('should reject empty fullName', async () => {
       if (!authToken) {
+        // eslint-disable-next-line no-console
         console.log('Skipping test due to missing token');
         return;
       }
@@ -216,6 +222,7 @@ describe('User Profile Endpoints', () => {
 
     it('should reject non-string fullName', async () => {
       if (!authToken) {
+        // eslint-disable-next-line no-console
         console.log('Skipping test due to missing token');
         return;
       }
@@ -245,6 +252,7 @@ describe('User Profile Endpoints', () => {
 
     it('should return 404 if user does not exist', async () => {
       if (!authToken) {
+        // eslint-disable-next-line no-console
         console.log('Skipping test due to missing token');
         return;
       }

@@ -7,9 +7,6 @@ const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 // Initialize Stripe with the secret key
 const stripe = require('stripe')(stripeSecretKey);
 
-// Debug logging to help troubleshoot
-console.log('Stripe initialization - Key available:', !!stripeSecretKey);
-
 const Course = require('../models/course');
 
 // Get frontend URL from environment variable, with a fallback for development

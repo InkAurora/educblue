@@ -20,6 +20,7 @@ const getAllUsers = async (req, res) => {
 
     return res.json(users);
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Error fetching users:', error);
     return res.status(500).json({ message: 'Server error' });
   }

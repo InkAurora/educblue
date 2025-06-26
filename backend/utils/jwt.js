@@ -38,7 +38,7 @@ exports.generateRefreshToken = (userId) => {
  * @returns {Promise<Object>} Updated user object
  */
 exports.saveRefreshToken = async (userId, refreshToken) =>
-  await User.findByIdAndUpdate(
+  User.findByIdAndUpdate(
     userId,
     { $push: { refreshTokens: refreshToken } },
     { new: true }
@@ -51,7 +51,7 @@ exports.saveRefreshToken = async (userId, refreshToken) =>
  * @returns {Promise<Object>} Updated user object
  */
 exports.removeRefreshToken = async (userId, refreshToken) =>
-  await User.findByIdAndUpdate(
+  User.findByIdAndUpdate(
     userId,
     { $pull: { refreshTokens: refreshToken } },
     { new: true }

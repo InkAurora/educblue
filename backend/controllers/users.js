@@ -27,6 +27,7 @@ exports.getUserProfile = async (req, res) => {
       enrolledCourses: user.enrolledCourses,
     });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Error fetching user profile:', error);
     return res.status(500).json({ message: 'Server error' });
   }
@@ -81,6 +82,7 @@ exports.updateUserProfile = async (req, res) => {
       enrolledCourses: user.enrolledCourses,
     });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Error updating user profile:', error);
     return res.status(500).json({ message: 'Server error' });
   }

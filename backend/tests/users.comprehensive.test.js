@@ -7,8 +7,12 @@ const Course = require('../models/course');
 require('./setup');
 
 describe('User Comprehensive Tests', () => {
-  let adminToken, instructorToken, studentToken;
-  let adminUser, instructorUser, studentUser;
+  let adminToken;
+  let instructorToken;
+  let studentToken;
+  let adminUser;
+  let instructorUser;
+  let studentUser;
   let testCourse;
 
   beforeEach(async () => {
