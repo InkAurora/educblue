@@ -29,10 +29,10 @@ jest.mock('axios');
 jest.mock('../utils/axiosConfig', () => ({
   __esModule: true,
   default: {
-    post: jest.fn().mockImplementation(() => Promise.resolve({ data: {} })),
-    get: jest.fn().mockImplementation(() => Promise.resolve({ data: {} })),
-    put: jest.fn().mockImplementation(() => Promise.resolve({ data: {} })),
-    delete: jest.fn().mockImplementation(() => Promise.resolve({ data: {} })),
+    post: jest.fn(),
+    get: jest.fn(),
+    put: jest.fn(),
+    delete: jest.fn(),
   },
 }));
 
@@ -51,13 +51,22 @@ describe('CreateCourse Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     localStorage.getItem.mockReset();
+
+    // Mock the user API call by default to return instructor user
+    axiosInstance.get.mockResolvedValue({
+      data: { id: 1, role: 'instructor', name: 'Test User' },
+    });
   });
 
-  test('renders create course form correctly', () => {
+  test('renders create course form correctly', async () => {
     render(<CreateCourse />);
 
-    expect(screen.getByText('Create New Course')).toBeInTheDocument();
-    expect(screen.getByLabelText(/title/i)).toBeInTheDocument();
+    // Wait for component to finish loading
+    await waitFor(() => {
+      expect(screen.getByText('Create New Course')).toBeInTheDocument();
+    });
+
+    expect(screen.getByLabelText(/course title/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/short description/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/price/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/duration/i)).toBeInTheDocument();
@@ -66,11 +75,16 @@ describe('CreateCourse Component', () => {
     expect(screen.getByTestId('mock-simplemde')).toBeInTheDocument();
   });
 
-  test('handles input changes', () => {
+  test('handles input changes', async () => {
     render(<CreateCourse />);
 
+    // Wait for component to finish loading
+    await waitFor(() => {
+      expect(screen.getByText('Create New Course')).toBeInTheDocument();
+    });
+
     // Test regular inputs
-    fireEvent.change(screen.getByLabelText(/title/i), {
+    fireEvent.change(screen.getByLabelText(/course title/i), {
       target: { value: 'React Basics' },
     });
     fireEvent.change(screen.getByLabelText(/short description/i), {
@@ -90,11 +104,8 @@ describe('CreateCourse Component', () => {
       },
     });
 
-    // Test switch
-    fireEvent.click(screen.getByRole('checkbox'));
-
     // Check if inputs have the correct values
-    expect(screen.getByLabelText(/title/i)).toHaveValue('React Basics');
+    expect(screen.getByLabelText(/course title/i)).toHaveValue('React Basics');
     expect(screen.getByLabelText(/short description/i)).toHaveValue(
       'Learn React fundamentals',
     );
@@ -103,11 +114,15 @@ describe('CreateCourse Component', () => {
     expect(screen.getByTestId('mock-simplemde')).toHaveValue(
       '# React Course\n\nThis is a **markdown** description.',
     );
-    expect(screen.getByRole('checkbox')).toBeChecked();
   });
 
   test('validates form fields', async () => {
     render(<CreateCourse />);
+
+    // Wait for component to finish loading
+    await waitFor(() => {
+      expect(screen.getByText('Create New Course')).toBeInTheDocument();
+    });
 
     // Submit form without filling required fields
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
@@ -121,8 +136,14 @@ describe('CreateCourse Component', () => {
   });
 
   test('shows error when user is not logged in', async () => {
-    // Set up mocks for form submission
-    window.localStorage.getItem.mockReturnValue(null); // No token
+    // Set up mocks for when user is not logged in
+    axiosInstance.get.mockRejectedValueOnce({
+      response: {
+        status: 401,
+        data: { message: 'Unauthorized' },
+      },
+    });
+
     axiosInstance.post.mockRejectedValueOnce({
       response: {
         status: 401,
@@ -133,32 +154,12 @@ describe('CreateCourse Component', () => {
     // Render component
     render(<CreateCourse />);
 
-    // Fill in the form
-    fireEvent.change(screen.getByLabelText(/title/i), {
-      target: { value: 'React Basics' },
-    });
-    fireEvent.change(screen.getByLabelText(/short description/i), {
-      target: { value: 'Learn React fundamentals' },
-    });
-    fireEvent.change(screen.getByLabelText(/price/i), {
-      target: { value: '49.99' },
-    });
-    fireEvent.change(screen.getByLabelText(/duration/i), {
-      target: { value: '8' },
-    });
-
-    // Submit the form
-    fireEvent.click(screen.getByRole('button', { name: /next/i }));
-
-    // Check for error message
+    // Wait for the error to be shown
     await waitFor(() => {
       expect(
-        screen.getByText('You need to be logged in to create a course'),
+        screen.getByText('You must be logged in to create a course'),
       ).toBeInTheDocument();
     });
-
-    // Check that API was called
-    expect(axiosInstance.post).toHaveBeenCalled();
   });
 
   test('submits form successfully and navigates to new course', async () => {
@@ -170,8 +171,13 @@ describe('CreateCourse Component', () => {
     // Render and fill the form
     render(<CreateCourse />);
 
+    // Wait for component to finish loading
+    await waitFor(() => {
+      expect(screen.getByText('Create New Course')).toBeInTheDocument();
+    });
+
     // Fill in all required fields
-    fireEvent.change(screen.getByLabelText(/title/i), {
+    fireEvent.change(screen.getByLabelText(/course title/i), {
       target: { value: 'React Basics' },
     });
     fireEvent.change(screen.getByLabelText(/short description/i), {
@@ -218,8 +224,13 @@ describe('CreateCourse Component', () => {
     // Render and fill the form
     render(<CreateCourse />);
 
+    // Wait for component to finish loading
+    await waitFor(() => {
+      expect(screen.getByText('Create New Course')).toBeInTheDocument();
+    });
+
     // Fill in all required fields
-    fireEvent.change(screen.getByLabelText(/title/i), {
+    fireEvent.change(screen.getByLabelText(/course title/i), {
       target: { value: 'React Basics' },
     });
     fireEvent.change(screen.getByLabelText(/short description/i), {
@@ -257,8 +268,13 @@ describe('CreateCourse Component', () => {
     // Render and fill the form
     render(<CreateCourse />);
 
+    // Wait for component to finish loading
+    await waitFor(() => {
+      expect(screen.getByText('Create New Course')).toBeInTheDocument();
+    });
+
     // Fill in form fields
-    fireEvent.change(screen.getByLabelText(/title/i), {
+    fireEvent.change(screen.getByLabelText(/course title/i), {
       target: { value: 'React Basics' },
     });
     fireEvent.change(screen.getByLabelText(/short description/i), {
@@ -294,8 +310,13 @@ describe('CreateCourse Component', () => {
     // Render and fill the form
     render(<CreateCourse />);
 
+    // Wait for component to finish loading
+    await waitFor(() => {
+      expect(screen.getByText('Create New Course')).toBeInTheDocument();
+    });
+
     // Fill in form fields
-    fireEvent.change(screen.getByLabelText(/title/i), {
+    fireEvent.change(screen.getByLabelText(/course title/i), {
       target: { value: 'React Basics' },
     });
     fireEvent.change(screen.getByLabelText(/short description/i), {
@@ -328,8 +349,13 @@ describe('CreateCourse Component', () => {
     // Render and fill the form
     render(<CreateCourse />);
 
+    // Wait for component to finish loading
+    await waitFor(() => {
+      expect(screen.getByText('Create New Course')).toBeInTheDocument();
+    });
+
     // Fill in form fields
-    fireEvent.change(screen.getByLabelText(/title/i), {
+    fireEvent.change(screen.getByLabelText(/course title/i), {
       target: { value: 'React Basics' },
     });
     fireEvent.change(screen.getByLabelText(/short description/i), {
@@ -365,8 +391,13 @@ describe('CreateCourse Component', () => {
     // Render and fill the form
     render(<CreateCourse />);
 
+    // Wait for component to finish loading
+    await waitFor(() => {
+      expect(screen.getByText('Create New Course')).toBeInTheDocument();
+    });
+
     // Fill in form fields
-    fireEvent.change(screen.getByLabelText(/title/i), {
+    fireEvent.change(screen.getByLabelText(/course title/i), {
       target: { value: 'React Basics' },
     });
     fireEvent.change(screen.getByLabelText(/short description/i), {
@@ -397,8 +428,13 @@ describe('CreateCourse Component', () => {
   test('handles validation errors for specific fields', async () => {
     render(<CreateCourse />);
 
+    // Wait for component to finish loading
+    await waitFor(() => {
+      expect(screen.getByText('Create New Course')).toBeInTheDocument();
+    });
+
     // Fill in some fields but leave others blank
-    fireEvent.change(screen.getByLabelText(/title/i), {
+    fireEvent.change(screen.getByLabelText(/course title/i), {
       target: { value: 'React Basics' },
     });
     // Intentionally leave description blank
@@ -431,8 +467,13 @@ describe('CreateCourse Component', () => {
     // Render and fill the form
     render(<CreateCourse />);
 
+    // Wait for component to finish loading
+    await waitFor(() => {
+      expect(screen.getByText('Create New Course')).toBeInTheDocument();
+    });
+
     // Fill in all required fields
-    fireEvent.change(screen.getByLabelText(/title/i), {
+    fireEvent.change(screen.getByLabelText(/course title/i), {
       target: { value: 'React Basics' },
     });
     fireEvent.change(screen.getByLabelText(/short description/i), {
