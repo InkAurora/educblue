@@ -211,7 +211,7 @@ function UserDashboard() {
                             </Typography>
                           )}
                         </CardContent>
-                        <CardActions>
+                        <CardActions sx={{ p: 3, pt: 0 }}>
                           <Button
                             variant='contained'
                             color='primary'
