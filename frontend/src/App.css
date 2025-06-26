@@ -1,3 +1,4 @@
+/* Modern App Styles */
 .App {
   text-align: center;
 }
@@ -14,7 +15,7 @@
 }
 
 .App-header {
-  background-color: #282c34;
+  background: linear-gradient(135deg, #495057 0%, #343a40 100%);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -25,7 +26,14 @@
 }
 
 .App-link {
-  color: #02e6ef;
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.App-link:hover {
+  color: var(--primary-light);
+  text-decoration: underline;
 }
 
 @keyframes App-logo-spin {
@@ -38,30 +46,42 @@
 }
 
 /* Enhanced Markdown Editor Styling */
+.editor-preview {
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
 .editor-preview pre {
   background: #1e1e1e !important;
   color: #d4d4d4 !important;
   border: 1px solid #333 !important;
-  border-radius: 8px !important;
+  border-radius: 12px !important;
   position: relative !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-  margin: 16px 0 !important;
+  box-shadow: var(--shadow-lg) !important;
+  margin: 24px 0 !important;
+  overflow: hidden !important;
 }
 
 .editor-preview pre::before {
-  content: "";
+  content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, #02e6ef, #00bfa5);
-  border-radius: 8px 8px 0 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));
+  border-radius: 12px 12px 0 0;
 }
 
 .editor-preview code {
-  font-family: 'Fira Code', 'Cascadia Code', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace !important;
-  font-feature-settings: 'liga' 1, 'calt' 1;
+  font-family:
+    'Fira Code', 'Cascadia Code', 'SF Mono', 'Monaco', 'Inconsolata',
+    'Roboto Mono', monospace !important;
+  font-feature-settings:
+    'liga' 1,
+    'calt' 1;
 }
 
 .editor-preview pre code {
@@ -70,33 +90,225 @@
   padding: 24px !important;
   font-size: 14px !important;
   line-height: 1.6 !important;
+  display: block !important;
 }
 
 /* Inline code styling in editor preview */
 .editor-preview p code,
-.editor-preview li code {
-  background: #f8f9fa !important;
-  color: #d73e48 !important;
-  padding: 3px 6px !important;
-  border-radius: 4px !important;
+.editor-preview li code,
+.editor-preview td code,
+.editor-preview th code {
+  background: rgba(2, 230, 239, 0.1) !important;
+  color: var(--primary-dark) !important;
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
   font-weight: 500 !important;
-  border: 1px solid #e9ecef !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  border: 1px solid rgba(2, 230, 239, 0.2) !important;
+  box-shadow: var(--shadow-sm) !important;
   font-size: 0.875em !important;
 }
 
 /* SimpleMDE toolbar improvements */
 .CodeMirror-toolbar {
-  border-bottom: 1px solid #e0e0e0 !important;
-  background: #fafafa !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  background: var(--background-paper) !important;
+  border-radius: 12px 12px 0 0 !important;
+  padding: 12px !important;
 }
 
 .CodeMirror-toolbar .separator {
-  border-left: 1px solid #e0e0e0 !important;
+  border-left: 1px solid var(--border-color) !important;
+  height: 20px !important;
+}
+
+.CodeMirror-toolbar button {
+  border-radius: 6px !important;
+  padding: 6px 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+.CodeMirror-toolbar button:hover {
+  background: rgba(2, 230, 239, 0.1) !important;
+  color: var(--primary-dark) !important;
+}
+
+.CodeMirror-toolbar button.active {
+  background: var(--primary-color) !important;
+  color: white !important;
+}
+
+/* CodeMirror editor improvements */
+.CodeMirror {
+  border-radius: 0 0 12px 12px !important;
+  border: 1px solid var(--border-color) !important;
+  border-top: none !important;
+  font-family:
+    'Fira Code', 'Cascadia Code', 'SF Mono', 'Monaco', 'Inconsolata',
+    'Roboto Mono', monospace !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+}
+
+.CodeMirror-focused {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 2px rgba(2, 230, 239, 0.2) !important;
 }
 
 /* Ensure code font consistency across the app */
 .MuiTypography-root code {
-  font-family: 'Fira Code', 'Cascadia Code', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace !important;
-  font-feature-settings: 'liga' 1, 'calt' 1;
+  font-family:
+    'Fira Code', 'Cascadia Code', 'SF Mono', 'Monaco', 'Inconsolata',
+    'Roboto Mono', monospace !important;
+  font-feature-settings:
+    'liga' 1,
+    'calt' 1;
+}
+
+/* Enhanced blockquote styling */
+.editor-preview blockquote {
+  border-left: 4px solid var(--primary-color);
+  margin: 24px 0;
+  padding: 16px 24px;
+  background: rgba(2, 230, 239, 0.05);
+  border-radius: 0 8px 8px 0;
+  font-style: italic;
+}
+
+/* Table styling improvements */
+.editor-preview table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 24px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.editor-preview th,
+.editor-preview td {
+  border: 1px solid var(--border-color);
+  padding: 12px 16px;
+  text-align: left;
+}
+
+.editor-preview th {
+  background: var(--background-default);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.editor-preview tr:nth-child(even) {
+  background: rgba(2, 230, 239, 0.03);
+}
+
+/* List styling improvements */
+.editor-preview ul,
+.editor-preview ol {
+  padding-left: 24px;
+  margin: 16px 0;
+}
+
+.editor-preview li {
+  margin: 8px 0;
+  line-height: 1.6;
+}
+
+/* Heading styling improvements */
+.editor-preview h1,
+.editor-preview h2,
+.editor-preview h3,
+.editor-preview h4,
+.editor-preview h5,
+.editor-preview h6 {
+  margin: 32px 0 16px 0;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.editor-preview h1 {
+  font-size: 2.5rem;
+  border-bottom: 2px solid var(--primary-color);
+  padding-bottom: 8px;
+}
+
+.editor-preview h2 {
+  font-size: 2rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 6px;
+}
+
+/* Utility classes for modern UI */
+.modern-card {
+  background: var(--background-paper);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+}
+
+.modern-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.modern-button {
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--primary-dark)
+  );
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 12px 24px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: none;
+}
+
+.modern-button:hover {
+  background: linear-gradient(
+    135deg,
+    var(--primary-light),
+    var(--primary-color)
+  );
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.modern-button:active {
+  transform: translateY(0);
+}
+
+.modern-input {
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: var(--background-paper);
+}
+
+.modern-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(2, 230, 239, 0.1);
+}
+
+.glass-effect {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.text-gradient {
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--primary-dark)
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }

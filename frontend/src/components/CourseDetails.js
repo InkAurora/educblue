@@ -239,7 +239,6 @@ function CourseDetails({ 'data-testid': dataTestId, testId = null }) {
       setProcessing(false);
     }
   };
-
   const handleEnrollFree = async () => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -249,7 +248,9 @@ function CourseDetails({ 'data-testid': dataTestId, testId = null }) {
 
     try {
       setProcessing(true);
-      await axiosInstance.post(`/api/courses/${id}/enroll`);
+      await axiosInstance.post('/api/enroll/free', {
+        courseId: id,
+      });
       setIsEnrolled(true);
       setProcessing(false);
       setPaymentStatus({
@@ -420,7 +421,7 @@ function CourseDetails({ 'data-testid': dataTestId, testId = null }) {
                   <Typography variant='h6' gutterBottom fontWeight='bold'>
                     About this course
                   </Typography>
-                  
+
                   <Box
                     sx={{
                       overflow: 'hidden',

@@ -308,17 +308,9 @@ function ContentRenderer({
       setSubmittingAnswer(false);
     }
   };
-
   // Handle radio option change
   const handleOptionChange = (event) => {
     setSelectedOption(event.target.value);
-  };
-
-  const getContentTypeDisplay = () => {
-    if (type && typeof type === 'string') {
-      return type.charAt(0).toUpperCase() + type.slice(1);
-    }
-    return '';
   };
 
   const renderCompletionButtonText = () => {
@@ -333,20 +325,12 @@ function ContentRenderer({
 
   return (
     <Box sx={{ mt: 3, position: 'relative', pb: 4 }}>
-      <Typography
-        variant='body2'
-        color='text.secondary'
-        sx={{ mb: 2 }}
-        data-testid='content-type'
-      >
-        {getContentTypeDisplay()}
-      </Typography>
-
       {/* Video content rendering */}
       {type === 'video' && videoUrl && (
         <Box sx={{ mb: 4 }} data-testid='video-content'>
           {isYoutubeVideo && youtubeVideoId ? (
             <>
+              {' '}
               <Box
                 sx={{
                   position: 'relative',
@@ -375,11 +359,18 @@ function ContentRenderer({
                     mt: 1,
                   }}
                 >
+                  {' '}
                   <Button
                     variant='outlined'
                     color='primary'
                     onClick={handleYoutubeManualCompletion}
                     disabled={completing}
+                    size='large'
+                    sx={{
+                      px: 4,
+                      py: 2,
+                      // Remove borderRadius override to use theme default
+                    }}
                   >
                     {completing ? 'Saving Progress...' : 'Mark as Completed'}
                   </Button>
@@ -406,11 +397,18 @@ function ContentRenderer({
                 mt: 2,
               }}
             >
+              {' '}
               <Button
                 variant='outlined'
                 color='primary'
                 onClick={handleCompletionClick}
                 disabled={completing}
+                size='large'
+                sx={{
+                  px: 4,
+                  py: 2,
+                  // Remove borderRadius override to use theme default
+                }}
               >
                 {completing ? 'Saving Progress...' : 'Mark Video as Completed'}
               </Button>
@@ -476,6 +474,7 @@ function ContentRenderer({
           />
 
           <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-start' }}>
+            {' '}
             <Button
               variant='contained'
               color='primary'
@@ -487,7 +486,10 @@ function ContentRenderer({
                 (isCompleted && !isInstructor)
               }
               data-testid='submit-answer-button'
-              sx={{ mr: 2 }}
+              sx={{
+                mr: 2,
+                // Remove borderRadius override to use theme default
+              }}
             >
               {submittingAnswer ? 'Submitting...' : 'Submit Answer'}
             </Button>
@@ -543,12 +545,14 @@ function ContentRenderer({
           </FormControl>
 
           <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-start' }}>
+            {' '}
             <Button
               variant='contained'
               color='primary'
               onClick={handleMultipleChoiceSubmit}
               disabled={submittingAnswer || selectedOption === ''}
               data-testid='submit-multiple-choice-button'
+              // Remove sx override to use theme default styling
             >
               {submittingAnswer ? 'Submitting...' : 'Submit Answer'}
             </Button>
@@ -568,6 +572,7 @@ function ContentRenderer({
             py: { xs: 1, sm: 2 },
           }}
         >
+          {' '}
           <Button
             variant='contained'
             color='primary'
@@ -579,6 +584,7 @@ function ContentRenderer({
             sx={{
               minWidth: '200px',
               boxShadow: 3,
+              // Remove borderRadius override to use theme default
             }}
           >
             {renderCompletionButtonText()}

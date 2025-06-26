@@ -113,8 +113,8 @@ describe('CreateCourse Component', () => {
     });
 
     // Check form fields are rendered
-    expect(screen.getByLabelText(/Title/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Description/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Course Title/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Short Description/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Price/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Duration/i)).toBeInTheDocument();
     expect(screen.getByTestId('markdown-editor')).toBeInTheDocument();
@@ -138,8 +138,8 @@ describe('CreateCourse Component', () => {
     });
 
     // Check form fields are rendered
-    expect(screen.getByLabelText(/Title/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Description/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Course Title/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Short Description/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Price/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Duration/i)).toBeInTheDocument();
     expect(screen.getByTestId('markdown-editor')).toBeInTheDocument();
@@ -163,14 +163,15 @@ describe('CreateCourse Component', () => {
     });
 
     // Submit form without filling required fields
-    const submitButton = screen.getByText('Create Course');
+    const submitButton = screen.getByRole('button', { name: /next/i });
     fireEvent.click(submitButton);
 
     // Check validation errors are shown
-    expect(screen.getByText('Title is required')).toBeInTheDocument();
-    expect(screen.getByText('Description is required')).toBeInTheDocument();
-    expect(screen.getByText('Price is required')).toBeInTheDocument();
-    expect(screen.getByText('Duration is required')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByText('Please fix the highlighted fields'),
+      ).toBeInTheDocument();
+    });
   });
 
   test('submits form successfully as admin', async () => {
@@ -198,11 +199,11 @@ describe('CreateCourse Component', () => {
     });
 
     // Fill out the form
-    fireEvent.change(screen.getByLabelText(/Title/i), {
+    fireEvent.change(screen.getByLabelText(/Course Title/i), {
       target: { value: 'Test Course' },
     });
 
-    fireEvent.change(screen.getByLabelText(/Description/i), {
+    fireEvent.change(screen.getByLabelText(/Short Description/i), {
       target: { value: 'Course description' },
     });
 
@@ -211,7 +212,7 @@ describe('CreateCourse Component', () => {
     });
 
     fireEvent.change(screen.getByLabelText(/Duration/i), {
-      target: { value: '6 weeks' },
+      target: { value: '6' },
     });
 
     fireEvent.change(screen.getByTestId('markdown-editor'), {
@@ -221,7 +222,7 @@ describe('CreateCourse Component', () => {
     });
 
     // Submit the form
-    const submitButton = screen.getByText('Create Course');
+    const submitButton = screen.getByRole('button', { name: /next/i });
     fireEvent.click(submitButton);
 
     // Verify API call was made with correct data
@@ -232,7 +233,7 @@ describe('CreateCourse Component', () => {
           title: 'Test Course',
           description: 'Course description',
           price: '99.99',
-          duration: '6 weeks',
+          duration: '6',
           markdownDescription:
             '# Detailed Course Description\n\nThis is a test course.',
         }),

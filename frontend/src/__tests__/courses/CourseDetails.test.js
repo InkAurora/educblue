@@ -51,6 +51,7 @@ Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 jest.mock('react-router-dom', () => ({
   useParams: () => ({ id: 'test-course-id' }),
   useNavigate: () => jest.fn(),
+  useLocation: () => ({ pathname: '/courses/test-course-id' }),
   Link: ({ children, to }) => <a href={to}>{children}</a>,
 }));
 
@@ -63,7 +64,7 @@ describe('CourseDetails Component', () => {
     instructor: 'Instructor Name',
     price: 99.99,
     duration: '6 weeks',
-    contentItems: [
+    content: [
       { _id: 'content1', title: 'Introduction', type: 'markdown' },
       { _id: 'content2', title: 'Lesson 1', type: 'video' },
     ],
@@ -104,7 +105,7 @@ describe('CourseDetails Component', () => {
 
     // Wait for data to load
     await waitFor(() => {
-      expect(screen.getByText('Test Course')).toBeInTheDocument();
+      expect(screen.getAllByText('Test Course')).toHaveLength(2); // Should appear in both sidebar and main content
     });
 
     // Verify the admin can see instructor-only content
@@ -209,7 +210,7 @@ describe('CourseDetails Component', () => {
 
     // Wait for data to load
     await waitFor(() => {
-      expect(screen.getByText('Test Course')).toBeInTheDocument();
+      expect(screen.getAllByText('Test Course')).toHaveLength(2); // Should appear in both sidebar and main content
     });
 
     // Verify student can access content

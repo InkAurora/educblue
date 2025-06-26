@@ -362,7 +362,7 @@ describe('Course Management Endpoints', () => {
       // Create a test course with content
       const courseWithContent = await Course.create({
         ...sampleCourse,
-        instructor: instructorUser.fullName,
+        instructor: instructorUser._id,
       });
       courseIdWithContent = courseWithContent._id;
 
@@ -371,9 +371,9 @@ describe('Course Management Endpoints', () => {
         title: 'Course Without Content',
         description: 'This course has no content items',
         price: 49.99,
-        instructor: instructorUser.fullName,
+        instructor: instructorUser._id,
         duration: 5,
-        content: [],
+        sections: [],
       });
       courseIdWithoutContent = courseWithoutContent._id;
     });
@@ -393,12 +393,18 @@ describe('Course Management Endpoints', () => {
 
     it('should allow publishing a course and change status to published', async () => {
       const course = await Course.create({
-        title: 'Test Course No Content',
+        title: 'Test Course With Content',
         description: 'A course for testing publish functionality',
         price: 10,
         duration: 1,
-        instructor: instructorUser.fullName, // Corrected to use instructor's fullName
-        // No content validation needed at publish time
+        instructor: instructorUser._id, // Corrected to use instructor's _id
+        content: [
+          {
+            title: 'Test Content',
+            type: 'video',
+            videoUrl: 'http://example.com',
+          },
+        ], // Add content so it can be published
       });
 
       const res = await request(app)
@@ -419,7 +425,7 @@ describe('Course Management Endpoints', () => {
         description: 'This course is already published',
         price: 15,
         duration: 2,
-        instructor: instructorUser.fullName,
+        instructor: instructorUser._id,
         status: 'published', // Course is already published
       });
 
@@ -462,13 +468,19 @@ describe('Course Management Endpoints', () => {
         description: 'Original description',
         markdownDescription: '# Original Markdown',
         price: 99.99,
-        instructor: instructorUser.fullName,
+        instructor: instructorUser._id,
         duration: 10,
-        content: [
+        sections: [
           {
-            title: 'Introduction',
-            videoUrl: 'https://example.com/video1',
-            type: 'video',
+            title: 'Section 1',
+            order: 1,
+            content: [
+              {
+                title: 'Introduction',
+                videoUrl: 'https://example.com/video1',
+                type: 'video',
+              },
+            ],
           },
         ],
       });
@@ -500,7 +512,7 @@ describe('Course Management Endpoints', () => {
       // Original fields should remain unchanged
       expect(res.body.course).toHaveProperty(
         'instructor',
-        instructorUser.fullName
+        instructorUser._id.toString()
       );
       expect(res.body.course).toHaveProperty('duration', 10);
 
@@ -561,7 +573,7 @@ describe('Course Management Endpoints', () => {
       // Should not change instructor
       expect(res.body.course).toHaveProperty(
         'instructor',
-        instructorUser.fullName
+        instructorUser._id.toString()
       );
     });
 
@@ -593,7 +605,7 @@ describe('Course Management Endpoints', () => {
         description: 'This course will be unpublished',
         price: 50,
         duration: 5,
-        instructor: instructorUser.fullName,
+        instructor: instructorUser._id,
         status: 'published', // Start as published
       });
 
@@ -618,7 +630,7 @@ describe('Course Management Endpoints', () => {
         description: 'Test description',
         price: 30,
         duration: 3,
-        instructor: instructorUser.fullName,
+        instructor: instructorUser._id,
       });
 
       const res = await request(app)

@@ -8,7 +8,7 @@ services:
       dockerfile: Dockerfile
     container_name: educblue-backend-dev
     ports:
-      - "5000:5000"
+      - '5000:5000'
     environment:
       - NODE_ENV=development
       - MONGO_URI=mongodb://mongo:27017/educblue_dev
@@ -29,7 +29,7 @@ services:
       dockerfile: Dockerfile
     container_name: educblue-backend-prod
     ports:
-      - "5000:5000"
+      - '5000:5000'
     environment:
       - NODE_ENV=production
     env_file:
@@ -46,7 +46,7 @@ services:
     image: mongo:6.0
     container_name: educblue-mongo
     ports:
-      - "27017:27017"
+      - '27017:27017'
     volumes:
       - mongo-data:/data/db
     environment:
@@ -59,7 +59,7 @@ services:
     image: redis:7-alpine
     container_name: educblue-redis
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis-data:/data
     networks:

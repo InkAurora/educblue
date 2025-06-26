@@ -12,6 +12,7 @@ describe('Analytics Controller', () => {
   let regularToken;
   let adminUser;
   let regularUser;
+  let instructorUser;
   let course1;
 
   beforeEach(async () => {
@@ -32,7 +33,7 @@ describe('Analytics Controller', () => {
     });
 
     // Create an instructor user
-    await User.create({
+    instructorUser = await User.create({
       fullName: 'Instructor User',
       email: 'instructor@example.com',
       password: 'password123',
@@ -43,31 +44,45 @@ describe('Analytics Controller', () => {
     course1 = await Course.create({
       title: 'Test Course 1',
       description: 'This is a test course',
-      instructor: 'Instructor User',
+      instructor: instructorUser._id, // Use ObjectId
       price: 99.99,
       status: 'published',
       duration: 10, // Added duration
-      content: [
+      sections: [
         {
-          title: 'Test Content 1',
-          type: 'video',
           _id: new mongoose.Types.ObjectId(),
+          title: 'Section 1',
+          order: 0,
+          content: [
+            {
+              title: 'Test Content 1',
+              type: 'video',
+              _id: new mongoose.Types.ObjectId(),
+            },
+          ],
         },
-      ], // Added dummy content with _id
+      ],
     });
 
     await Course.create({
       title: 'Test Course 2',
       description: 'This is another test course',
-      instructor: 'Instructor User',
+      instructor: instructorUser._id, // Use ObjectId
       price: 149.99,
       status: 'draft',
       duration: 5, // Added duration
-      content: [
+      sections: [
         {
-          title: 'Test Content 2',
-          type: 'video',
           _id: new mongoose.Types.ObjectId(),
+          title: 'Section 1',
+          order: 0,
+          content: [
+            {
+              title: 'Test Content 2',
+              type: 'video',
+              _id: new mongoose.Types.ObjectId(),
+            },
+          ],
         },
       ],
     });
@@ -76,7 +91,8 @@ describe('Analytics Controller', () => {
     await Progress.create({
       userId: regularUser._id,
       courseId: course1._id,
-      contentId: course1.content[0]._id,
+      sectionId: course1.sections[0]._id,
+      contentId: course1.sections[0].content[0]._id,
       completed: true,
       completionPercentage: 75, // Ensure this is set for the test
     });
@@ -189,16 +205,23 @@ describe('Analytics Controller', () => {
       const courseWithEnrollments = await Course.create({
         title: 'Test Course with Enrollments',
         description: 'This is a test course with enrollments',
-        instructor: 'Instructor User',
+        instructor: instructorUser._id,
         price: 100,
         status: 'published',
         duration: 10,
         enrolledStudents: [regularUser._id],
-        content: [
+        sections: [
           {
-            title: 'Enrollment Content',
-            type: 'video',
             _id: new mongoose.Types.ObjectId(),
+            title: 'Section 1',
+            order: 0,
+            content: [
+              {
+                title: 'Enrollment Content',
+                type: 'video',
+                _id: new mongoose.Types.ObjectId(),
+              },
+            ],
           },
         ],
       });

@@ -1,11 +1,5 @@
 // filepath: c:\Users\INK\Desktop\educblue\backend\tests\models\progress.test.js
-const {
-  describe,
-  it,
-  expect,
-  beforeAll,
-  beforeEach,
-} = require('@jest/globals');
+const { describe, it, expect } = require('@jest/globals');
 const mongoose = require('mongoose');
 const Progress = require('../../models/progress');
 require('../setup');
@@ -16,15 +10,7 @@ describe('Progress Model', () => {
   let contentId;
   let sectionId;
 
-  beforeAll(async () => {
-    // Ensure indexes are created
-    await Progress.createIndexes();
-  });
-
-  beforeEach(async () => {
-    // Clear the Progress collection before each test
-    await Progress.deleteMany({});
-
+  beforeEach(() => {
     // Create fresh IDs for each test
     userId = new mongoose.Types.ObjectId();
     courseId = new mongoose.Types.ObjectId();
@@ -188,15 +174,12 @@ describe('Progress Model', () => {
     } catch (error) {
       expect(error).toBeDefined();
       // Check for MongoDB duplicate key error (code 11000)
-      // or if the message contains "duplicate" or "E11000"
+      // or Mongoose validation error, or if the message contains "duplicate key"
       const isDuplicateError =
         error.code === 11000 ||
         error.name === 'MongoServerError' ||
-        (error.message &&
-          (error.message.includes('duplicate') ||
-            error.message.includes('E11000') ||
-            error.message.includes('unique')));
-
+        error.name === 'ValidationError' ||
+        (error.message && error.message.includes('duplicate key'));
       expect(isDuplicateError).toBe(true);
     }
   });

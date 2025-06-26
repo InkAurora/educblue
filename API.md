@@ -543,6 +543,87 @@ Get detailed information about a specific course. Response varies based on authe
 
 ---
 
+### Get Instructor Courses
+
+**GET** `/courses/instructor`
+**Authentication Required** (Instructor or Admin)
+
+Get all courses created by the instructor making the request, including courses in draft status. This endpoint allows instructors to manage their own courses and admins to access instructor data for administrative purposes.
+
+**Response (200):**
+
+```json
+{
+  "message": "Instructor courses retrieved successfully",
+  "courses": [
+    {
+      "_id": "507f1f77bcf86cd799439011",
+      "title": "JavaScript Fundamentals",
+      "description": "Learn the basics of JavaScript programming",
+      "markdownDescription": "# Course Overview\n\nThis course covers...",
+      "price": 99.99,
+      "instructor": {
+        "_id": "507f1f77bcf86cd799439010",
+        "fullName": "Jane Smith",
+        "email": "jane.smith@example.com"
+      },
+      "duration": 40,
+      "status": "published",
+      "sections": [
+        {
+          "_id": "507f1f77bcf86cd799439012",
+          "title": "Introduction",
+          "description": "Getting started with JavaScript",
+          "order": 0,
+          "content": [
+            {
+              "_id": "507f1f77bcf86cd799439013",
+              "title": "Welcome to JavaScript",
+              "type": "video",
+              "videoUrl": "https://example.com/intro.mp4"
+            }
+          ]
+        }
+      ],
+      "createdAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "_id": "507f1f77bcf86cd799439014",
+      "title": "Advanced React Patterns",
+      "description": "Deep dive into React patterns",
+      "markdownDescription": "# Advanced React\n\nThis course explores...",
+      "price": 199.99,
+      "instructor": {
+        "_id": "507f1f77bcf86cd799439010",
+        "fullName": "Jane Smith",
+        "email": "jane.smith@example.com"
+      },
+      "duration": 80,
+      "status": "draft",
+      "sections": [],
+      "createdAt": "2025-01-15T00:00:00.000Z"
+    }
+  ],
+  "totalCourses": 2
+}
+```
+
+**Features:**
+
+- Returns all courses created by the authenticated instructor
+- Includes courses in both `published` and `draft` status
+- Returns full course details including sections and content
+- Provides total count of courses
+
+**Error Responses:**
+
+- `401`: Authentication required
+- `403`: Access denied. Only instructors and admins can access this endpoint
+- `404`: User not found
+- `500`: Server error
+
+---
+
 ### Create Course
 
 **POST** `/courses`
@@ -1109,6 +1190,45 @@ Enroll in a course after successful payment.
 
 - `400`: Course ID and session ID are required
 - `400`: Payment not completed
+- `400`: Already enrolled in this course
+- `401`: Authentication required
+- `404`: Course not found
+- `404`: User not found
+- `500`: Server error during enrollment process
+
+### Enroll in Free Course
+
+**POST** `/enroll/free`
+**Authentication Required** (Student, Instructor, or Admin)
+
+Enroll in a free course without payment processing. This endpoint is specifically for courses with a price of $0.
+
+**Request Body:**
+
+```json
+{
+  "courseId": "507f1f77bcf86cd799439011"
+}
+```
+
+**Response (200):**
+
+```json
+{
+  "message": "Successfully enrolled in the free course",
+  "course": {
+    "id": "507f1f77bcf86cd799439011",
+    "title": "Introduction to Programming",
+    "price": 0
+  }
+}
+```
+
+**Error Responses:**
+
+- `400`: Course ID is required
+- `400`: This course is not free. Please use the regular enrollment process.
+- `400`: Course is not available for enrollment (unpublished)
 - `400`: Already enrolled in this course
 - `401`: Authentication required
 - `404`: Course not found

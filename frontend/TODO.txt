@@ -1,1 +1,1 @@
-- Fix error message being misaligned in the content area
+✅ Fix draft courses not showing under "My Courses" when they are not published - COMPLETED

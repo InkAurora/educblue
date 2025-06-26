@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode';
 import {
   Grid,
   Card,
@@ -22,50 +21,20 @@ function MyCourses() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [instructorName, setInstructorName] = useState('');
-
   useEffect(() => {
-    // Extract user fullName from the token
-    const getInstructorName = () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (token) {
-          const decodedToken = jwtDecode(token);
-          return decodedToken.fullName || '';
-        }
-        return '';
-      } catch (err) {
-        setError('Error decoding authentication token');
-        return '';
-      }
-    };
-
-    const fullName = getInstructorName();
-    setInstructorName(fullName);
-
     const fetchMyCourses = async () => {
-      if (!fullName) {
-        setError('You must be logged in to view your courses');
-        setLoading(false);
-        return;
-      }
-
       try {
         setLoading(true);
-        // Using axiosInstance - no need to manually include the token
-        const response = await axiosInstance.get('/api/courses');
+        // Use the new instructor-specific endpoint that returns all courses (including drafts)
+        const response = await axiosInstance.get('/api/courses/instructor');
 
-        // Filter courses by the instructor's fullName
-        const myCourses = response.data.filter(
-          (course) =>
-            course.instructor?.fullName === fullName ||
-            course.instructor === fullName,
-        );
-
-        setCourses(myCourses);
+        // The API now returns only the instructor's courses, so no filtering needed
+        setCourses(response.data.courses);
         setLoading(false);
       } catch (err) {
-        if (err.response?.status === 403) {
+        if (err.response?.status === 401) {
+          setError('You must be logged in to view your courses');
+        } else if (err.response?.status === 403) {
           setError(
             'Access denied. You do not have permission to view these courses.',
           );
@@ -101,18 +70,11 @@ function MyCourses() {
       </Container>
     );
   }
-
   return (
     <Container sx={{ py: 4, px: { xs: 1, sm: 2, md: 3 } }}>
       <Typography variant='h4' component='h1' gutterBottom>
         My Courses
       </Typography>
-
-      {instructorName && (
-        <Typography variant='subtitle1' color='text.secondary' gutterBottom>
-          Instructor: {instructorName}
-        </Typography>
-      )}
 
       {courses.length === 0 ? (
         <Alert severity='info'>

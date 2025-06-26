@@ -23,6 +23,8 @@ jest.mock('react-router-dom', () => ({
   useNavigate: () => jest.fn(),
 }));
 
+// Mock Material-UI Select component
+
 describe('AdminDashboard Component', () => {
   const mockAdminUser = {
     _id: 'admin123',
@@ -56,11 +58,17 @@ describe('AdminDashboard Component', () => {
   ];
 
   const mockAnalytics = {
-    totalCourses: 25,
-    totalUsers: 120,
-    totalInstructors: 15,
-    totalStudents: 104,
-    averageCompletionRate: 68,
+    courses: { total: 25 },
+    users: {
+      total: 120,
+      byRole: {
+        instructor: 15,
+        student: 104,
+      },
+    },
+    engagement: {
+      averageCompletionRate: 0.68,
+    },
   };
 
   const mockCourses = [
@@ -129,14 +137,13 @@ describe('AdminDashboard Component', () => {
     expect(screen.getByText('Total Users')).toBeInTheDocument();
     expect(screen.getByText('120')).toBeInTheDocument();
     expect(screen.getByText('Avg. Completion Rate')).toBeInTheDocument();
-    expect(screen.getByText('68%')).toBeInTheDocument();
+    expect(screen.getByText('68.0%')).toBeInTheDocument();
 
     // Check user table headers
-    expect(screen.getByText('Full Name')).toBeInTheDocument();
+    expect(screen.getByText('Name')).toBeInTheDocument();
     expect(screen.getByText('Email')).toBeInTheDocument();
     expect(screen.getByText('Role')).toBeInTheDocument();
     expect(screen.getByText('Enrolled Courses')).toBeInTheDocument();
-    expect(screen.getByText('Actions')).toBeInTheDocument();
 
     // Check if user data is displayed
     expect(screen.getByText('Student One')).toBeInTheDocument();
@@ -161,7 +168,10 @@ describe('AdminDashboard Component', () => {
 
     // Mock put request for role update
     axiosInstance.put.mockResolvedValue({
-      data: { message: 'User updated successfully' },
+      data: {
+        user: { ...mockUsers[0], role: 'instructor' },
+        message: 'User updated successfully',
+      },
     });
 
     render(<AdminDashboard />);
@@ -173,9 +183,9 @@ describe('AdminDashboard Component', () => {
 
     // Find the role select element for the first user
     const studentRow = screen.getByText('Student One').closest('tr');
-    const selectElement = within(studentRow).getByRole('combobox');
+    const selectElement = within(studentRow).getByDisplayValue('student');
 
-    // Change role from student to instructor
+    // Trigger the change event directly on the hidden input element
     fireEvent.change(selectElement, { target: { value: 'instructor' } });
 
     // Verify the API call was made correctly
@@ -208,18 +218,16 @@ describe('AdminDashboard Component', () => {
       expect(screen.getByText('Student One')).toBeInTheDocument();
     });
 
-    // Find the edit button for the first user
+    // Find the edit button for the first user (the one with EditIcon)
     const studentRow = screen.getByText('Student One').closest('tr');
-    const editButton = within(studentRow).getByRole('button');
+    const editButton = within(studentRow).getByLabelText('Manage Enrollments');
 
     // Click the edit button to open the enrollment dialog
     fireEvent.click(editButton);
 
     // Verify dialog opens
     await waitFor(() => {
-      expect(
-        screen.getByText(/Manage Course Enrollments for Student One/i),
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Enroll User in Courses/i)).toBeInTheDocument();
     });
 
     // Check if courses are displayed in the dialog
@@ -241,7 +249,7 @@ describe('AdminDashboard Component', () => {
     fireEvent.click(reactCourseCheckbox);
 
     // Save changes
-    fireEvent.click(screen.getByText('Save Changes'));
+    fireEvent.click(screen.getByText('Save'));
 
     // Verify API call
     await waitFor(() => {
@@ -264,7 +272,9 @@ describe('AdminDashboard Component', () => {
 
     // Wait for error message
     await waitFor(() => {
-      expect(screen.getByText('Failed to load admin data')).toBeInTheDocument();
+      expect(
+        screen.getByText(/Failed to load initial data/i),
+      ).toBeInTheDocument();
     });
   });
 });

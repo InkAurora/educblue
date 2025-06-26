@@ -12,6 +12,7 @@ const {
   updateCourseContent,
   publishCourse,
   getCourseContentById,
+  getInstructorCourses,
 } = require('../controllers/courses');
 const {
   updateCourseSections,
@@ -30,6 +31,12 @@ const optionalAuth = require('../middleware/optionalAuth');
 const restrictTo = require('../middleware/role');
 
 router.get('/', getCourses);
+router.get(
+  '/instructor',
+  auth,
+  restrictTo('instructor', 'admin'),
+  getInstructorCourses
+);
 router.get('/:id', optionalAuth, getCourseById);
 // Get sections for a course (without content details)
 router.get('/:id/sections', auth, getCourseSections);

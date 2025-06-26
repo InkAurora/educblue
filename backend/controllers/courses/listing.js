@@ -295,3 +295,47 @@ exports.getSectionContents = async (req, res) => {
     return res.status(500).json({ message: 'Server error' });
   }
 };
+
+// Get all courses created by the instructor making the request
+exports.getInstructorCourses = async (req, res) => {
+  try {
+    // Check if user exists in the request (set by auth middleware)
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    // Find the user to check their role
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if user is an instructor or admin
+    if (user.role !== 'instructor' && user.role !== 'admin') {
+      return res.status(403).json({
+        message:
+          'Access denied. Only instructors and admins can access this endpoint.',
+      });
+    }
+
+    // Find all courses created by this instructor (including drafts)
+    const courses = await Course.find({ instructor: user._id }).populate(
+      'instructor',
+      'fullName email'
+    );
+
+    // Return courses with full details since this is the instructor's own courses
+    return res.json({
+      message: 'Instructor courses retrieved successfully',
+      courses,
+      totalCourses: courses.length,
+    });
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('Error in getInstructorCourses:', error);
+    return res.status(500).json({
+      message: 'Server error',
+      error: error.message,
+    });
+  }
+};

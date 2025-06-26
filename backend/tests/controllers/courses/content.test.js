@@ -19,6 +19,7 @@ describe('Course Content Endpoints', () => {
   let studentToken;
   let courseId;
   let instructorUser;
+  let sectionCourseId;
 
   beforeAll(async () => {
     // Create test users with different roles
@@ -86,7 +87,7 @@ describe('Course Content Endpoints', () => {
       title: 'Test Course',
       description: 'This is a test course',
       price: 99.99,
-      instructor: instructorUser.fullName,
+      instructor: new mongoose.Types.ObjectId(),
       duration: 10,
       content: [
         {
@@ -97,10 +98,33 @@ describe('Course Content Endpoints', () => {
       ],
     });
     courseId = course._id;
+
+    // Create a test course with sections for section-based tests
+    const sectionCourse = await Course.create({
+      title: 'Section Course',
+      description: 'This is a course with sections',
+      price: 99.99,
+      instructor: instructorUser._id,
+      duration: 10,
+      sections: [
+        {
+          title: 'Chapter 1',
+          order: 1,
+          content: [
+            {
+              title: 'Video 1',
+              videoUrl: 'https://example.com/video1',
+              type: 'video',
+            },
+          ],
+        },
+      ],
+    });
+    sectionCourseId = sectionCourse._id;
   });
 
   describe('PUT /api/courses/:id/content', () => {
-    it('should update course content successfully as instructor', async () => {
+    it('should return deprecation message for PUT content endpoint as instructor', async () => {
       const updatedContent = [
         {
           title: 'Updated Introduction',
@@ -120,14 +144,11 @@ describe('Course Content Endpoints', () => {
         .set('Authorization', `Bearer ${instructorToken}`)
         .send({ content: updatedContent });
 
-      expect(res.status).toBe(200);
-      expect(res.body.message).toContain('updated successfully');
-      expect(res.body.course.content).toHaveLength(2);
-      expect(res.body.course.content[0].title).toBe('Updated Introduction');
-      expect(res.body.course.content[1].type).toBe('markdown');
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
-    it('should update course content successfully as admin', async () => {
+    it('should return deprecation message for PUT content endpoint as admin', async () => {
       const updatedContent = [
         {
           title: 'Admin Updated Content',
@@ -141,11 +162,11 @@ describe('Course Content Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ content: updatedContent });
 
-      expect(res.status).toBe(200);
-      expect(res.body.course.content[0].title).toBe('Admin Updated Content');
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
-    it('should return 404 when updating content for non-existent course', async () => {
+    it('should return deprecation message for non-existent course', async () => {
       const nonExistentId = new mongoose.Types.ObjectId();
       const res = await request(app)
         .put(`/api/courses/${nonExistentId}/content`)
@@ -160,21 +181,21 @@ describe('Course Content Endpoints', () => {
           ],
         });
 
-      expect(res.status).toBe(404);
-      expect(res.body.message).toContain('not found');
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
-    it('should validate content array is not empty', async () => {
+    it('should return deprecation message for empty content validation', async () => {
       const res = await request(app)
         .put(`/api/courses/${courseId}/content`)
         .set('Authorization', `Bearer ${instructorToken}`)
         .send({ content: [] });
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain('non-empty array');
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
-    it('should validate content type', async () => {
+    it('should return deprecation message for content type validation', async () => {
       const res = await request(app)
         .put(`/api/courses/${courseId}/content`)
         .set('Authorization', `Bearer ${instructorToken}`)
@@ -189,10 +210,10 @@ describe('Course Content Endpoints', () => {
         });
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain('valid type');
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
-    it('should validate markdown content has content field', async () => {
+    it('should return deprecation message for markdown content validation', async () => {
       const res = await request(app)
         .put(`/api/courses/${courseId}/content`)
         .set('Authorization', `Bearer ${instructorToken}`)
@@ -207,7 +228,7 @@ describe('Course Content Endpoints', () => {
         });
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain('content field');
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
     it('should deny access to students', async () => {
@@ -230,7 +251,7 @@ describe('Course Content Endpoints', () => {
   });
 
   describe('PUT /api/courses/:id/content - Multiple Choice Quiz', () => {
-    it('should update course with valid multiple choice quiz content', async () => {
+    it('should return deprecation message for multiple choice quiz content', async () => {
       const updatedContent = [
         {
           title: 'Introduction Video',
@@ -251,22 +272,11 @@ describe('Course Content Endpoints', () => {
         .set('Authorization', `Bearer ${instructorToken}`)
         .send({ content: updatedContent });
 
-      expect(res.status).toBe(200);
-      expect(res.body.message).toContain('updated successfully');
-
-      // Check multiple choice content
-      const quiz = res.body.course.content.find(
-        (c) => c.type === 'multipleChoice'
-      );
-      expect(quiz).toBeDefined();
-      expect(quiz.title).toBe('Multiple Choice Quiz');
-      expect(quiz.question).toBe('Which planet is closest to the sun?');
-      expect(quiz.options).toHaveLength(4);
-      expect(quiz.options[0]).toBe('Mercury');
-      expect(quiz.correctOption).toBe(0);
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
-    it('should reject update with multiple choice quiz having fewer than 4 options', async () => {
+    it('should return deprecation message for multiple choice quiz with too few options', async () => {
       const invalidContent = [
         {
           title: 'Multiple Choice Quiz',
@@ -283,12 +293,10 @@ describe('Course Content Endpoints', () => {
         .send({ content: invalidContent });
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain(
-        'Multiple choice questions must include'
-      );
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
-    it('should reject update with multiple choice quiz having invalid correctOption', async () => {
+    it('should return deprecation message for multiple choice quiz with invalid correctOption', async () => {
       const invalidContent = [
         {
           title: 'Multiple Choice Quiz',
@@ -305,12 +313,10 @@ describe('Course Content Endpoints', () => {
         .send({ content: invalidContent });
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain(
-        'Multiple choice questions must include'
-      );
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
-    it('should reject update with multiple choice quiz missing required fields', async () => {
+    it('should return deprecation message for multiple choice quiz missing required fields', async () => {
       const invalidContent = [
         {
           title: 'Multiple Choice Quiz',
@@ -326,12 +332,10 @@ describe('Course Content Endpoints', () => {
         .send({ content: invalidContent });
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain(
-        'Multiple choice questions must include'
-      );
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
-    it('should handle multiple content types including multiple choice quizzes', async () => {
+    it('should return deprecation message for multiple content types', async () => {
       const mixedContent = [
         {
           title: 'Introduction',
@@ -361,22 +365,8 @@ describe('Course Content Endpoints', () => {
         .set('Authorization', `Bearer ${instructorToken}`)
         .send({ content: mixedContent });
 
-      expect(res.status).toBe(200);
-      expect(res.body.course.content).toHaveLength(4);
-
-      // Check each content type
-      expect(
-        res.body.course.content.find((c) => c.type === 'video')
-      ).toBeDefined();
-      expect(
-        res.body.course.content.find((c) => c.type === 'markdown')
-      ).toBeDefined();
-      expect(
-        res.body.course.content.find((c) => c.type === 'quiz')
-      ).toBeDefined();
-      expect(
-        res.body.course.content.find((c) => c.type === 'multipleChoice')
-      ).toBeDefined();
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
   });
 
@@ -390,7 +380,7 @@ describe('Course Content Endpoints', () => {
       existingCourse = await Course.create({
         title: 'Course with Existing Content',
         description: 'Test course for _id matching',
-        instructor: instructorUser.fullName,
+        instructor: new mongoose.Types.ObjectId(),
         price: 50,
         duration: 40, // Duration in hours as a number
         content: [
@@ -415,7 +405,7 @@ describe('Course Content Endpoints', () => {
       contentId2 = existingCourse.content[1]._id;
     });
 
-    it('should update existing content item when _id is provided', async () => {
+    it('should return deprecation message when _id is provided', async () => {
       const updateContent = [
         {
           // eslint-disable-next-line no-underscore-dangle
@@ -438,21 +428,8 @@ describe('Course Content Endpoints', () => {
         .set('Authorization', `Bearer ${instructorToken}`)
         .send({ content: updateContent });
 
-      expect(res.status).toBe(200);
-      expect(res.body.course.content).toHaveLength(2); // Same length as before
-
-      const updatedItem1 = res.body.course.content.find(
-        // eslint-disable-next-line no-underscore-dangle
-        (item) => item._id.toString() === contentId1.toString()
-      );
-      expect(updatedItem1.title).toBe('Updated Content 1');
-      expect(updatedItem1.content).toBe('# Updated markdown content');
-
-      const updatedItem2 = res.body.course.content.find(
-        // eslint-disable-next-line no-underscore-dangle
-        (item) => item._id.toString() === contentId2.toString()
-      );
-      expect(updatedItem2.title).toBe('Updated Video Title');
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
     it('should add new content item when no _id is provided', async () => {
@@ -469,16 +446,8 @@ describe('Course Content Endpoints', () => {
         .set('Authorization', `Bearer ${instructorToken}`)
         .send({ content: newContent });
 
-      expect(res.status).toBe(200);
-      expect(res.body.course.content).toHaveLength(1); // Only the new item
-
-      const newItem = res.body.course.content.find(
-        (item) => item.title === 'New Quiz Content'
-      );
-      expect(newItem).toBeDefined();
-      expect(newItem.type).toBe('quiz');
-      // eslint-disable-next-line no-underscore-dangle
-      expect(newItem._id).toBeDefined(); // Should have auto-generated _id
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
     it('should handle mixed update and insert operations', async () => {
@@ -502,29 +471,8 @@ describe('Course Content Endpoints', () => {
         .set('Authorization', `Bearer ${instructorToken}`)
         .send({ content: mixedContent });
 
-      expect(res.status).toBe(200);
-      expect(res.body.course.content).toHaveLength(2); // 1 updated + 1 new
-
-      // Check updated item
-      const updatedItem = res.body.course.content.find(
-        // eslint-disable-next-line no-underscore-dangle
-        (item) => item._id.toString() === contentId1.toString()
-      );
-      expect(updatedItem.title).toBe('Updated Markdown');
-
-      // Check new item
-      const newItem = res.body.course.content.find(
-        (item) => item.title === 'New Document'
-      );
-      expect(newItem).toBeDefined();
-      expect(newItem.type).toBe('document');
-
-      // The second original item should NOT be present (not mentioned in update)
-      const originalItem2 = res.body.course.content.find(
-        // eslint-disable-next-line no-underscore-dangle
-        (item) => item._id.toString() === contentId2.toString()
-      );
-      expect(originalItem2).toBeUndefined();
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
     it('should return 400 for invalid _id format', async () => {
@@ -544,7 +492,7 @@ describe('Course Content Endpoints', () => {
         .send({ content: invalidContent });
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain('Invalid content item ID');
+      expect(res.body.message).toContain('This endpoint is deprecated');
     });
 
     it('should return 400 for non-existent _id', async () => {
@@ -565,7 +513,616 @@ describe('Course Content Endpoints', () => {
         .send({ content: invalidContent });
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain('not found');
+      expect(res.body.message).toContain('This endpoint is deprecated');
+    });
+  });
+
+  describe('PUT /api/courses/:id/sections', () => {
+    it('should update course sections successfully as instructor', async () => {
+      const updatedSections = [
+        {
+          title: 'Updated Chapter 1',
+          order: 1,
+          content: [
+            {
+              title: 'Updated Video 1',
+              videoUrl: 'https://example.com/updated-video1',
+              type: 'video',
+            },
+          ],
+        },
+        {
+          title: 'New Chapter 2',
+          order: 2,
+          content: [
+            {
+              title: 'Video 2',
+              videoUrl: 'https://example.com/video2',
+              type: 'video',
+            },
+          ],
+        },
+      ];
+
+      const res = await request(app)
+        .put(`/api/courses/${sectionCourseId}/sections`)
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send({ sections: updatedSections });
+
+      expect(res.status).toBe(200);
+      expect(res.body.message).toBe('Course sections updated successfully');
+      expect(res.body.course.sections).toHaveLength(2);
+      expect(res.body.course.sections[0].title).toBe('Updated Chapter 1');
+      expect(res.body.course.sections[1].title).toBe('New Chapter 2');
+    });
+
+    it('should add a new section successfully', async () => {
+      const sectionData = {
+        title: 'New Section',
+        description: 'A new section for testing',
+        order: 2,
+        content: [],
+      };
+
+      const res = await request(app)
+        .post(`/api/courses/${sectionCourseId}/sections`)
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send(sectionData);
+
+      expect(res.status).toBe(201);
+      expect(res.body.message).toBe('Section added successfully');
+      expect(res.body.course.sections).toHaveLength(2);
+      expect(res.body.newSectionId).toBeDefined();
+    });
+
+    it('should delete a section successfully', async () => {
+      // Delete the existing section (first section from our setup)
+      const course = await Course.findById(sectionCourseId);
+      const sectionId = course.sections[0]._id;
+
+      const deleteRes = await request(app)
+        .delete(`/api/courses/${sectionCourseId}/sections/${sectionId}`)
+        .set('Authorization', `Bearer ${instructorToken}`);
+
+      expect(deleteRes.status).toBe(200);
+      expect(deleteRes.body.message).toBe('Section deleted successfully');
+    });
+  });
+
+  describe('POST /api/courses/:id/sections/:sectionId/content', () => {
+    it('should add content to a section successfully as instructor', async () => {
+      const course = await Course.findById(sectionCourseId);
+      const sectionId = course.sections[0]._id;
+
+      const newContent = {
+        title: 'New Video Content',
+        videoUrl: 'https://example.com/new-video',
+        type: 'video',
+      };
+
+      const res = await request(app)
+        .post(`/api/courses/${sectionCourseId}/sections/${sectionId}/content`)
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send(newContent);
+
+      expect(res.status).toBe(201);
+      expect(res.body.message).toBe('Content added successfully');
+      expect(res.body.content).toBeDefined();
+      expect(res.body.content.title).toBe('New Video Content');
+    });
+
+    it('should add markdown content to a section successfully', async () => {
+      const course = await Course.findById(sectionCourseId);
+      const sectionId = course.sections[0]._id;
+
+      const newContent = {
+        title: 'New Markdown Content',
+        type: 'markdown',
+        content: '# New Content\n\nThis is markdown content.',
+      };
+
+      const res = await request(app)
+        .post(`/api/courses/${sectionCourseId}/sections/${sectionId}/content`)
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send(newContent);
+
+      expect(res.status).toBe(201);
+      expect(res.body.message).toBe('Content added successfully');
+      expect(res.body.content).toBeDefined();
+    });
+
+    it('should add multiple choice quiz content to a section successfully', async () => {
+      const course = await Course.findById(sectionCourseId);
+      const sectionId = course.sections[0]._id;
+
+      const newContent = {
+        title: 'Quiz Question',
+        type: 'multipleChoice',
+        question: 'What is 2 + 2?',
+        options: ['2', '3', '4', '5'],
+        correctOption: 2,
+      };
+
+      const res = await request(app)
+        .post(`/api/courses/${sectionCourseId}/sections/${sectionId}/content`)
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send(newContent);
+
+      expect(res.status).toBe(201);
+      expect(res.body.message).toBe('Content added successfully');
+      expect(res.body.content).toBeDefined();
+    });
+
+    it('should validate content type when adding content', async () => {
+      const course = await Course.findById(sectionCourseId);
+      const sectionId = course.sections[0]._id;
+
+      const invalidContent = {
+        title: 'Invalid Content',
+        type: 'invalid_type',
+      };
+
+      const res = await request(app)
+        .post(`/api/courses/${sectionCourseId}/sections/${sectionId}/content`)
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send(invalidContent);
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain(
+        'Content items must have a valid type'
+      );
+    });
+
+    it('should validate required fields for multiple choice quiz', async () => {
+      const course = await Course.findById(sectionCourseId);
+      const sectionId = course.sections[0]._id;
+
+      const invalidQuiz = {
+        title: 'Quiz Question',
+        type: 'multipleChoice',
+        question: 'What is 2 + 2?',
+        options: ['2', '3'], // Too few options
+        correctOption: 2,
+      };
+
+      const res = await request(app)
+        .post(`/api/courses/${sectionCourseId}/sections/${sectionId}/content`)
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send(invalidQuiz);
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain(
+        'Multiple choice questions must include'
+      );
+    });
+
+    it('should return 404 for non-existent course', async () => {
+      const nonExistentCourseId = new mongoose.Types.ObjectId();
+      const course = await Course.findById(sectionCourseId);
+      const sectionId = course.sections[0]._id;
+
+      const newContent = {
+        title: 'New Content',
+        type: 'video',
+        videoUrl: 'https://example.com/video',
+      };
+
+      const res = await request(app)
+        .post(
+          `/api/courses/${nonExistentCourseId}/sections/${sectionId}/content`
+        )
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send(newContent);
+
+      expect(res.status).toBe(404);
+      expect(res.body.message).toBe('Course not found');
+    });
+
+    it('should return 404 for non-existent section', async () => {
+      const nonExistentSectionId = new mongoose.Types.ObjectId();
+
+      const newContent = {
+        title: 'New Content',
+        type: 'video',
+        videoUrl: 'https://example.com/video',
+      };
+
+      const res = await request(app)
+        .post(
+          `/api/courses/${sectionCourseId}/sections/${nonExistentSectionId}/content`
+        )
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send(newContent);
+
+      expect(res.status).toBe(404);
+      expect(res.body.message).toBe('Section not found');
+    });
+
+    it('should deny access to students', async () => {
+      const course = await Course.findById(sectionCourseId);
+      const sectionId = course.sections[0]._id;
+
+      const newContent = {
+        title: 'New Content',
+        type: 'video',
+        videoUrl: 'https://example.com/video',
+      };
+
+      const res = await request(app)
+        .post(`/api/courses/${sectionCourseId}/sections/${sectionId}/content`)
+        .set('Authorization', `Bearer ${studentToken}`)
+        .send(newContent);
+
+      expect(res.status).toBe(403);
+      expect(res.body.message).toContain('Access denied');
+    });
+  });
+
+  describe('PUT /api/courses/:id/sections/:sectionId/content/:contentId', () => {
+    it('should update content in a section successfully as instructor', async () => {
+      const course = await Course.findById(sectionCourseId);
+      const sectionId = course.sections[0]._id;
+      const contentId = course.sections[0].content[0]._id;
+
+      const updatedContent = {
+        title: 'Updated Video Title',
+        videoUrl: 'https://example.com/updated-video',
+        type: 'video',
+      };
+
+      const res = await request(app)
+        .put(
+          `/api/courses/${sectionCourseId}/sections/${sectionId}/content/${contentId}`
+        )
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send(updatedContent);
+
+      expect(res.status).toBe(200);
+      expect(res.body.message).toBe('Content updated successfully');
+      expect(res.body.content.title).toBe('Updated Video Title');
+    });
+
+    it('should update content to markdown type successfully', async () => {
+      const course = await Course.findById(sectionCourseId);
+      const sectionId = course.sections[0]._id;
+      const contentId = course.sections[0].content[0]._id;
+
+      const updatedContent = {
+        title: 'Updated to Markdown',
+        type: 'markdown',
+        content: '# Updated Content\n\nThis is now markdown.',
+      };
+
+      const res = await request(app)
+        .put(
+          `/api/courses/${sectionCourseId}/sections/${sectionId}/content/${contentId}`
+        )
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send(updatedContent);
+
+      expect(res.status).toBe(200);
+      expect(res.body.message).toBe('Content updated successfully');
+      expect(res.body.content.type).toBe('markdown');
+    });
+
+    it('should update content to multiple choice quiz successfully', async () => {
+      const course = await Course.findById(sectionCourseId);
+      const sectionId = course.sections[0]._id;
+      const contentId = course.sections[0].content[0]._id;
+
+      const updatedContent = {
+        title: 'Updated Quiz',
+        type: 'multipleChoice',
+        question: 'What is the capital of France?',
+        options: ['London', 'Berlin', 'Paris', 'Madrid'],
+        correctOption: 2,
+      };
+
+      const res = await request(app)
+        .put(
+          `/api/courses/${sectionCourseId}/sections/${sectionId}/content/${contentId}`
+        )
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send(updatedContent);
+
+      expect(res.status).toBe(200);
+      expect(res.body.message).toBe('Content updated successfully');
+      expect(res.body.content.type).toBe('multipleChoice');
+    });
+
+    it('should validate content type when updating', async () => {
+      const course = await Course.findById(sectionCourseId);
+      const sectionId = course.sections[0]._id;
+      const contentId = course.sections[0].content[0]._id;
+
+      const invalidContent = {
+        title: 'Invalid Update',
+        type: 'invalid_type',
+      };
+
+      const res = await request(app)
+        .put(
+          `/api/courses/${sectionCourseId}/sections/${sectionId}/content/${contentId}`
+        )
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send(invalidContent);
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain(
+        'Content items must have a valid type'
+      );
+    });
+
+    it('should return 404 for non-existent content', async () => {
+      const course = await Course.findById(sectionCourseId);
+      const sectionId = course.sections[0]._id;
+      const nonExistentContentId = new mongoose.Types.ObjectId();
+
+      const updatedContent = {
+        title: 'Updated Content',
+        type: 'video',
+        videoUrl: 'https://example.com/video',
+      };
+
+      const res = await request(app)
+        .put(
+          `/api/courses/${sectionCourseId}/sections/${sectionId}/content/${nonExistentContentId}`
+        )
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send(updatedContent);
+
+      expect(res.status).toBe(404);
+      expect(res.body.message).toBe('Content not found');
+    });
+
+    it('should deny access to students', async () => {
+      const course = await Course.findById(sectionCourseId);
+      const sectionId = course.sections[0]._id;
+      const contentId = course.sections[0].content[0]._id;
+
+      const updatedContent = {
+        title: 'Updated Content',
+        type: 'video',
+        videoUrl: 'https://example.com/video',
+      };
+
+      const res = await request(app)
+        .put(
+          `/api/courses/${sectionCourseId}/sections/${sectionId}/content/${contentId}`
+        )
+        .set('Authorization', `Bearer ${studentToken}`)
+        .send(updatedContent);
+
+      expect(res.status).toBe(403);
+      expect(res.body.message).toContain('Access denied');
+    });
+  });
+
+  describe('DELETE /api/courses/:id/sections/:sectionId/content/:contentId', () => {
+    it('should delete content from a section successfully as instructor', async () => {
+      const course = await Course.findById(sectionCourseId);
+      const sectionId = course.sections[0]._id;
+      const contentId = course.sections[0].content[0]._id;
+
+      const res = await request(app)
+        .delete(
+          `/api/courses/${sectionCourseId}/sections/${sectionId}/content/${contentId}`
+        )
+        .set('Authorization', `Bearer ${instructorToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.message).toBe('Content deleted successfully');
+    });
+
+    it('should allow admin to delete content from any course', async () => {
+      const course = await Course.findById(sectionCourseId);
+      const sectionId = course.sections[0]._id;
+      const contentId = course.sections[0].content[0]._id;
+
+      const res = await request(app)
+        .delete(
+          `/api/courses/${sectionCourseId}/sections/${sectionId}/content/${contentId}`
+        )
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.message).toBe('Content deleted successfully');
+    });
+
+    it('should return 404 for non-existent course', async () => {
+      const nonExistentCourseId = new mongoose.Types.ObjectId();
+      const course = await Course.findById(sectionCourseId);
+      const sectionId = course.sections[0]._id;
+      const contentId = course.sections[0].content[0]._id;
+
+      const res = await request(app)
+        .delete(
+          `/api/courses/${nonExistentCourseId}/sections/${sectionId}/content/${contentId}`
+        )
+        .set('Authorization', `Bearer ${instructorToken}`);
+
+      expect(res.status).toBe(404);
+      expect(res.body.message).toBe('Course not found');
+    });
+
+    it('should return 404 for non-existent section', async () => {
+      const nonExistentSectionId = new mongoose.Types.ObjectId();
+      const course = await Course.findById(sectionCourseId);
+      const contentId = course.sections[0].content[0]._id;
+
+      const res = await request(app)
+        .delete(
+          `/api/courses/${sectionCourseId}/sections/${nonExistentSectionId}/content/${contentId}`
+        )
+        .set('Authorization', `Bearer ${instructorToken}`);
+
+      expect(res.status).toBe(404);
+      expect(res.body.message).toBe('Section not found');
+    });
+
+    it('should return 404 for non-existent content', async () => {
+      const course = await Course.findById(sectionCourseId);
+      const sectionId = course.sections[0]._id;
+      const nonExistentContentId = new mongoose.Types.ObjectId();
+
+      const res = await request(app)
+        .delete(
+          `/api/courses/${sectionCourseId}/sections/${sectionId}/content/${nonExistentContentId}`
+        )
+        .set('Authorization', `Bearer ${instructorToken}`);
+
+      expect(res.status).toBe(404);
+      expect(res.body.message).toBe('Content not found');
+    });
+
+    it('should deny access to students', async () => {
+      const course = await Course.findById(sectionCourseId);
+      const sectionId = course.sections[0]._id;
+      const contentId = course.sections[0].content[0]._id;
+
+      const res = await request(app)
+        .delete(
+          `/api/courses/${sectionCourseId}/sections/${sectionId}/content/${contentId}`
+        )
+        .set('Authorization', `Bearer ${studentToken}`);
+
+      expect(res.status).toBe(403);
+      expect(res.body.message).toContain('Access denied');
+    });
+  });
+
+  describe('PUT /api/courses/:id/sections/:sectionId', () => {
+    it('should update section details successfully as instructor', async () => {
+      const course = await Course.findById(sectionCourseId);
+      const sectionId = course.sections[0]._id;
+
+      const updatedSection = {
+        title: 'Updated Chapter Title',
+        description: 'This is an updated description',
+        order: 2,
+      };
+
+      const res = await request(app)
+        .put(`/api/courses/${sectionCourseId}/sections/${sectionId}`)
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send(updatedSection);
+
+      expect(res.status).toBe(200);
+      expect(res.body.message).toBe('Section updated successfully');
+      expect(res.body.section.title).toBe('Updated Chapter Title');
+      expect(res.body.section.description).toBe(
+        'This is an updated description'
+      );
+      expect(res.body.section.order).toBe(2);
+    });
+
+    it('should update only provided fields', async () => {
+      const course = await Course.findById(sectionCourseId);
+      const sectionId = course.sections[0]._id;
+      const originalTitle = course.sections[0].title;
+
+      const partialUpdate = {
+        title: originalTitle, // Must include title as it's required
+        description: 'Only updating description',
+      };
+
+      const res = await request(app)
+        .put(`/api/courses/${sectionCourseId}/sections/${sectionId}`)
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send(partialUpdate);
+
+      expect(res.status).toBe(200);
+      expect(res.body.message).toBe('Section updated successfully');
+      expect(res.body.section.title).toBe(originalTitle); // Should remain unchanged
+      expect(res.body.section.description).toBe('Only updating description');
+    });
+
+    it('should allow admin to update sections in any course', async () => {
+      const course = await Course.findById(sectionCourseId);
+      const sectionId = course.sections[0]._id;
+
+      const updatedSection = {
+        title: 'Admin Updated Title',
+        order: 3,
+      };
+
+      const res = await request(app)
+        .put(`/api/courses/${sectionCourseId}/sections/${sectionId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(updatedSection);
+
+      expect(res.status).toBe(200);
+      expect(res.body.message).toBe('Section updated successfully');
+      expect(res.body.section.title).toBe('Admin Updated Title');
+    });
+
+    it('should validate section title is required', async () => {
+      const course = await Course.findById(sectionCourseId);
+      const sectionId = course.sections[0]._id;
+
+      const invalidUpdate = {
+        title: '', // Empty title
+        description: 'Valid description',
+      };
+
+      const res = await request(app)
+        .put(`/api/courses/${sectionCourseId}/sections/${sectionId}`)
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send(invalidUpdate);
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('Section title is required');
+    });
+
+    it('should return 404 for non-existent course', async () => {
+      const nonExistentCourseId = new mongoose.Types.ObjectId();
+      const course = await Course.findById(sectionCourseId);
+      const sectionId = course.sections[0]._id;
+
+      const updatedSection = {
+        title: 'Updated Title',
+      };
+
+      const res = await request(app)
+        .put(`/api/courses/${nonExistentCourseId}/sections/${sectionId}`)
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send(updatedSection);
+
+      expect(res.status).toBe(404);
+      expect(res.body.message).toBe('Course not found');
+    });
+
+    it('should return 404 for non-existent section', async () => {
+      const nonExistentSectionId = new mongoose.Types.ObjectId();
+
+      const updatedSection = {
+        title: 'Updated Title',
+      };
+
+      const res = await request(app)
+        .put(`/api/courses/${sectionCourseId}/sections/${nonExistentSectionId}`)
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send(updatedSection);
+
+      expect(res.status).toBe(404);
+      expect(res.body.message).toBe('Section not found');
+    });
+
+    it('should deny access to students', async () => {
+      const course = await Course.findById(sectionCourseId);
+      const sectionId = course.sections[0]._id;
+
+      const updatedSection = {
+        title: 'Student Update Attempt',
+      };
+
+      const res = await request(app)
+        .put(`/api/courses/${sectionCourseId}/sections/${sectionId}`)
+        .set('Authorization', `Bearer ${studentToken}`)
+        .send(updatedSection);
+
+      expect(res.status).toBe(403);
+      expect(res.body.message).toContain('Access denied');
     });
   });
 });

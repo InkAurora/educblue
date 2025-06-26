@@ -22,7 +22,8 @@ const getCourseAnalytics = async (req, res) => {
     // Ensure the requesting user is the instructor or admin
     // Assuming req.user.role is available from auth middleware
     const isAdmin = req.user.role === 'admin';
-    if (req.user.fullName !== course.instructor && !isAdmin) {
+    const isInstructor = course.instructor.toString() === req.user.id;
+    if (!isInstructor && !isAdmin) {
       return res.status(403).json({
         message:
           'Access denied. Only the course instructor or admin can view analytics',
@@ -75,9 +76,25 @@ const getCourseAnalytics = async (req, res) => {
         : 0;
 
     // Find quiz/multiple-choice content items in the course
-    const quizContentItems = course.content.filter(
-      (item) => item.type === 'quiz' || item.type === 'multipleChoice'
-    );
+    // Handle both legacy content structure and new sections structure
+    let quizContentItems = [];
+
+    if (course.content && course.content.length > 0) {
+      // Legacy content structure
+      quizContentItems = course.content.filter(
+        (item) => item.type === 'quiz' || item.type === 'multipleChoice'
+      );
+    } else if (course.sections && course.sections.length > 0) {
+      // New sections structure - extract content from all sections
+      course.sections.forEach((section) => {
+        if (section.content && section.content.length > 0) {
+          const sectionQuizItems = section.content.filter(
+            (item) => item.type === 'quiz' || item.type === 'multipleChoice'
+          );
+          quizContentItems = quizContentItems.concat(sectionQuizItems);
+        }
+      });
+    }
 
     // Calculate quiz statistics
     const quizStats = quizContentItems.map((quizItem) => {

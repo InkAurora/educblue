@@ -1,48 +1,54 @@
 import React from 'react';
-import {
-  render,
-  screen,
-  fireEvent,
-  waitFor,
-  act,
-} from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import CourseContentEditor from './CourseContentEditor';
-import useCourseContent from '../../../hooks/useCourseContent';
+import axiosInstance from '../../../utils/axiosConfig';
 
-// Mock the custom hook
-jest.mock('../../../hooks/useCourseContent');
+// Mock axios
+jest.mock('../../../utils/axiosConfig', () => ({
+  get: jest.fn(),
+  post: jest.fn(),
+  put: jest.fn(),
+  patch: jest.fn(),
+  delete: jest.fn(),
+}));
 
 // Mock the child components to focus on testing just this component
-jest.mock('./ContentItemList', () => ({ content, onEdit, onDelete, onAdd }) => (
-  <div data-testid='mock-content-item-list'>
-    <button data-testid='add-content-button' onClick={onAdd}>
-      Add Content
-    </button>
-    {content.map((item, index) => (
-      <div key={index} data-testid={`content-item-${index}`}>
-        {item.title} ({item.type})
-        <button
-          data-testid={`edit-button-${index}`}
-          onClick={() => onEdit(index)}
-        >
-          Edit
-        </button>
-        <button
-          data-testid={`delete-button-${index}`}
-          onClick={() => onDelete(index)}
-        >
-          Delete
-        </button>
-      </div>
-    ))}
-  </div>
-));
+jest.mock(
+  './ContentItemList',
+  () =>
+    function ({ content, onEdit, onDelete, onAdd }) {
+      return (
+        <div data-testid='mock-content-item-list'>
+          <button data-testid='add-content-button' onClick={onAdd}>
+            Add Content
+          </button>
+          {content.map((item, index) => (
+            <div key={index} data-testid={`content-item-${index}`}>
+              {item.title} ({item.type})
+              <button
+                data-testid={`edit-button-${index}`}
+                onClick={() => onEdit(index)}
+              >
+                Edit
+              </button>
+              <button
+                data-testid={`delete-button-${index}`}
+                onClick={() => onDelete(index)}
+              >
+                Delete
+              </button>
+            </div>
+          ))}
+        </div>
+      );
+    },
+);
 
 jest.mock(
   './ContentItemForm',
   () =>
-    ({
+    function ({
       open,
       onClose,
       currentItem,
@@ -50,8 +56,8 @@ jest.mock(
       onSave,
       error,
       isEditing,
-    }) =>
-      open ? (
+    }) {
+      return open ? (
         <div data-testid='mock-content-item-form'>
           <div>Type: {currentItem.type}</div>
           <div>Title: {currentItem.title}</div>
@@ -139,715 +145,485 @@ jest.mock(
             Save
           </button>
         </div>
-      ) : null,
+      ) : null;
+    },
 );
 
-// Mock useParams - simplified approach
+// Mock useParams
 jest.mock('react-router-dom', () => ({
   useParams: () => ({ id: '123' }),
 }));
 
-describe('CourseContentEditor Component', () => {
-  // Helper function to set up default mock returns
-  const setupMockHook = ({
-    course = { _id: '123', title: 'Test Course' },
-    content = [],
-    loading = false,
-    error = '',
-    savingContent = false,
-    publishing = false,
-    saveContent = jest.fn().mockResolvedValue(true),
-    publishCourse = jest.fn().mockResolvedValue(true),
-  } = {}) => {
-    useCourseContent.mockReturnValue({
-      course,
-      content,
-      setContent: jest.fn((newContent) => {
-        content = newContent;
-      }),
-      loading,
-      error,
-      setError: jest.fn(),
-      savingContent,
-      publishing,
-      saveContent,
-      publishCourse,
-    });
-  };
+// Mock SimpleMDE
+jest.mock('react-simplemde-editor', () => ({
+  __esModule: true,
+  default: ({ value, onChange }) => (
+    <textarea
+      data-testid='simplemde-editor'
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  ),
+}));
 
+// Mock markdownUtils
+jest.mock('../../../utils/markdownUtils', () => ({
+  convertMarkdownToHTML: (text) => `<div>${text}</div>`,
+}));
+
+const mockAxios = axiosInstance;
+
+describe('CourseContentEditor Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    setupMockHook();
+
+    // Set up comprehensive mocks that prevent component crash
+    mockAxios.get.mockImplementation((url) => {
+      if (url.includes('/courses/123/sections/') && url.includes('/content')) {
+        // Mock section content endpoint
+        return Promise.resolve({
+          data: { content: [] },
+        });
+      }
+      if (url.includes('/courses/123/sections/')) {
+        // Mock individual section endpoint (used by fetchSectionContent)
+        return Promise.resolve({
+          data: { content: [] },
+        });
+      }
+      if (url.includes('/courses/123/sections')) {
+        // Mock sections endpoint
+        return Promise.resolve({
+          data: [{ id: 'section1', title: 'Section 1' }], // Return array directly
+        });
+      }
+      if (url.includes('/courses/123')) {
+        // Mock course endpoint
+        return Promise.resolve({
+          data: { _id: '123', title: 'Test Course', status: 'draft' },
+        });
+      }
+      return Promise.reject(new Error('Not found'));
+    });
+
+    mockAxios.post.mockResolvedValue({
+      data: { content: { _id: 'new-id', title: 'New Item', type: 'video' } },
+    });
+
+    mockAxios.put.mockResolvedValue({
+      data: {
+        content: { _id: 'updated-id', title: 'Updated Item', type: 'video' },
+      },
+    });
+
+    mockAxios.patch.mockResolvedValue({ data: {} });
+    mockAxios.delete.mockResolvedValue({ data: {} });
   });
 
-  test('renders loading spinner when loading', () => {
-    setupMockHook({ loading: true });
+  test('renders loading spinner when loading', async () => {
+    // Mock delayed response to see loading state
+    mockAxios.get.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          setTimeout(() => {
+            resolve({
+              data: { _id: '123', title: 'Test Course' },
+            });
+          }, 100);
+        }),
+    );
+
     render(<CourseContentEditor />);
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 
-  test('renders course title and content area when course is loaded', () => {
+  test('renders course title when loaded', async () => {
     render(<CourseContentEditor />);
-    expect(screen.getByText(/Add Content: Test Course/i)).toBeInTheDocument();
-    expect(screen.getByTestId('mock-content-item-list')).toBeInTheDocument();
-  });
 
-  test('renders error alert when error exists', () => {
-    setupMockHook({ error: 'Test error message' });
-    render(<CourseContentEditor />);
-    expect(screen.getByTestId('error-alert')).toBeInTheDocument();
-    expect(screen.getByText('Test error message')).toBeInTheDocument();
-  });
-
-  test('opens dialog for adding new content item', () => {
-    render(<CourseContentEditor />);
-    fireEvent.click(screen.getByTestId('add-content-button'));
-    expect(screen.getByTestId('mock-content-item-form')).toBeInTheDocument();
-    expect(screen.getByText('IsEditing: false')).toBeInTheDocument();
-  });
-
-  test('opens dialog for editing existing content item', () => {
-    setupMockHook({
-      content: [
-        {
-          type: 'video',
-          title: 'Test Video',
-          videoUrl: 'https://example.com/video',
-          content: '',
-        },
-      ],
+    await waitFor(() => {
+      expect(screen.getByText('Test Course')).toBeInTheDocument();
     });
-    render(<CourseContentEditor />);
-    fireEvent.click(screen.getByTestId('edit-button-0'));
-    expect(screen.getByTestId('mock-content-item-form')).toBeInTheDocument();
-    expect(screen.getByText('IsEditing: true')).toBeInTheDocument();
-    expect(screen.getByText('Title: Test Video')).toBeInTheDocument();
   });
 
-  test('deletes content item when delete button is clicked', () => {
-    const setContentMock = jest.fn();
-    useCourseContent.mockReturnValue({
-      course: { _id: '123', title: 'Test Course' },
-      content: [
-        {
-          type: 'video',
-          title: 'Test Video',
-          videoUrl: 'https://example.com/video',
-          content: '',
-        },
-      ],
-      setContent: setContentMock,
-      loading: false,
-      error: '',
-      setError: jest.fn(),
-      savingContent: false,
-      publishing: false,
-      saveContent: jest.fn(),
-      publishCourse: jest.fn(),
-    });
-
-    render(<CourseContentEditor />);
-    fireEvent.click(screen.getByTestId('delete-button-0'));
-    expect(setContentMock).toHaveBeenCalledWith([]);
-  });
-
-  test('saves content item when form is submitted', () => {
-    const setContentMock = jest.fn();
-    useCourseContent.mockReturnValue({
-      course: { _id: '123', title: 'Test Course' },
-      content: [],
-      setContent: setContentMock,
-      loading: false,
-      error: '',
-      setError: jest.fn(),
-      savingContent: false,
-      publishing: false,
-      saveContent: jest.fn(),
-      publishCourse: jest.fn(),
+  test('renders error alert when API call fails', async () => {
+    mockAxios.get.mockImplementation((url) => {
+      if (url.includes('/courses/123')) {
+        return Promise.reject(new Error('Failed to load'));
+      }
+      return Promise.resolve({ data: [] });
     });
 
     render(<CourseContentEditor />);
 
-    // Open the form
+    await waitFor(() => {
+      expect(screen.getByText(/Failed to load course/i)).toBeInTheDocument();
+    });
+  });
+  test('displays section selection when sections are loaded', async () => {
+    render(<CourseContentEditor />);
+
+    await waitFor(() => {
+      // Check that the section control exists and has the right role
+      const combobox = screen.getByRole('combobox');
+      expect(combobox).toBeInTheDocument();
+      expect(combobox).toHaveTextContent('Section 1');
+    });
+  });
+
+  test('shows add section button', async () => {
+    render(<CourseContentEditor />);
+
+    await waitFor(() => {
+      const addButton = screen.getByTitle(/Add New Section/i);
+      expect(addButton).toBeInTheDocument();
+    });
+  });
+
+  test('opens content form when add content is clicked', async () => {
+    render(<CourseContentEditor />);
+
+    // Wait for section to be selected automatically
+    await waitFor(() => {
+      expect(screen.getByTestId('add-content-button')).toBeInTheDocument();
+    });
+
     fireEvent.click(screen.getByTestId('add-content-button'));
 
-    // Fill in the form
-    fireEvent.change(screen.getByTestId('title-input'), {
-      target: { value: 'New Video Item' },
+    await waitFor(() => {
+      expect(screen.getByTestId('mock-content-item-form')).toBeInTheDocument();
+      expect(screen.getByText('IsEditing: false')).toBeInTheDocument();
+    });
+  });
+
+  test('validates title is required when saving content', async () => {
+    render(<CourseContentEditor />);
+
+    // Wait for section to load
+    await waitFor(() => {
+      fireEvent.click(screen.getByTestId('add-content-button'));
     });
 
-    fireEvent.change(screen.getByTestId('video-url-input'), {
-      target: { value: 'https://example.com/new-video' },
-    });
-
-    // Save the form
+    // Try to save without title
     fireEvent.click(screen.getByTestId('save-button'));
 
-    // Check that setContent was called with the new item
-    expect(setContentMock).toHaveBeenCalledWith([
-      expect.objectContaining({
-        title: 'New Video Item',
-        videoUrl: 'https://example.com/new-video',
-        type: 'video',
-      }),
-    ]);
+    await waitFor(() => {
+      expect(screen.getByTestId('error-alert')).toHaveTextContent(
+        'Title is required',
+      );
+    });
   });
 
-  test('validates item before saving', () => {
-    const setErrorMock = jest.fn();
-    useCourseContent.mockReturnValue({
-      course: { _id: '123', title: 'Test Course' },
-      content: [],
-      setContent: jest.fn(),
-      loading: false,
-      error: '',
-      setError: setErrorMock,
-      savingContent: false,
-      publishing: false,
-      saveContent: jest.fn(),
-      publishCourse: jest.fn(),
-    });
-
+  test('validates video URL for video items', async () => {
     render(<CourseContentEditor />);
 
-    // Open the form
-    fireEvent.click(screen.getByTestId('add-content-button'));
+    await waitFor(() => {
+      fireEvent.click(screen.getByTestId('add-content-button'));
+    });
 
-    // Don't fill in the title
+    // Fill title but not video URL for video type
+    fireEvent.change(screen.getByTestId('title-input'), {
+      target: { value: 'Test Video' },
+    });
 
-    // Save the form
     fireEvent.click(screen.getByTestId('save-button'));
 
-    // Error should be set
-    expect(setErrorMock).toHaveBeenCalledWith('Title is required');
+    await waitFor(() => {
+      expect(screen.getByTestId('error-alert')).toHaveTextContent(
+        'Video URL is required',
+      );
+    });
   });
 
-  test('validates video URL for video items', () => {
-    const setErrorMock = jest.fn();
-    useCourseContent.mockReturnValue({
-      course: { _id: '123', title: 'Test Course' },
-      content: [],
-      setContent: jest.fn(),
-      loading: false,
-      error: '',
-      setError: setErrorMock,
-      savingContent: false,
-      publishing: false,
-      saveContent: jest.fn(),
-      publishCourse: jest.fn(),
-    });
-
+  test('validates content for markdown items', async () => {
     render(<CourseContentEditor />);
 
-    // Open the form
-    fireEvent.click(screen.getByTestId('add-content-button'));
-
-    // Fill in the title but not the video URL
-    fireEvent.change(screen.getByTestId('title-input'), {
-      target: { value: 'New Video Item' },
+    await waitFor(() => {
+      fireEvent.click(screen.getByTestId('add-content-button'));
     });
 
-    // Save the form
-    fireEvent.click(screen.getByTestId('save-button'));
-
-    // Error should be set
-    expect(setErrorMock).toHaveBeenCalledWith('Video URL is required');
-  });
-
-  test('validates content for markdown items', () => {
-    const setErrorMock = jest.fn();
-    useCourseContent.mockReturnValue({
-      course: { _id: '123', title: 'Test Course' },
-      content: [],
-      setContent: jest.fn(),
-      loading: false,
-      error: '',
-      setError: setErrorMock,
-      savingContent: false,
-      publishing: false,
-      saveContent: jest.fn(),
-      publishCourse: jest.fn(),
-    });
-
-    render(<CourseContentEditor />);
-
-    // Open the form
-    fireEvent.click(screen.getByTestId('add-content-button'));
-
-    // Fill in the title but not the content
-    fireEvent.change(screen.getByTestId('title-input'), {
-      target: { value: 'New Markdown Item' },
-    });
-
-    // Change the type to markdown
+    // Change type to markdown
     fireEvent.change(screen.getByTestId('type-select'), {
       target: { value: 'markdown' },
     });
 
-    // Save the form
+    // Fill title but not content
+    fireEvent.change(screen.getByTestId('title-input'), {
+      target: { value: 'Test Markdown' },
+    });
+
     fireEvent.click(screen.getByTestId('save-button'));
 
-    // Error should be set
-    expect(setErrorMock).toHaveBeenCalledWith(
-      'Content is required for markdown items',
-    );
-  });
-
-  test('saves course content when save content button is clicked', async () => {
-    const saveContentMock = jest.fn().mockResolvedValue(true);
-    useCourseContent.mockReturnValue({
-      course: { _id: '123', title: 'Test Course' },
-      content: [
-        {
-          type: 'video',
-          title: 'Test Video',
-          videoUrl: 'https://example.com/video',
-          content: '',
-        },
-      ],
-      setContent: jest.fn(),
-      loading: false,
-      error: '',
-      setError: jest.fn(),
-      savingContent: false,
-      publishing: false,
-      saveContent: saveContentMock,
-      publishCourse: jest.fn(),
-    });
-
-    render(<CourseContentEditor />);
-
-    const saveButton = screen.getByText('Save Content');
-    fireEvent.click(saveButton);
-
-    expect(saveContentMock).toHaveBeenCalled();
-  });
-
-  test('handles saving content in progress state', () => {
-    useCourseContent.mockReturnValue({
-      course: { _id: '123', title: 'Test Course' },
-      content: [
-        {
-          type: 'video',
-          title: 'Test Video',
-          videoUrl: 'https://example.com/video',
-          content: '',
-        },
-      ],
-      setContent: jest.fn(),
-      loading: false,
-      error: '',
-      setError: jest.fn(),
-      savingContent: true,
-      publishing: false,
-      saveContent: jest.fn(),
-      publishCourse: jest.fn(),
-    });
-
-    render(<CourseContentEditor />);
-
-    // Save button should contain a progress indicator
-    expect(screen.getAllByRole('progressbar')[0]).toBeInTheDocument();
-  });
-
-  test('publishes course when publish button is clicked', () => {
-    const publishCourseMock = jest.fn();
-    useCourseContent.mockReturnValue({
-      course: { _id: '123', title: 'Test Course' },
-      content: [
-        {
-          type: 'video',
-          title: 'Test Video',
-          videoUrl: 'https://example.com/video',
-          content: '',
-        },
-      ],
-      setContent: jest.fn(),
-      loading: false,
-      error: '',
-      setError: jest.fn(),
-      savingContent: false,
-      publishing: false,
-      saveContent: jest.fn(),
-      publishCourse: publishCourseMock,
-    });
-
-    render(<CourseContentEditor />);
-
-    const publishButton = screen.getByText('Publish Course');
-    fireEvent.click(publishButton);
-
-    expect(publishCourseMock).toHaveBeenCalled();
-  });
-
-  test('handles publishing in progress state', () => {
-    useCourseContent.mockReturnValue({
-      course: { _id: '123', title: 'Test Course' },
-      content: [
-        {
-          type: 'video',
-          title: 'Test Video',
-          videoUrl: 'https://example.com/video',
-          content: '',
-        },
-      ],
-      setContent: jest.fn(),
-      loading: false,
-      error: '',
-      setError: jest.fn(),
-      savingContent: false,
-      publishing: true,
-      saveContent: jest.fn(),
-      publishCourse: jest.fn(),
-    });
-
-    render(<CourseContentEditor />);
-
-    // Publish button should contain a progress indicator
-    expect(screen.getAllByRole('progressbar')[0]).toBeInTheDocument();
-  });
-
-  test('edit form loads with the correct existing content data', () => {
-    setupMockHook({
-      content: [
-        {
-          type: 'markdown',
-          title: 'Test Markdown',
-          videoUrl: '',
-          content: 'Some markdown content',
-        },
-      ],
-    });
-
-    render(<CourseContentEditor />);
-    fireEvent.click(screen.getByTestId('edit-button-0'));
-
-    expect(screen.getByText('Type: markdown')).toBeInTheDocument();
-    expect(screen.getByText('Title: Test Markdown')).toBeInTheDocument();
-    expect(
-      screen.getByText('Content: Some markdown content'),
-    ).toBeInTheDocument();
-  });
-
-  test('validates multiple-choice quiz question content', () => {
-    const setErrorMock = jest.fn();
-    useCourseContent.mockReturnValue({
-      course: { _id: '123', title: 'Test Course' },
-      content: [],
-      setContent: jest.fn(),
-      loading: false,
-      error: '',
-      setError: setErrorMock,
-      savingContent: false,
-      publishing: false,
-      saveContent: jest.fn(),
-      publishCourse: jest.fn(),
-    });
-
-    render(<CourseContentEditor />);
-
-    // Open the form
-    fireEvent.click(screen.getByTestId('add-content-button'));
-
-    // Fill in the title but not the question content
-    fireEvent.change(screen.getByTestId('title-input'), {
-      target: { value: 'Multiple Choice Quiz' },
-    });
-
-    // Change the type to multiple choice
-    fireEvent.change(screen.getByTestId('type-select'), {
-      target: { value: 'multipleChoice' },
-    });
-
-    // Save the form
-    fireEvent.click(screen.getByTestId('save-button'));
-
-    // Error should be set for missing question
-    expect(setErrorMock).toHaveBeenCalledWith(
-      'Question is required for multiple-choice quiz',
-    );
-  });
-
-  test('validates multiple-choice quiz requires exactly 4 options', () => {
-    const setErrorMock = jest.fn();
-    useCourseContent.mockReturnValue({
-      course: { _id: '123', title: 'Test Course' },
-      content: [],
-      setContent: jest.fn(),
-      loading: false,
-      error: '',
-      setError: setErrorMock,
-      savingContent: false,
-      publishing: false,
-      saveContent: jest.fn(),
-      publishCourse: jest.fn(),
-    });
-
-    render(<CourseContentEditor />);
-
-    // Open the form
-    fireEvent.click(screen.getByTestId('add-content-button'));
-
-    // Fill in the title and question
-    fireEvent.change(screen.getByTestId('title-input'), {
-      target: { value: 'Multiple Choice Quiz' },
-    });
-
-    // Change the type to multiple choice
-    fireEvent.change(screen.getByTestId('type-select'), {
-      target: { value: 'multipleChoice' },
-    });
-
-    // Add content
-    fireEvent.change(screen.getByTestId('content-textarea'), {
-      target: { value: 'What is the capital of France?' },
-    });
-
-    // Try to save with empty options (the default state will include empty options array)
-    const currentItem = {
-      type: 'multipleChoice',
-      title: 'Multiple Choice Quiz',
-      content: 'What is the capital of France?',
-      options: null, // Test with no options array
-      correctOption: 0,
-    };
-
-    // Simulate saving with the invalid state
-    const validateFn = () => {
-      // Find the validation function and call it
-      const validateContentItem = CourseContentEditor.__get__(
-        'validateContentItem',
+    await waitFor(() => {
+      expect(screen.getByTestId('error-alert')).toHaveTextContent(
+        'Content is required for markdown items',
       );
-      return validateContentItem.call({ currentItem, setError: setErrorMock });
-    };
-
-    // Save the form
-    fireEvent.click(screen.getByTestId('save-button'));
-
-    // Error should be set for missing options
-    expect(setErrorMock).toHaveBeenCalledWith(
-      'Multiple-choice quiz must have exactly 4 options',
-    );
+    });
   });
 
-  test('validates all multiple-choice options have content', () => {
-    const setErrorMock = jest.fn();
-    useCourseContent.mockReturnValue({
-      course: { _id: '123', title: 'Test Course' },
-      content: [],
-      setContent: jest.fn(),
-      loading: false,
-      error: '',
-      setError: setErrorMock,
-      savingContent: false,
-      publishing: false,
-      saveContent: jest.fn(),
-      publishCourse: jest.fn(),
-    });
-
+  test('validates multiple-choice quiz requires question', async () => {
     render(<CourseContentEditor />);
 
-    // Open the form
-    fireEvent.click(screen.getByTestId('add-content-button'));
+    await waitFor(() => {
+      fireEvent.click(screen.getByTestId('add-content-button'));
+    });
 
-    // Change the type to multiple choice
+    // Change type to multiple choice
     fireEvent.change(screen.getByTestId('type-select'), {
       target: { value: 'multipleChoice' },
     });
 
-    // Fill in required fields but leave one option empty
+    // Fill title but not question content
     fireEvent.change(screen.getByTestId('title-input'), {
-      target: { value: 'Multiple Choice Quiz' },
+      target: { value: 'Test Quiz' },
     });
 
-    fireEvent.change(screen.getByTestId('content-textarea'), {
-      target: { value: 'What is the capital of France?' },
-    });
-
-    // Fill some options but leave one empty
-    fireEvent.change(screen.getByTestId('option-input-0'), {
-      target: { value: 'London' },
-    });
-
-    fireEvent.change(screen.getByTestId('option-input-1'), {
-      target: { value: 'Paris' },
-    });
-
-    fireEvent.change(screen.getByTestId('option-input-2'), {
-      target: { value: 'Berlin' },
-    });
-
-    // Option 3 is intentionally left empty
-
-    // Save the form
     fireEvent.click(screen.getByTestId('save-button'));
 
-    // Error should be set for empty option
-    expect(setErrorMock).toHaveBeenCalledWith(
-      'All multiple-choice options must have content',
-    );
+    await waitFor(() => {
+      expect(screen.getByTestId('error-alert')).toHaveTextContent(
+        'Question is required for multiple-choice quiz',
+      );
+    });
   });
 
-  test('validates multiple-choice correctOption is within valid range', () => {
-    const setErrorMock = jest.fn();
-    useCourseContent.mockReturnValue({
-      course: { _id: '123', title: 'Test Course' },
-      content: [],
-      setContent: jest.fn(),
-      loading: false,
-      error: '',
-      setError: setErrorMock,
-      savingContent: false,
-      publishing: false,
-      saveContent: jest.fn(),
-      publishCourse: jest.fn(),
-    });
-
+  test('validates multiple-choice quiz options', async () => {
     render(<CourseContentEditor />);
 
-    // Open the form
-    fireEvent.click(screen.getByTestId('add-content-button'));
+    await waitFor(() => {
+      fireEvent.click(screen.getByTestId('add-content-button'));
+    });
 
-    // Change the type to multiple choice
+    // Change type to multiple choice
     fireEvent.change(screen.getByTestId('type-select'), {
       target: { value: 'multipleChoice' },
     });
 
-    // Fill in all required fields
     fireEvent.change(screen.getByTestId('title-input'), {
-      target: { value: 'Multiple Choice Quiz' },
+      target: { value: 'Test Quiz' },
     });
 
     fireEvent.change(screen.getByTestId('content-textarea'), {
-      target: { value: 'What is the capital of France?' },
+      target: { value: 'What is 2+2?' },
     });
 
-    // Fill all options
+    // Fill only 3 options (leave one empty)
     fireEvent.change(screen.getByTestId('option-input-0'), {
-      target: { value: 'London' },
+      target: { value: '3' },
     });
-
     fireEvent.change(screen.getByTestId('option-input-1'), {
-      target: { value: 'Paris' },
+      target: { value: '4' },
     });
-
     fireEvent.change(screen.getByTestId('option-input-2'), {
-      target: { value: 'Berlin' },
+      target: { value: '5' },
+    });
+    // option-input-3 left empty
+
+    fireEvent.click(screen.getByTestId('save-button'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('error-alert')).toHaveTextContent(
+        'All multiple-choice options must have content',
+      );
+    });
+  });
+
+  test('saves valid multiple-choice quiz', async () => {
+    render(<CourseContentEditor />);
+
+    // Wait for component to load and select section automatically
+    await waitFor(() => {
+      fireEvent.click(screen.getByTestId('add-content-button'));
     });
 
+    // Fill all required fields for multiple choice
+    fireEvent.change(screen.getByTestId('type-select'), {
+      target: { value: 'multipleChoice' },
+    });
+
+    fireEvent.change(screen.getByTestId('title-input'), {
+      target: { value: 'Math Quiz' },
+    });
+
+    fireEvent.change(screen.getByTestId('content-textarea'), {
+      target: { value: 'What is 2+2?' },
+    });
+
+    // Fill all 4 options
+    fireEvent.change(screen.getByTestId('option-input-0'), {
+      target: { value: '3' },
+    });
+    fireEvent.change(screen.getByTestId('option-input-1'), {
+      target: { value: '4' },
+    });
+    fireEvent.change(screen.getByTestId('option-input-2'), {
+      target: { value: '5' },
+    });
     fireEvent.change(screen.getByTestId('option-input-3'), {
-      target: { value: 'Madrid' },
+      target: { value: '6' },
     });
 
-    // Set an invalid correctOption value (outside 0-3 range)
-    // We need to directly set the currentItem to have an invalid correctOption
-    // since our UI doesn't let users select an invalid option
-    const courseContentEditorInstance = screen.getByTestId(
-      'mock-content-item-form',
-    );
-
-    // Save the form and verify error was set to expected message
-    fireEvent.click(screen.getByTestId('save-button'));
-
-    // Since we can't directly modify the correctOption in our test to be invalid,
-    // we'll just verify that the validation function is called
-    expect(setErrorMock).toHaveBeenCalled();
-  });
-
-  test('saves multiple-choice quiz when all fields are valid', () => {
-    const setContentMock = jest.fn();
-    useCourseContent.mockReturnValue({
-      course: { _id: '123', title: 'Test Course' },
-      content: [],
-      setContent: setContentMock,
-      loading: false,
-      error: '',
-      setError: jest.fn(),
-      savingContent: false,
-      publishing: false,
-      saveContent: jest.fn(),
-      publishCourse: jest.fn(),
-    });
-
-    render(<CourseContentEditor />);
-
-    // Open the form
-    fireEvent.click(screen.getByTestId('add-content-button'));
-
-    // Change the type to multiple choice
-    fireEvent.change(screen.getByTestId('type-select'), {
-      target: { value: 'multipleChoice' },
-    });
-
-    // Fill in all required fields
-    fireEvent.change(screen.getByTestId('title-input'), {
-      target: { value: 'Multiple Choice Quiz' },
-    });
-
-    fireEvent.change(screen.getByTestId('content-textarea'), {
-      target: { value: 'What is the capital of France?' },
-    });
-
-    // Fill all options
-    fireEvent.change(screen.getByTestId('option-input-0'), {
-      target: { value: 'London' },
-    });
-
-    fireEvent.change(screen.getByTestId('option-input-1'), {
-      target: { value: 'Paris' },
-    });
-
-    fireEvent.change(screen.getByTestId('option-input-2'), {
-      target: { value: 'Berlin' },
-    });
-
-    fireEvent.change(screen.getByTestId('option-input-3'), {
-      target: { value: 'Madrid' },
-    });
-
-    // Set correct option
     fireEvent.change(screen.getByTestId('correct-option-select'), {
-      target: { value: '1' }, // Paris is correct
+      target: { value: '1' },
     });
 
-    // Save the form
     fireEvent.click(screen.getByTestId('save-button'));
 
-    // Check that setContent was called with the new quiz item
-    expect(setContentMock).toHaveBeenCalledWith([
-      expect.objectContaining({
-        type: 'multipleChoice',
-        title: 'Multiple Choice Quiz',
-        content: 'What is the capital of France?',
-        options: ['London', 'Paris', 'Berlin', 'Madrid'],
-        correctOption: 1,
-      }),
-    ]);
-  });
-
-  test('edit form loads correctly for multiple-choice quiz data', () => {
-    setupMockHook({
-      content: [
-        {
+    await waitFor(() => {
+      expect(mockAxios.post).toHaveBeenCalledWith(
+        '/api/courses/123/sections/section1/content',
+        expect.objectContaining({
           type: 'multipleChoice',
-          title: 'Geography Quiz',
-          content: 'What is the capital of France?',
-          options: ['London', 'Paris', 'Berlin', 'Madrid'],
+          title: 'Math Quiz',
+          question: 'What is 2+2?',
+          options: ['3', '4', '5', '6'],
           correctOption: 1,
-        },
-      ],
+        }),
+      );
+    });
+  });
+  test('publishes course when publish button is clicked', async () => {
+    // Mock course with content so publish button is enabled
+    mockAxios.get.mockImplementation((url) => {
+      if (url === '/api/courses/123') {
+        return Promise.resolve({
+          data: { title: 'Test Course', status: 'draft' },
+        });
+      }
+      if (url === '/api/courses/123/sections') {
+        return Promise.resolve({
+          data: [{ id: 'section1', title: 'Section 1' }], // Direct array, not wrapped
+        });
+      }
+      if (url === '/api/courses/123/sections/section1') {
+        // This is the endpoint that fetchSectionContent calls
+        return Promise.resolve({
+          data: {
+            content: [
+              {
+                _id: 'item1',
+                title: 'Existing Video',
+                type: 'video',
+                videoUrl: 'http://example.com',
+              },
+            ],
+          },
+        });
+      }
+      return Promise.reject(new Error('Unknown URL'));
     });
 
     render(<CourseContentEditor />);
-    fireEvent.click(screen.getByTestId('edit-button-0'));
 
-    expect(screen.getByText('Type: multipleChoice')).toBeInTheDocument();
-    expect(screen.getByText('Title: Geography Quiz')).toBeInTheDocument();
-    expect(
-      screen.getByText('Content: What is the capital of France?'),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Options:.*"London","Paris","Berlin","Madrid"/),
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      const publishButton = screen.getByText(/Publish Course/i);
+      expect(publishButton).not.toBeDisabled();
+      fireEvent.click(publishButton);
+    });
+
+    await waitFor(() => {
+      expect(mockAxios.patch).toHaveBeenCalledWith('/api/courses/123/publish');
+    });
+  });
+
+  test('prevents publishing when no content exists', async () => {
+    render(<CourseContentEditor />);
+
+    await waitFor(() => {
+      const publishButton = screen.getByText(/Publish Course/i);
+      expect(publishButton).toBeDisabled();
+    });
+  });
+
+  test('handles edit existing content item', async () => {
+    // Mock section with existing content
+    mockAxios.get.mockImplementation((url) => {
+      if (url.includes('/courses/123/sections/section1')) {
+        return Promise.resolve({
+          data: {
+            content: [
+              {
+                _id: 'item1',
+                title: 'Existing Video',
+                type: 'video',
+                videoUrl: 'http://example.com',
+              },
+            ],
+          },
+        });
+      }
+      if (url.includes('/courses/123/sections')) {
+        return Promise.resolve({
+          data: [{ id: 'section1', title: 'Section 1' }],
+        });
+      }
+      if (url.includes('/courses/123')) {
+        return Promise.resolve({
+          data: { _id: '123', title: 'Test Course', status: 'draft' },
+        });
+      }
+      return Promise.reject(new Error('Not found'));
+    });
+
+    render(<CourseContentEditor />);
+
+    // Wait for content to load
+    await waitFor(() => {
+      const editButton = screen.getByTestId('edit-button-0');
+      fireEvent.click(editButton);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('mock-content-item-form')).toBeInTheDocument();
+      expect(screen.getByText('IsEditing: true')).toBeInTheDocument();
+      expect(screen.getByText('Title: Existing Video')).toBeInTheDocument();
+    });
+  });
+
+  test('handles delete content item with confirmation', async () => {
+    // Mock section with existing content
+    mockAxios.get.mockImplementation((url) => {
+      if (url.includes('/courses/123/sections/section1')) {
+        return Promise.resolve({
+          data: {
+            content: [{ _id: 'item1', title: 'Item to Delete', type: 'video' }],
+          },
+        });
+      }
+      if (url.includes('/courses/123/sections')) {
+        return Promise.resolve({
+          data: [{ id: 'section1', title: 'Section 1' }],
+        });
+      }
+      if (url.includes('/courses/123')) {
+        return Promise.resolve({
+          data: { _id: '123', title: 'Test Course', status: 'draft' },
+        });
+      }
+      return Promise.reject(new Error('Not found'));
+    });
+
+    render(<CourseContentEditor />);
+
+    // Wait for content to load and click delete
+    await waitFor(() => {
+      const deleteButton = screen.getByTestId('delete-button-0');
+      fireEvent.click(deleteButton);
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Are you sure you want to delete/i),
+      ).toBeInTheDocument();
+    });
+
+    // Confirm deletion - use the dialog's delete button specifically
+    const confirmButton = screen.getByRole('button', { name: /delete/i });
+    fireEvent.click(confirmButton);
+
+    await waitFor(() => {
+      expect(mockAxios.delete).toHaveBeenCalledWith(
+        '/api/courses/123/sections/section1/content/item1',
+      );
+    });
   });
 });

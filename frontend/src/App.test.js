@@ -1,3 +1,5 @@
+/* eslint-disable react/function-component-definition */
+/* eslint-disable arrow-body-style */
 import React from 'react';
 import { render, screen, cleanup } from '@testing-library/react';
 import App from './App';
@@ -16,6 +18,8 @@ jest.mock('react-router-dom', () => ({
       {element}
     </div>
   ),
+  useLocation: () => ({ pathname: '/' }),
+  useNavigate: () => jest.fn(),
 }));
 
 // Mock all the components that routes render
@@ -48,6 +52,11 @@ jest.mock('./components/courses/editor/CourseContentEditor', () => () => (
     Course Content Editor Component
   </div>
 ));
+jest.mock('./components/instructor/InstructorAnalytics', () => () => (
+  <div data-testid='mock-instructor-analytics'>
+    Instructor Analytics Component
+  </div>
+));
 jest.mock('./components/MyCourses', () => () => (
   <div data-testid='mock-my-courses'>My Courses Component</div>
 ));
@@ -57,6 +66,15 @@ jest.mock('./components/PersonalInformation', () => () => (
 jest.mock('./components/Navbar', () => () => (
   <div data-testid='mock-navbar'>Navbar Component</div>
 ));
+jest.mock('./components/admin/AdminDashboard', () => () => (
+  <div data-testid='mock-admin-dashboard'>Admin Dashboard Component</div>
+));
+jest.mock('./components/CourseSidebar', () => () => (
+  <div data-testid='mock-course-sidebar'>Course Sidebar Component</div>
+));
+
+// Mock theme
+jest.mock('./theme', () => ({}));
 
 // Also mock Material UI components
 jest.mock('@mui/material', () => ({
@@ -67,6 +85,10 @@ jest.mock('@mui/material', () => ({
     <div data-testid='mock-typography'>{children}</div>
   ),
   Box: ({ children }) => <div data-testid='mock-box'>{children}</div>,
+  ThemeProvider: ({ children }) => (
+    <div data-testid='mock-theme-provider'>{children}</div>
+  ),
+  CssBaseline: () => <div data-testid='mock-css-baseline' />,
 }));
 
 // Clean up after each test
@@ -85,10 +107,14 @@ describe('App Component', () => {
     // Verify all routes are present
     expect(screen.getByTestId('mock-routes')).toBeInTheDocument();
 
-    // Check that all components are rendered
+    // Check that all components are rendered (using getAllByTestId for components that appear multiple times)
     expect(screen.getByTestId('mock-course-list')).toBeInTheDocument();
     expect(screen.getByTestId('mock-course-details')).toBeInTheDocument();
-    expect(screen.getByTestId('mock-course-content')).toBeInTheDocument();
+
+    // CourseContent appears in multiple routes
+    const courseContentElements = screen.getAllByTestId('mock-course-content');
+    expect(courseContentElements.length).toBeGreaterThan(0);
+
     expect(screen.getByTestId('mock-login')).toBeInTheDocument();
     expect(screen.getByTestId('mock-register')).toBeInTheDocument();
     expect(screen.getByTestId('mock-success')).toBeInTheDocument();
@@ -98,6 +124,8 @@ describe('App Component', () => {
       screen.getByTestId('mock-course-content-editor'),
     ).toBeInTheDocument();
     expect(screen.getByTestId('mock-my-courses')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-instructor-analytics')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-admin-dashboard')).toBeInTheDocument();
 
     // Check for PersonalInformation component (used in two routes)
     const personalInfoElements = screen.getAllByTestId('mock-personal-info');

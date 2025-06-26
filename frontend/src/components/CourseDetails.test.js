@@ -1,11 +1,14 @@
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { useNavigate } from 'react-router-dom';
 import CourseDetails from './CourseDetails';
+import axiosInstance from '../utils/axiosConfig';
 
 // Mock react-router-dom modules
 jest.mock('react-router-dom', () => ({
   useParams: jest.fn().mockReturnValue({}),
   useNavigate: jest.fn().mockReturnValue(jest.fn()),
+  useLocation: jest.fn().mockReturnValue({ pathname: '/courses/123' }),
 }));
 
 // Mock axios instance
@@ -38,10 +41,6 @@ jest.mock('react-markdown', () => ({
 jest.mock('dompurify', () => ({
   sanitize: jest.fn((content) => content),
 }));
-
-// Import mocked modules
-import axiosInstance from '../utils/axiosConfig';
-import { useNavigate } from 'react-router-dom';
 
 // Test data
 const mockCourse = {
@@ -215,8 +214,9 @@ describe('CourseDetails Component', () => {
       return Promise.reject(new Error('Not found'));
     });
 
+    // Mock the response to not include a URL, which will trigger the error message
     axiosInstance.post.mockResolvedValueOnce({
-      data: { sessionId: 'stripe-session-id' },
+      data: { sessionId: 'stripe-session-id' }, // No URL provided
     });
 
     render(<CourseDetails testId='123' data-testid='course-details' />);
@@ -233,7 +233,9 @@ describe('CourseDetails Component', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText(/Payment initiated/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Could not retrieve checkout session/i),
+      ).toBeInTheDocument();
     });
   });
 
@@ -263,7 +265,9 @@ describe('CourseDetails Component', () => {
     // Use fireEvent instead of userEvent.setup()
     fireEvent.click(screen.getByText('Enroll for Free'));
 
-    expect(axiosInstance.post).toHaveBeenCalledWith('/api/courses/123/enroll');
+    expect(axiosInstance.post).toHaveBeenCalledWith('/api/enroll/free', {
+      courseId: '123',
+    });
 
     await waitFor(() => {
       expect(screen.getByText(/Successfully enrolled/i)).toBeInTheDocument();
@@ -359,20 +363,33 @@ describe('CourseDetails Component', () => {
     });
   });
 
-  test('sanitizeMarkdown function handles null/undefined content', () => {
-    // Test null/undefined handling without relying on mocks
-    expect('').toBe('');
-    expect('').toBe('');
+  test('sanitizeMarkdown function handles null/undefined content', async () => {
+    // Test that the component renders with null markdownDescription without crashing
+    const courseWithNullMarkdown = { ...mockCourse, markdownDescription: null };
 
-    // This test is simply verifying the behavior of the function in CourseDetails.js:
-    // const sanitizeMarkdown = (content) => {
-    //   if (!content) return '';
-    //   return DOMPurify.sanitize(content);
-    // };
+    localStorage.setItem('token', 'fake-token');
 
-    // Verify both branches are covered - null/undefined check and content
-    expect(!null).toBe(true); // eslint-disable-line no-restricted-syntax
-    expect(!undefined).toBe(true); // eslint-disable-line no-restricted-syntax
-    expect(!'content').toBe(false); // eslint-disable-line no-restricted-syntax
+    axiosInstance.get.mockImplementation((url) => {
+      if (url === '/api/users/me') {
+        return Promise.resolve({ data: mockNonEnrolledUser });
+      }
+      if (url === '/api/courses/123') {
+        return Promise.resolve({ data: courseWithNullMarkdown });
+      }
+      return Promise.reject(new Error('Not found'));
+    });
+
+    render(<CourseDetails testId='123' data-testid='course-details' />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Advanced React Development'),
+      ).toBeInTheDocument();
+    });
+
+    // Verify the component renders without errors when markdownDescription is null
+    expect(
+      screen.getByText('Learn advanced React concepts'),
+    ).toBeInTheDocument();
   });
 });

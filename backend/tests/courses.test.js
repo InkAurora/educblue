@@ -641,4 +641,133 @@ describe('Course Endpoints', () => {
       expect(res.body.message).toContain('Access denied');
     });
   });
+
+  describe('GET /instructor', () => {
+    let draftCourse;
+    let publishedCourse;
+    let otherInstructorCourse;
+
+    beforeEach(async () => {
+      // Clean up previous test data
+      await Course.deleteMany({});
+
+      // Create courses for the test instructor
+      draftCourse = await Course.create({
+        title: 'Draft Course',
+        description: 'A draft course',
+        price: 29.99,
+        duration: 5,
+        instructor: instructorUser._id,
+        status: 'draft',
+        sections: [],
+      });
+
+      publishedCourse = await Course.create({
+        title: 'Published Course',
+        description: 'A published course',
+        price: 49.99,
+        duration: 10,
+        instructor: instructorUser._id,
+        status: 'published',
+        sections: [],
+      });
+
+      // Create a course by another instructor
+      let otherInstructor = await User.findOne({ email: 'other@test.com' });
+      if (!otherInstructor) {
+        otherInstructor = await User.create({
+          fullName: 'Other Instructor',
+          email: 'other@test.com',
+          password: 'password123',
+          role: 'instructor',
+        });
+      }
+
+      otherInstructorCourse = await Course.create({
+        title: 'Other Instructor Course',
+        description: 'A course by another instructor',
+        price: 39.99,
+        duration: 8,
+        instructor: otherInstructor._id,
+        status: 'published',
+        sections: [],
+      });
+    });
+
+    it('should return all courses created by the instructor', async () => {
+      const res = await request(app)
+        .get('/api/courses/instructor')
+        .set('Authorization', `Bearer ${instructorToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.message).toBe(
+        'Instructor courses retrieved successfully'
+      );
+      expect(res.body.courses).toHaveLength(2);
+      expect(res.body.totalCourses).toBe(2);
+
+      // Check that both draft and published courses are included
+      const courseTitles = res.body.courses.map((course) => course.title);
+      expect(courseTitles).toContain('Draft Course');
+      expect(courseTitles).toContain('Published Course');
+
+      // Ensure the other instructor's course is not included
+      expect(courseTitles).not.toContain('Other Instructor Course');
+    });
+
+    it('should allow admin to access instructor courses endpoint', async () => {
+      const res = await request(app)
+        .get('/api/courses/instructor')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.message).toBe(
+        'Instructor courses retrieved successfully'
+      );
+      expect(res.body.courses).toBeDefined();
+    });
+
+    it('should deny access to students', async () => {
+      const res = await request(app)
+        .get('/api/courses/instructor')
+        .set('Authorization', `Bearer ${studentToken}`);
+
+      expect(res.status).toBe(403);
+      expect(res.body.message).toBe(
+        'Access denied. You do not have the required role.'
+      );
+    });
+
+    it('should require authentication', async () => {
+      const res = await request(app).get('/api/courses/instructor');
+
+      expect(res.status).toBe(401);
+      expect(res.body.message).toBe('No token, authorization denied');
+    });
+
+    it('should return empty array when instructor has no courses', async () => {
+      // Create a new instructor with no courses using a unique email
+      const uniqueEmail = `newinstructor${Date.now()}@test.com`;
+      const newInstructor = await User.create({
+        fullName: 'New Instructor',
+        email: uniqueEmail,
+        password: 'password123',
+        role: 'instructor',
+      });
+
+      const newInstructorToken = jwt.sign(
+        { id: newInstructor._id, role: newInstructor.role },
+        process.env.JWT_SECRET,
+        { expiresIn: '1h' }
+      );
+
+      const res = await request(app)
+        .get('/api/courses/instructor')
+        .set('Authorization', `Bearer ${newInstructorToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.courses).toHaveLength(0);
+      expect(res.body.totalCourses).toBe(0);
+    });
+  });
 });

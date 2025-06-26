@@ -35,9 +35,30 @@ function UserDashboard() {
         const response = await axiosInstance.get('/api/users/me');
         setUserData(response.data);
 
-        // Assuming enrolled courses are included in the user data response
-        if (response.data.enrolledCourses) {
-          setEnrolledCourses(response.data.enrolledCourses);
+        // Fetch full course details for each enrolled course
+        if (
+          response.data.enrolledCourses &&
+          response.data.enrolledCourses.length > 0
+        ) {
+          const coursePromises = response.data.enrolledCourses.map(
+            async (course) => {
+              try {
+                const courseId = course._id || course.id || course.courseId;
+                const courseDetailResponse = await axiosInstance.get(
+                  `/api/courses/${courseId}`,
+                );
+                return courseDetailResponse.data;
+              } catch (err) {
+                // Return original course data if fetch fails
+                return course;
+              }
+            },
+          );
+
+          const detailedCourses = await Promise.all(coursePromises);
+          setEnrolledCourses(detailedCourses);
+        } else {
+          setEnrolledCourses([]);
         }
 
         setLoading(false);
@@ -107,8 +128,20 @@ function UserDashboard() {
               margin: '0 auto',
             }}
           >
-            <Typography variant='h5' component='h2' gutterBottom>
-              Your Enrolled Courses
+            {' '}
+            <Typography
+              variant='h4'
+              component='h2'
+              sx={{
+                fontWeight: 700,
+                mb: 4,
+                background: 'linear-gradient(135deg, #02e6ef, #01b8c4)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              Your Learning Journey
             </Typography>
             <Grid container spacing={3} sx={{ justifyContent: 'center' }}>
               {enrolledCourses.length > 0 ? (
@@ -119,55 +152,93 @@ function UserDashboard() {
                       key={courseId || `course-${Math.random()}`}
                       sx={{
                         width: {
-                          xs: '100%', // Full width on mobile
-                          sm: '320px', // Fixed width on small screens and up
+                          xs: '100%',
+                          sm: '320px',
                         },
-                        maxWidth: '320px', // Maximum card width
+                        maxWidth: '320px',
                         minWidth: {
-                          xs: '280px', // Minimum width on mobile
-                          sm: '320px', // Fixed minimum on larger screens
+                          xs: '280px',
+                          sm: '320px',
                         },
                         flexGrow: 0,
                         flexShrink: 0,
-                        p: 1.5, // Fixed padding around each card
+                        p: 1.5,
                       }}
                     >
                       <Card
                         sx={{
-                          height: '400px', // Fixed card height
+                          height: '420px',
                           display: 'flex',
                           flexDirection: 'column',
+                          borderRadius: 3,
+                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                          border: '1px solid rgba(0, 0, 0, 0.08)',
+                          background:
+                            'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+                          '&:hover': {
+                            transform: 'translateY(-4px)',
+                            boxShadow: '0 12px 40px rgba(0, 0, 0, 0.15)',
+                            borderColor: 'primary.main',
+                          },
                         }}
                       >
-                        <CardContent sx={{ flexGrow: 1 }}>
-                          <Typography gutterBottom variant='h5' component='h2'>
+                        <CardContent
+                          sx={{
+                            flexGrow: 1,
+                            p: 3,
+                            display: 'flex',
+                            flexDirection: 'column',
+                          }}
+                        >
+                          <Typography
+                            gutterBottom
+                            variant='h5'
+                            component='h3'
+                            sx={{
+                              fontWeight: 600,
+                              mb: 2,
+                              lineHeight: 1.3,
+                              color: 'text.primary',
+                            }}
+                          >
                             {course.title}
                           </Typography>
-                          <Typography>{course.description}</Typography>
-                          {course.price && (
-                            <Typography
-                              variant='h6'
-                              color='primary'
-                              sx={{ mt: 2 }}
-                            >
-                              ${course.price}
-                            </Typography>
-                          )}
                           <Typography
-                            variant='body2'
-                            color='text.secondary'
-                            sx={{ mt: 1 }}
+                            sx={{
+                              mb: 2.5,
+                              lineHeight: 1.6,
+                              color: 'text.secondary',
+                              display: '-webkit-box',
+                              WebkitLineClamp: 3,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                              flexGrow: 1,
+                            }}
                           >
-                            Instructor:{' '}
-                            {course.instructor?.fullName || course.instructor}
+                            {course.description}
                           </Typography>
-                          {course.duration && (
-                            <Typography variant='body2' color='text.secondary'>
-                              Duration: {course.duration} hours
+
+                          <Box sx={{ mt: 'auto' }}>
+                            <Typography
+                              variant='body2'
+                              color='text.secondary'
+                              sx={{ mb: 1 }}
+                            >
+                              Instructor:{' '}
+                              {course.instructor?.fullName ||
+                                'Unknown Instructor'}
                             </Typography>
-                          )}
+                            {course.duration && (
+                              <Typography
+                                variant='body2'
+                                color='text.secondary'
+                              >
+                                Duration: {course.duration} hours
+                              </Typography>
+                            )}
+                          </Box>
                         </CardContent>
-                        <CardActions>
+                        <CardActions sx={{ p: 3, pt: 0 }}>
                           <Button
                             variant='contained'
                             color='primary'

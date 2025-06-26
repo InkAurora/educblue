@@ -10,7 +10,11 @@ import {
   Box,
   CircularProgress,
   Alert,
+  Chip,
+  Avatar,
 } from '@mui/material';
+import PersonIcon from '@mui/icons-material/Person';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import axiosInstance from '../utils/axiosConfig';
 
 function CourseList(props) {
@@ -101,39 +105,120 @@ function CourseList(props) {
                 p: 1.5, // Fixed padding around each card
               }}
             >
+              {' '}
               <Card
                 sx={{
-                  height: '400px', // Fixed card height
+                  height: '420px', // Slightly taller for better proportions
                   display: 'flex',
                   flexDirection: 'column',
+                  borderRadius: 3, // More rounded corners
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  border: '1px solid rgba(0, 0, 0, 0.08)',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)',
+                    borderColor: 'primary.main',
+                  },
                 }}
               >
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Typography gutterBottom variant='h5' component='h2'>
+                <CardContent
+                  sx={{
+                    flexGrow: 1,
+                    p: 3,
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
+                  <Typography
+                    gutterBottom
+                    variant='h5'
+                    component='h2'
+                    sx={{
+                      fontWeight: 600,
+                      mb: 2,
+                      lineHeight: 1.3,
+                      color: 'text.primary',
+                    }}
+                  >
                     {course.title}
                   </Typography>
-                  <Typography>{course.description}</Typography>
-                  <Typography variant='h6' color='primary' sx={{ mt: 2 }}>
-                    ${course.price}
-                  </Typography>
                   <Typography
-                    variant='body2'
-                    color='text.secondary'
-                    sx={{ mt: 1 }}
+                    sx={{
+                      mb: 2.5,
+                      lineHeight: 1.6,
+                      color: 'text.secondary',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 3,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      flexGrow: 1,
+                    }}
                   >
-                    Instructor:{' '}
-                    {course.instructor?.fullName || course.instructor}
+                    {course.description}
                   </Typography>
-                  <Typography variant='body2' color='text.secondary'>
-                    Duration: {course.duration} hours
-                  </Typography>
+
+                  <Box sx={{ mt: 'auto' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <Chip
+                        label={`$${course.price}`}
+                        color='primary'
+                        variant='filled'
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: '0.875rem',
+                          background:
+                            'linear-gradient(135deg, #02e6ef, #01b8c4)',
+                        }}
+                      />
+                    </Box>
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                      <PersonIcon
+                        sx={{ fontSize: 16, color: 'text.secondary', mr: 1 }}
+                      />
+                      <Typography
+                        variant='body2'
+                        color='text.secondary'
+                        sx={{ fontSize: '0.875rem' }}
+                      >
+                        {course.instructor?.fullName || course.instructor}
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <AccessTimeIcon
+                        sx={{ fontSize: 16, color: 'text.secondary', mr: 1 }}
+                      />
+                      <Typography
+                        variant='body2'
+                        color='text.secondary'
+                        sx={{ fontSize: '0.875rem' }}
+                      >
+                        {course.duration} hours
+                      </Typography>
+                    </Box>
+                  </Box>
                 </CardContent>
-                <CardActions>
+                <CardActions sx={{ p: 3, pt: 0 }}>
+                  {' '}
                   <Button
                     variant='contained'
                     color='primary'
                     fullWidth
                     onClick={() => navigate(`/courses/${course._id}`)}
+                    sx={{
+                      py: 1.5,
+                      fontWeight: 600,
+                      // Remove borderRadius override to use theme default (8px)
+                      textTransform: 'none',
+                      fontSize: '1rem',
+                      boxShadow: 'none',
+                      background: 'linear-gradient(135deg, #02e6ef, #01b8c4)',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #4df0f7, #02e6ef)',
+                        boxShadow: '0 4px 12px rgba(2, 230, 239, 0.3)',
+                      },
+                    }}
                   >
                     View Details
                   </Button>
