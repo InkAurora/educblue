@@ -21,7 +21,8 @@ RUN adduser -S nodejs -u 1001
 RUN chown -R nodejs:nodejs /app
 USER nodejs
 
-# Expose port
+# Expose ports
+EXPOSE 80
 EXPOSE 5000
 
 # Health check
