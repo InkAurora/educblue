@@ -8,12 +8,14 @@ const TestWrapper = ({ children }) => <BrowserRouter>{children}</BrowserRouter>;
 
 describe('ContentNavigation', () => {
   const courseId = 'course-123';
+  const sectionId = 'section-456';
   const contentTitle = 'Test Content';
 
   it('renders with title and navigation buttons', () => {
     render(
       <ContentNavigation
         courseId={courseId}
+        sectionId={sectionId}
         title={contentTitle}
         previousContentId='prev-123'
         nextContentId='next-456'
@@ -26,21 +28,21 @@ describe('ContentNavigation', () => {
     expect(screen.getByTestId('prev-button')).toBeInTheDocument();
     expect(screen.getByTestId('next-button')).toBeInTheDocument();
 
-    // Check that buttons are enabled and have correct links
+    // Check that buttons are enabled
     const prevButton = screen.getByTestId('prev-button');
     const nextButton = screen.getByTestId('next-button');
 
     expect(prevButton).not.toHaveAttribute('aria-disabled', 'true');
     expect(nextButton).not.toHaveAttribute('aria-disabled', 'true');
 
-    // Check for correct to attributes instead of href
-    expect(prevButton).toHaveAttribute(
-      'to',
-      '/courses/course-123/content/prev-123',
+    // Check for correct href attributes (Link components render as <a> elements)
+    expect(prevButton.closest('a')).toHaveAttribute(
+      'href',
+      '/courses/course-123/sections/section-456/content/prev-123',
     );
-    expect(nextButton).toHaveAttribute(
-      'to',
-      '/courses/course-123/content/next-456',
+    expect(nextButton.closest('a')).toHaveAttribute(
+      'href',
+      '/courses/course-123/sections/section-456/content/next-456',
     );
   });
 
@@ -50,6 +52,7 @@ describe('ContentNavigation', () => {
     render(
       <ContentNavigation
         courseId={courseId}
+        sectionId={sectionId}
         title={longTitle}
         previousContentId='prev-123'
         nextContentId='next-456'
@@ -67,6 +70,7 @@ describe('ContentNavigation', () => {
     render(
       <ContentNavigation
         courseId={courseId}
+        sectionId={sectionId}
         title={contentTitle}
         previousContentId={null}
         nextContentId='next-456'
@@ -88,6 +92,7 @@ describe('ContentNavigation', () => {
     render(
       <ContentNavigation
         courseId={courseId}
+        sectionId={sectionId}
         title={contentTitle}
         previousContentId='prev-123'
         nextContentId={null}
@@ -109,6 +114,7 @@ describe('ContentNavigation', () => {
     render(
       <ContentNavigation
         courseId={courseId}
+        sectionId={sectionId}
         title={contentTitle}
         previousContentId={null}
         nextContentId={null}
@@ -116,6 +122,27 @@ describe('ContentNavigation', () => {
       { wrapper: TestWrapper },
     );
 
+    expect(screen.getByTestId('prev-button')).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    expect(screen.getByTestId('next-button')).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+  });
+
+  it('uses default props when optional props are not provided', () => {
+    render(
+      <ContentNavigation
+        courseId={courseId}
+        sectionId={sectionId}
+        title={contentTitle}
+      />,
+      { wrapper: TestWrapper },
+    );
+
+    // Both buttons should be disabled when no content IDs are provided
     expect(screen.getByTestId('prev-button')).toHaveAttribute(
       'aria-disabled',
       'true',

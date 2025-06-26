@@ -36,22 +36,36 @@ describe('ProgressBar', () => {
     expect(progressBar).toHaveAttribute('aria-valuenow', '100');
   });
 
-  test('handles invalid percentage values', () => {
-    // Test with negative value
+  test('handles negative percentage values', () => {
     render(<ProgressBar percentage={-20} />);
     expect(screen.getByText('Progress: 0%')).toBeInTheDocument();
 
-    // Re-render with value > 100
+    const progressBar = screen.getByRole('progressbar');
+    expect(progressBar).toHaveAttribute('aria-valuenow', '0');
+  });
+
+  test('handles percentage values greater than 100', () => {
     render(<ProgressBar percentage={120} />);
     expect(screen.getByText('Progress: 100%')).toBeInTheDocument();
 
-    // Re-render with non-numeric value
+    const progressBar = screen.getByRole('progressbar');
+    expect(progressBar).toHaveAttribute('aria-valuenow', '100');
+  });
+
+  test('handles non-numeric percentage values', () => {
     render(<ProgressBar percentage='invalid' />);
     expect(screen.getByText('Progress: 0%')).toBeInTheDocument();
 
-    // Re-render with undefined value
+    const progressBar = screen.getByRole('progressbar');
+    expect(progressBar).toHaveAttribute('aria-valuenow', '0');
+  });
+
+  test('handles undefined percentage values', () => {
     render(<ProgressBar percentage={undefined} />);
     expect(screen.getByText('Progress: 0%')).toBeInTheDocument();
+
+    const progressBar = screen.getByRole('progressbar');
+    expect(progressBar).toHaveAttribute('aria-valuenow', '0');
   });
 
   test('has correct styling', () => {

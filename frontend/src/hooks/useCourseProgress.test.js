@@ -18,14 +18,20 @@ describe('useCourseProgress Hook', () => {
     { contentId: 'content-789', completed: true },
   ];
 
+  // Mock response with new API format
+  const mockProgressResponse = {
+    progressRecords: mockProgress,
+    progressPercentage: 75,
+  };
+
   beforeEach(() => {
     // Clear mocks
     jest.clearAllMocks();
   });
 
   it('should fetch progress data on init', async () => {
-    // Set up the mock
-    axiosInstance.get.mockResolvedValueOnce({ data: mockProgress });
+    // Set up the mock with new API format
+    axiosInstance.get.mockResolvedValueOnce({ data: mockProgressResponse });
 
     // Render the hook
     const { result } = renderHook(() =>
@@ -34,11 +40,13 @@ describe('useCourseProgress Hook', () => {
 
     // Initially progress should be empty
     expect(result.current.progress).toEqual([]);
+    expect(result.current.progressPercentage).toBe(0);
     expect(result.current.error).toBeNull();
 
     // Wait for the effect to run and state to update
     await waitFor(() => {
       expect(result.current.progress).toEqual(mockProgress);
+      expect(result.current.progressPercentage).toBe(75);
     });
 
     // Verify API was called correctly
@@ -69,16 +77,38 @@ describe('useCourseProgress Hook', () => {
     consoleErrorSpy.mockRestore();
   });
 
-  it('should mark an item as completed', async () => {
-    // Set up mocks
-    axiosInstance.get.mockResolvedValueOnce({ data: mockProgress });
+  it('should mark an item as completed with valid contentId', async () => {
+    // Use a non-numeric contentId to avoid course details fetch
+    const validContentId = 'content-abc-123';
+
+    // Set up mocks for progress fetch
+    axiosInstance.get.mockResolvedValueOnce({ data: mockProgressResponse });
+
+    // Mock the mark completed API call with new response format
     axiosInstance.post.mockResolvedValueOnce({
-      data: { contentId: mockContentId, completed: true },
+      data: {
+        progressRecords: [
+          ...mockProgress,
+          { contentId: validContentId, completed: true },
+        ],
+        progressPercentage: 80,
+      },
     });
 
-    // Render the hook with both courseId, sectionId and contentId
+    // Mock the refresh progress fetch after marking complete
+    axiosInstance.get.mockResolvedValueOnce({
+      data: {
+        progressRecords: [
+          ...mockProgress,
+          { contentId: validContentId, completed: true },
+        ],
+        progressPercentage: 80,
+      },
+    });
+
+    // Render the hook with valid contentId
     const { result } = renderHook(() =>
-      useCourseProgress(mockCourseId, mockSectionId, mockContentId),
+      useCourseProgress(mockCourseId, mockSectionId, validContentId),
     );
 
     // Wait for the initial data to load
@@ -100,21 +130,19 @@ describe('useCourseProgress Hook', () => {
 
     // Check if API was called correctly
     expect(axiosInstance.post).toHaveBeenCalledWith(
-      `/api/progress/${mockCourseId}/${mockSectionId}/${mockContentId}`,
+      `/api/progress/${mockCourseId}/${mockSectionId}/${validContentId}`,
       { completed: true },
     );
 
-    // Check if the item was added to progress
-    expect(
-      result.current.progress.some(
-        (item) => item.contentId === mockContentId && item.completed,
-      ),
-    ).toBe(true);
+    // Check if the progress was updated
+    await waitFor(() => {
+      expect(result.current.progressPercentage).toBe(80);
+    });
   });
 
   it('should check if an item is completed', async () => {
-    // Set up mock
-    axiosInstance.get.mockResolvedValueOnce({ data: mockProgress });
+    // Set up mock with new API format
+    axiosInstance.get.mockResolvedValueOnce({ data: mockProgressResponse });
 
     // Render the hook with the content that exists in the progress data
     const { result } = renderHook(() =>
@@ -131,7 +159,7 @@ describe('useCourseProgress Hook', () => {
 
     // Reset mocks and render with different content ID
     axiosInstance.get.mockReset();
-    axiosInstance.get.mockResolvedValueOnce({ data: mockProgress });
+    axiosInstance.get.mockResolvedValueOnce({ data: mockProgressResponse });
 
     const { result: result2 } = renderHook(() =>
       useCourseProgress(mockCourseId, mockSectionId, 'content-999'),
@@ -158,13 +186,18 @@ describe('useCourseProgress Hook', () => {
       .spyOn(console, 'error')
       .mockImplementation(() => {});
 
-    // Set up mocks
-    axiosInstance.get.mockResolvedValueOnce({ data: mockProgress });
+    // Use a non-numeric contentId to avoid course details fetch
+    const validContentId = 'content-abc-123';
+
+    // Set up mocks for progress fetch
+    axiosInstance.get.mockResolvedValueOnce({ data: mockProgressResponse });
+
+    // Mock failed post request
     axiosInstance.post.mockRejectedValueOnce(new Error('Failed to update'));
 
     // Render the hook
     const { result } = renderHook(() =>
-      useCourseProgress(mockCourseId, mockSectionId, mockContentId),
+      useCourseProgress(mockCourseId, mockSectionId, validContentId),
     );
 
     // Wait for initial data to be loaded
@@ -199,5 +232,99 @@ describe('useCourseProgress Hook', () => {
 
     // Post should not be called
     expect(axiosInstance.post).not.toHaveBeenCalled();
+  });
+
+  it('should handle 404 error when fetching progress', async () => {
+    const consoleErrorSpy = jest
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+
+    // Mock 404 error response
+    const error404 = new Error('Not found');
+    error404.response = { status: 404 };
+    axiosInstance.get.mockRejectedValueOnce(error404);
+
+    const { result } = renderHook(() =>
+      useCourseProgress(mockCourseId, mockSectionId),
+    );
+
+    // Wait for the error to be processed
+    await waitFor(() => {
+      expect(result.current.progress).toEqual([]);
+      expect(result.current.progressPercentage).toBe(0);
+      expect(result.current.error).toBeNull(); // 404 is not treated as error
+    });
+
+    expect(consoleErrorSpy).toHaveBeenCalled();
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('should handle 400 error with specific message when marking content as completed', async () => {
+    const consoleErrorSpy = jest
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+
+    const validContentId = 'content-abc-123';
+    axiosInstance.get.mockResolvedValueOnce({ data: mockProgressResponse });
+
+    // Mock 400 error with specific message
+    const error400 = new Error('Bad request');
+    error400.response = {
+      status: 400,
+      data: { message: 'Invalid content ID format' },
+    };
+    axiosInstance.post.mockRejectedValueOnce(error400);
+
+    const { result } = renderHook(() =>
+      useCourseProgress(mockCourseId, mockSectionId, validContentId),
+    );
+
+    await waitFor(() => {
+      expect(result.current.progress).toEqual(mockProgress);
+    });
+
+    let success;
+    await act(async () => {
+      success = await result.current.markContentCompleted();
+    });
+
+    expect(success).toBe(false);
+    expect(result.current.error).toBe(
+      'The system could not process this content for progress tracking.',
+    );
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('should use refreshProgress function correctly', async () => {
+    axiosInstance.get.mockResolvedValueOnce({ data: mockProgressResponse });
+
+    const { result } = renderHook(() =>
+      useCourseProgress(mockCourseId, mockSectionId),
+    );
+
+    await waitFor(() => {
+      expect(result.current.progress).toEqual(mockProgress);
+    });
+
+    // Mock another response for refresh
+    const refreshedData = {
+      progressRecords: [
+        ...mockProgress,
+        { contentId: 'new-content', completed: true },
+      ],
+      progressPercentage: 90,
+    };
+    axiosInstance.get.mockResolvedValueOnce({ data: refreshedData });
+
+    // Call refresh
+    let refreshResult;
+    await act(async () => {
+      refreshResult = await result.current.refreshProgress();
+    });
+
+    expect(refreshResult.records).toEqual(refreshedData.progressRecords);
+    expect(refreshResult.percentage).toBe(90);
+    expect(result.current.progressPercentage).toBe(90);
   });
 });

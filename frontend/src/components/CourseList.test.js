@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CourseList from './CourseList';
 
@@ -82,8 +82,8 @@ describe('CourseList', () => {
         screen.getByText('Learn the fundamentals of JavaScript programming.'),
       ).toBeInTheDocument();
       expect(screen.getByText('$49.99')).toBeInTheDocument();
-      expect(screen.getByText('Instructor: John Smith')).toBeInTheDocument();
-      expect(screen.getByText('Duration: 8 hours')).toBeInTheDocument();
+      expect(screen.getByText('John Smith')).toBeInTheDocument();
+      expect(screen.getByText('8 hours')).toBeInTheDocument();
 
       // Check for second course
       expect(
@@ -113,7 +113,10 @@ describe('CourseList', () => {
     });
 
     const viewDetailsButtons = screen.getAllByText('View Details');
-    await userEvent.click(viewDetailsButtons[0]);
+
+    await act(async () => {
+      await userEvent.click(viewDetailsButtons[0]);
+    });
 
     expect(mockedNavigate).toHaveBeenCalledWith(
       `/courses/${mockCourses[0]._id}`,
@@ -138,6 +141,19 @@ describe('CourseList', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('custom-test-id')).toBeInTheDocument();
+    });
+  });
+
+  test('handles non-array response data gracefully', async () => {
+    axiosInstance.get.mockResolvedValueOnce({
+      data: { message: 'invalid format' },
+    });
+    render(<CourseList />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Failed to load courses: Unexpected data format/i),
+      ).toBeInTheDocument();
     });
   });
 });
