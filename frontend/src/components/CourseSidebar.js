@@ -390,6 +390,12 @@ function CourseSidebar({
                   <ListItemButton
                     component={Link}
                     to={`/courses/${courseId}/sections/${selectedSection}/content/${contentId}`}
+                    onClick={() => {
+                      // Close sidebar on mobile after selecting content
+                      if (isMobile) {
+                        setOpen(false);
+                      }
+                    }}
                     sx={{
                       py: 1.5,
                       borderLeft: selected
