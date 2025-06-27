@@ -35,7 +35,11 @@ function Navbar() {
     const isCourseContentPage =
       location.pathname.includes('/courses/') &&
       location.pathname.includes('/content/');
-    setShowSidebarToggle(isCourseContentPage);
+
+    const isCourseDetailsPage =
+      location.pathname.match(/^\/courses\/[^/]+$/) !== null;
+
+    setShowSidebarToggle(isCourseContentPage || isCourseDetailsPage);
   }, [location.pathname]);
 
   const handleMenuOpen = (event) => {

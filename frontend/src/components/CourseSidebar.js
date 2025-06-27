@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
 import { Link, useLocation } from 'react-router-dom';
@@ -72,8 +72,8 @@ function CourseSidebar({
   }, [courseId, courseData]);
   // Fetch progress data if not provided (for persistent sidebar use case)
   useEffect(() => {
-    const fetchProgressData = async () => {
-      if (!progressData && courseId) {
+    const fetchInitialProgressData = async () => {
+      if (!progress && courseId) {
         try {
           const response = await axiosInstance.get(`/api/progress/${courseId}`);
           setProgressData(response.data.progressRecords || []);
@@ -86,8 +86,53 @@ function CourseSidebar({
       }
     };
 
-    fetchProgressData();
-  }, [courseId, progressData]);
+    fetchInitialProgressData();
+  }, [courseId, progress]); // Use original progress prop, not progressData state
+
+  // Add a function to refresh progress data from external components
+  const refreshProgressData = useCallback(async () => {
+    if (!courseId) return;
+
+    try {
+      const response = await axiosInstance.get(`/api/progress/${courseId}`);
+      setProgressData(response.data.progressRecords || []);
+      setProgressPercentageData(response.data.progressPercentage || 0);
+    } catch (err) {
+      // Handle error silently
+      setProgressData([]);
+      setProgressPercentageData(0);
+    }
+  }, [courseId]);
+
+  // Listen for storage events to refresh progress when updated from other components
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === `progress-update-${courseId}`) {
+        // Small delay to ensure the API call from the content component has completed
+        setTimeout(() => {
+          refreshProgressData();
+        }, 500);
+      }
+    };
+
+    const handleCustomEvent = (e) => {
+      if (e.detail && e.detail.courseId === courseId) {
+        // Small delay to ensure the API call from the content component has completed
+        setTimeout(() => {
+          refreshProgressData();
+        }, 500);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    // Listen for custom events in the same window with a separate handler
+    window.addEventListener('progress-updated', handleCustomEvent);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('progress-updated', handleCustomEvent);
+    };
+  }, [refreshProgressData, courseId]);
 
   // Fetch course sections for sidebar
   useEffect(() => {
@@ -104,9 +149,11 @@ function CourseSidebar({
         if (sectionsData.length > 0 && !selectedSection) {
           const sectionToSelect =
             currentSectionId &&
-            sectionsData.find((s) => s.id === currentSectionId)
+            sectionsData.find(
+              (s) => s.id === currentSectionId || s._id === currentSectionId,
+            )
               ? currentSectionId
-              : sectionsData[0].id;
+              : sectionsData[0].id || sectionsData[0]._id;
           setSelectedSection(sectionToSelect);
         }
       } catch (err) {
@@ -119,7 +166,19 @@ function CourseSidebar({
     if (courseId) {
       fetchSections();
     }
-  }, [courseId, selectedSection, currentSectionId]);
+  }, [courseId, currentSectionId]);
+
+  // Update selected section when currentSectionId prop changes (only when URL changes)
+  useEffect(() => {
+    if (currentSectionId && sections.length > 0) {
+      const sectionExists = sections.find(
+        (s) => s.id === currentSectionId || s._id === currentSectionId,
+      );
+      if (sectionExists) {
+        setSelectedSection(currentSectionId);
+      }
+    }
+  }, [currentSectionId, sections]); // Removed selectedSection from dependencies to prevent infinite loop
 
   // Fetch content for selected section
   useEffect(() => {
@@ -293,11 +352,14 @@ function CourseSidebar({
               <MenuItem value='' disabled>
                 {loadingSections ? 'Loading sections...' : 'Select a section'}
               </MenuItem>
-              {sections.map((section) => (
-                <MenuItem key={section.id} value={section.id}>
-                  {section.title}
-                </MenuItem>
-              ))}
+              {sections.map((section) => {
+                const sectionId = section._id || section.id;
+                return (
+                  <MenuItem key={sectionId} value={sectionId}>
+                    {section.title}
+                  </MenuItem>
+                );
+              })}
             </Select>
           </FormControl>
         </Box>
@@ -328,6 +390,12 @@ function CourseSidebar({
                   <ListItemButton
                     component={Link}
                     to={`/courses/${courseId}/sections/${selectedSection}/content/${contentId}`}
+                    onClick={() => {
+                      // Close sidebar on mobile after selecting content
+                      if (isMobile) {
+                        setOpen(false);
+                      }
+                    }}
                     sx={{
                       py: 1.5,
                       borderLeft: selected

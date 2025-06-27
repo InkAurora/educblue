@@ -27,7 +27,17 @@ module.exports = {
     'react/jsx-filename-extension': [1, { extensions: ['.js', '.jsx'] }],
     'import/no-extraneous-dependencies': 'off',
     'comma-dangle': ['error', 'always-multiline'],
-    'no-underscore-dangle': ['error', { allow: ['_id'] }],
+    'no-underscore-dangle': [
+      'error',
+      {
+        allow: [
+          '_id',
+          '_getRequestInterceptors',
+          '_getResponseInterceptors',
+          '_retry',
+        ],
+      },
+    ],
     'prettier/prettier': [
       'error',
       {

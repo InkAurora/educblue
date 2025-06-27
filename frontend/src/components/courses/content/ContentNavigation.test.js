@@ -4,7 +4,9 @@ import { BrowserRouter } from 'react-router-dom';
 import ContentNavigation from './ContentNavigation';
 
 // Wrapper to provide router context
-const TestWrapper = ({ children }) => <BrowserRouter>{children}</BrowserRouter>;
+function TestWrapper({ children }) {
+  return <BrowserRouter>{children}</BrowserRouter>;
+}
 
 describe('ContentNavigation', () => {
   const courseId = 'course-123';

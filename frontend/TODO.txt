@@ -1,1 +1,12 @@
 ✅ Fix draft courses not showing under "My Courses" when they are not published - COMPLETED
+✅ Fix course content list not showing on mobile - COMPLETED
+✅ Add routes for course sections ("/courses/684e232cbabe57b29283b94d/sections/684e2399babe57b29283b957") - COMPLETED
+✅ Fix course showing as completed when it has not all the content completed in the details page - COMPLETED
+✅ Fix course content menu not showing on mobile - COMPLETED
+✅ Fix browser bottom bar not hiding on iOS Safari - COMPLETED
+✅ Fix progress bar not updating without refreshing the page - COMPLETED
+✅ Hide sidebar on mobile after selecting a content - COMPLETED
+✅ Fix course details page misaligned center - COMPLETED
+✅ Remove content page margin at the top and padding at the bottom - COMPLETED
+✅ Fix user role not changing a second time without refreshing the page (wrong API request) - COMPLETED
+✅ Fix course details redirection when user is not enrolled - COMPLETED

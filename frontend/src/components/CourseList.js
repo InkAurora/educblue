@@ -11,7 +11,6 @@ import {
   CircularProgress,
   Alert,
   Chip,
-  Avatar,
 } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';

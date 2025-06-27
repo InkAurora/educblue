@@ -33,7 +33,7 @@ describe('ContentItemForm', () => {
   it('renders correctly for video type', () => {
     render(
       <ContentItemForm
-        open={true}
+        open
         onClose={mockOnClose}
         currentItem={mockCurrentItem}
         setCurrentItem={mockSetCurrentItem}
@@ -63,13 +63,13 @@ describe('ContentItemForm', () => {
 
     render(
       <ContentItemForm
-        open={true}
+        open
         onClose={mockOnClose}
         currentItem={markdownItem}
         setCurrentItem={mockSetCurrentItem}
         onSave={mockOnSave}
         error=''
-        isEditing={true}
+        isEditing
       />,
     );
 
@@ -94,7 +94,7 @@ describe('ContentItemForm', () => {
 
     render(
       <ContentItemForm
-        open={true}
+        open
         onClose={mockOnClose}
         currentItem={multipleChoiceItem}
         setCurrentItem={mockSetCurrentItem}
@@ -137,7 +137,7 @@ describe('ContentItemForm', () => {
   it('displays error message when provided', () => {
     render(
       <ContentItemForm
-        open={true}
+        open
         onClose={mockOnClose}
         currentItem={mockCurrentItem}
         setCurrentItem={mockSetCurrentItem}
@@ -153,7 +153,7 @@ describe('ContentItemForm', () => {
   it('calls onClose when cancel button is clicked', () => {
     render(
       <ContentItemForm
-        open={true}
+        open
         onClose={mockOnClose}
         currentItem={mockCurrentItem}
         setCurrentItem={mockSetCurrentItem}
@@ -170,7 +170,7 @@ describe('ContentItemForm', () => {
   it('calls onSave when save button is clicked', () => {
     render(
       <ContentItemForm
-        open={true}
+        open
         onClose={mockOnClose}
         currentItem={mockCurrentItem}
         setCurrentItem={mockSetCurrentItem}
@@ -187,7 +187,7 @@ describe('ContentItemForm', () => {
   it('updates currentItem when input changes', () => {
     render(
       <ContentItemForm
-        open={true}
+        open
         onClose={mockOnClose}
         currentItem={mockCurrentItem}
         setCurrentItem={mockSetCurrentItem}
@@ -215,7 +215,7 @@ describe('ContentItemForm', () => {
 
     render(
       <ContentItemForm
-        open={true}
+        open
         onClose={mockOnClose}
         currentItem={multipleChoiceItem}
         setCurrentItem={mockSetCurrentItem}
@@ -245,7 +245,7 @@ describe('ContentItemForm', () => {
 
     render(
       <ContentItemForm
-        open={true}
+        open
         onClose={mockOnClose}
         currentItem={multipleChoiceItem}
         setCurrentItem={mockSetCurrentItem}

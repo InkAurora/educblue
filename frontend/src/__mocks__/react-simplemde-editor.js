@@ -1,7 +1,7 @@
 // Mock implementation of SimpleMDE editor for tests
 import React from 'react';
 
-const SimpleMDE = ({ value, onChange, options }) => {
+function SimpleMDE({ value, onChange }) {
   return (
     <textarea
       data-testid='markdown-editor'
@@ -9,6 +9,6 @@ const SimpleMDE = ({ value, onChange, options }) => {
       onChange={(e) => onChange(e.target.value)}
     />
   );
-};
+}
 
 export default SimpleMDE;

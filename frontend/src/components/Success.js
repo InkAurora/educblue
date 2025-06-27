@@ -95,11 +95,12 @@ function Success() {
         }}
       >
         <Paper elevation={3} sx={{ p: 4, width: '100%' }}>
-          {loading ? (
+          {loading && (
             <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
               <CircularProgress />
             </Box>
-          ) : success ? (
+          )}
+          {!loading && success && (
             <>
               <Typography
                 component='h1'
@@ -121,7 +122,8 @@ function Success() {
                 Continue to Course
               </Button>
             </>
-          ) : (
+          )}
+          {!loading && !success && (
             <>
               <Typography
                 component='h1'

@@ -1,7 +1,9 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import * as reactRouterDom from 'react-router-dom';
 import Success from './Success';
+import axiosInstance from '../utils/axiosConfig';
 
 // Mock the axios instance properly
 jest.mock('../utils/axiosConfig', () => ({
@@ -11,21 +13,24 @@ jest.mock('../utils/axiosConfig', () => ({
     post: jest.fn(),
   },
 }));
-import axiosInstance from '../utils/axiosConfig';
 
 // Mock react-router-dom
 jest.mock('react-router-dom', () => ({
-  useNavigate: () => jest.fn(),
-  useLocation: () => ({
-    search: jest.fn(),
-  }),
+  useNavigate: jest.fn(),
+  useLocation: jest.fn(),
 }));
 
 describe('Success Component', () => {
+  let mockNavigate;
+
   // Mock setup before each test
   beforeEach(() => {
     // Clear mocks
     jest.clearAllMocks();
+
+    // Create navigation mock
+    mockNavigate = jest.fn();
+    reactRouterDom.useNavigate.mockReturnValue(mockNavigate);
 
     // Mock localStorage
     const localStorageMock = {
@@ -39,7 +44,7 @@ describe('Success Component', () => {
 
   test('renders loading state initially', async () => {
     // Mock location with a session ID and delay axios response to keep loading state
-    jest.spyOn(require('react-router-dom'), 'useLocation').mockReturnValue({
+    reactRouterDom.useLocation.mockReturnValue({
       search: '?session_id=test_session_123',
     });
 
@@ -59,7 +64,7 @@ describe('Success Component', () => {
 
   test('shows success message after successful enrollment', async () => {
     // Mock location with a session ID
-    jest.spyOn(require('react-router-dom'), 'useLocation').mockReturnValue({
+    reactRouterDom.useLocation.mockReturnValue({
       search: '?session_id=test_session_123&course_id=course123',
     });
 
@@ -86,7 +91,7 @@ describe('Success Component', () => {
 
   test('shows error when session_id is missing', async () => {
     // Mock location without a session ID
-    jest.spyOn(require('react-router-dom'), 'useLocation').mockReturnValue({
+    reactRouterDom.useLocation.mockReturnValue({
       search: '',
     });
 
@@ -103,7 +108,7 @@ describe('Success Component', () => {
 
   test('shows error when user is not logged in', async () => {
     // Mock location with session ID but no token
-    jest.spyOn(require('react-router-dom'), 'useLocation').mockReturnValue({
+    reactRouterDom.useLocation.mockReturnValue({
       search: '?session_id=test_session_123',
     });
 
@@ -123,7 +128,7 @@ describe('Success Component', () => {
 
   test('shows error when enrollment API call fails', async () => {
     // Mock location with session ID
-    jest.spyOn(require('react-router-dom'), 'useLocation').mockReturnValue({
+    reactRouterDom.useLocation.mockReturnValue({
       search: '?session_id=test_session_123',
     });
 
@@ -150,7 +155,7 @@ describe('Success Component', () => {
 
   test('shows generic error when API fails without specific message', async () => {
     // Mock location with session ID
-    jest.spyOn(require('react-router-dom'), 'useLocation').mockReturnValue({
+    reactRouterDom.useLocation.mockReturnValue({
       search: '?session_id=test_session_123',
     });
 
@@ -177,7 +182,7 @@ describe('Success Component', () => {
 
   test('navigates to course when continue button is clicked', async () => {
     // Mock location with a session ID and course ID
-    jest.spyOn(require('react-router-dom'), 'useLocation').mockReturnValue({
+    reactRouterDom.useLocation.mockReturnValue({
       search: '?session_id=test_session_123&course_id=course123',
     });
 
@@ -186,12 +191,6 @@ describe('Success Component', () => {
 
     // Mock successful API response
     axiosInstance.post.mockResolvedValueOnce({});
-
-    // Mock navigate function
-    const mockNavigate = jest.fn();
-    jest
-      .spyOn(require('react-router-dom'), 'useNavigate')
-      .mockReturnValue(mockNavigate);
 
     render(<Success />);
 
@@ -209,15 +208,9 @@ describe('Success Component', () => {
 
   test('navigates back to courses when return button is clicked on error', async () => {
     // Mock location without a session ID to trigger error
-    jest.spyOn(require('react-router-dom'), 'useLocation').mockReturnValue({
+    reactRouterDom.useLocation.mockReturnValue({
       search: '',
     });
-
-    // Mock navigate function
-    const mockNavigate = jest.fn();
-    jest
-      .spyOn(require('react-router-dom'), 'useNavigate')
-      .mockReturnValue(mockNavigate);
 
     render(<Success />);
 
@@ -235,7 +228,7 @@ describe('Success Component', () => {
 
   test('uses enrollingCourseId from localStorage when course_id is not in URL', async () => {
     // Mock location with a session ID but no course_id
-    jest.spyOn(require('react-router-dom'), 'useLocation').mockReturnValue({
+    reactRouterDom.useLocation.mockReturnValue({
       search: '?session_id=test_session_123',
     });
 

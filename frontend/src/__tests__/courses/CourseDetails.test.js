@@ -30,7 +30,7 @@ jest.mock('../../utils/axiosConfig', () => ({
 }));
 
 // Mock localStorage
-const localStorageMock = (function () {
+const localStorageMock = (function localStorageMockFunction() {
   let store = {};
   return {
     getItem: jest.fn((key) => store[key] || null),
@@ -64,9 +64,22 @@ describe('CourseDetails Component', () => {
     instructor: 'Instructor Name',
     price: 99.99,
     duration: '6 weeks',
-    content: [
-      { _id: 'content1', title: 'Introduction', type: 'markdown' },
-      { _id: 'content2', title: 'Lesson 1', type: 'video' },
+    sections: [
+      {
+        _id: 'section1',
+        title: 'Introduction',
+        description: 'Getting started',
+        content: [
+          { _id: 'content1', title: 'Welcome Video', type: 'video' },
+          { _id: 'content2', title: 'Course Overview', type: 'markdown' },
+        ],
+      },
+      {
+        _id: 'section2',
+        title: 'Advanced Topics',
+        description: 'Deep dive into advanced concepts',
+        content: [{ _id: 'content3', title: 'Lesson 1', type: 'video' }],
+      },
     ],
   };
 
@@ -93,9 +106,11 @@ describe('CourseDetails Component', () => {
             enrolledCourses: [],
           },
         });
-      } else if (url === '/api/courses/test-course-id') {
+      }
+      if (url === '/api/courses/test-course-id') {
         return Promise.resolve({ data: mockCourse });
-      } else if (url === '/api/progress/test-course-id') {
+      }
+      if (url === '/api/progress/test-course-id') {
         return Promise.resolve({ data: mockProgressResponse });
       }
       return Promise.reject(new Error('Unexpected URL'));
@@ -105,12 +120,12 @@ describe('CourseDetails Component', () => {
 
     // Wait for data to load
     await waitFor(() => {
-      expect(screen.getAllByText('Test Course')).toHaveLength(2); // Should appear in both sidebar and main content
+      expect(screen.getByText('Test Course')).toBeInTheDocument();
     });
 
-    // Verify the admin can see instructor-only content
+    // Verify the admin can see sections
     expect(screen.getByText('Introduction')).toBeInTheDocument();
-    expect(screen.getByText('Lesson 1')).toBeInTheDocument();
+    expect(screen.getByText('Advanced Topics')).toBeInTheDocument();
 
     // Course content should be accessible despite not being enrolled
     expect(
@@ -131,7 +146,8 @@ describe('CourseDetails Component', () => {
             enrolledCourses: [],
           },
         });
-      } else if (url === '/api/courses/test-course-id') {
+      }
+      if (url === '/api/courses/test-course-id') {
         return Promise.resolve({ data: mockCourse });
       }
       return Promise.reject(new Error('Unexpected URL'));
@@ -166,7 +182,8 @@ describe('CourseDetails Component', () => {
             enrolledCourses: [],
           },
         });
-      } else if (url === '/api/courses/test-course-id') {
+      }
+      if (url === '/api/courses/test-course-id') {
         return Promise.resolve({ data: mockCourse });
       }
       return Promise.reject(new Error('Unexpected URL'));
@@ -198,9 +215,11 @@ describe('CourseDetails Component', () => {
             enrolledCourses: ['test-course-id'],
           },
         });
-      } else if (url === '/api/courses/test-course-id') {
+      }
+      if (url === '/api/courses/test-course-id') {
         return Promise.resolve({ data: mockCourse });
-      } else if (url === '/api/progress/test-course-id') {
+      }
+      if (url === '/api/progress/test-course-id') {
         return Promise.resolve({ data: mockProgressResponse });
       }
       return Promise.reject(new Error('Unexpected URL'));
@@ -210,12 +229,12 @@ describe('CourseDetails Component', () => {
 
     // Wait for data to load
     await waitFor(() => {
-      expect(screen.getAllByText('Test Course')).toHaveLength(2); // Should appear in both sidebar and main content
+      expect(screen.getByText('Test Course')).toBeInTheDocument();
     });
 
-    // Verify student can access content
+    // Verify student can access sections
     expect(screen.getByText('Introduction')).toBeInTheDocument();
-    expect(screen.getByText('Lesson 1')).toBeInTheDocument();
+    expect(screen.getByText('Advanced Topics')).toBeInTheDocument();
 
     // Enrollment prompt should not be shown
     expect(

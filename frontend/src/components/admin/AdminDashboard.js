@@ -34,7 +34,7 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import axiosInstance from '../../utils/axiosConfig';
 
-const AdminDashboard = () => {
+function AdminDashboard() {
   const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [analytics, setAnalytics] = useState({
@@ -132,7 +132,12 @@ const AdminDashboard = () => {
       const response = await axiosInstance.put(`/api/users/${userId}`, {
         role: newRole,
       });
-      setUsers(users.map((u) => (u._id === userId ? response.data.user : u)));
+      // Ensure the updated user object has the correct _id property
+      const updatedUser = {
+        ...response.data.user,
+        _id: response.data.user.id || response.data.user._id || userId,
+      };
+      setUsers(users.map((u) => (u._id === userId ? updatedUser : u)));
       setSuccessMessage('User role updated successfully.');
     } catch (err) {
       setError(
@@ -210,7 +215,12 @@ const AdminDashboard = () => {
       const response = await axiosInstance.put(`/api/users/${userId}`, {
         enrolledCourses: courseIdsToEnroll,
       });
-      setUsers(users.map((u) => (u._id === userId ? response.data.user : u)));
+      // Ensure the updated user object has the correct _id property
+      const updatedUser = {
+        ...response.data.user,
+        _id: response.data.user.id || response.data.user._id || userId,
+      };
+      setUsers(users.map((u) => (u._id === userId ? updatedUser : u)));
       setOpenEnrollDialog(false);
       setSelectedUser(null);
       setSuccessMessage('User enrollments updated successfully.');
@@ -413,18 +423,18 @@ const AdminDashboard = () => {
       >
         <DialogTitle>Enroll User in Courses</DialogTitle>
         <DialogContent>
-          {coursesLoading ? (
-            <CircularProgress />
-          ) : coursesError ? (
+          {coursesLoading && <CircularProgress />}
+          {!coursesLoading && coursesError && (
             <Alert severity='error'>{coursesError}</Alert>
-          ) : (
+          )}
+          {!coursesLoading && !coursesError && (
             <List>
               {availableCourses.map((course) => (
                 <ListItem
                   key={course._id}
                   dense
-                  button
                   onClick={() => handleCourseToggle(course._id)}
+                  sx={{ cursor: 'pointer' }}
                 >
                   <Checkbox
                     edge='start'
@@ -488,6 +498,6 @@ const AdminDashboard = () => {
       </Dialog>
     </Container>
   );
-};
+}
 
 export default AdminDashboard;

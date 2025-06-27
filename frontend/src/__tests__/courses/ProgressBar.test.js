@@ -81,4 +81,15 @@ describe('ProgressBar', () => {
     const progressBar = screen.getByRole('progressbar');
     expect(progressBar).toBeInTheDocument();
   });
+
+  test('rounds decimal percentages to 0 decimal places', () => {
+    render(<ProgressBar percentage={75.8} />);
+    expect(screen.getByText('Progress: 76%')).toBeInTheDocument();
+
+    render(<ProgressBar percentage={33.3} />);
+    expect(screen.getByText('Progress: 33%')).toBeInTheDocument();
+
+    render(<ProgressBar percentage={66.7} />);
+    expect(screen.getByText('Progress: 67%')).toBeInTheDocument();
+  });
 });

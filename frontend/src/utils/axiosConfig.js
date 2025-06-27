@@ -55,6 +55,20 @@ const refreshAccessToken = async () => {
 // Add a request interceptor to add the auth token to each request and refresh if needed
 axiosInstance.interceptors.request.use(
   async (config) => {
+    // List of public endpoints that don't require authentication
+    const publicEndpoints = [
+      '/api/courses',
+      '/api/progress',
+      '/api/auth/register',
+      '/api/auth/login',
+      '/api/auth/refresh',
+    ];
+
+    // Check if this is a public endpoint
+    const isPublicEndpoint = publicEndpoints.some((endpoint) =>
+      config.url?.includes(endpoint),
+    );
+
     // Get current token
     let token = localStorage.getItem('token');
 
@@ -63,11 +77,14 @@ axiosInstance.interceptors.request.use(
       try {
         token = await refreshAccessToken();
       } catch (error) {
-        // If refresh fails and we're not already on the login page, redirect
-        if (!window.location.pathname.includes('/login')) {
+        // If refresh fails and this is NOT a public endpoint, redirect
+        if (!isPublicEndpoint && !window.location.pathname.includes('/login')) {
           window.location.href = '/login';
         }
-        throw error;
+        // For public endpoints, continue without token
+        if (!isPublicEndpoint) {
+          throw error;
+        }
       }
     }
 
@@ -95,6 +112,20 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // List of public endpoints that don't require authentication
+    const publicEndpoints = [
+      '/api/courses',
+      '/api/progress',
+      '/api/auth/register',
+      '/api/auth/login',
+      '/api/auth/refresh',
+    ];
+
+    // Check if this is a public endpoint
+    const isPublicEndpoint = publicEndpoints.some((endpoint) =>
+      originalRequest.url?.includes(endpoint),
+    );
+
     // If the error is 401 and we haven't retried yet
     if (error.response?.status === 401 && !originalRequest.retried) {
       originalRequest.retried = true;
@@ -113,8 +144,8 @@ axiosInstance.interceptors.response.use(
         return axiosInstance(originalRequest);
       } catch (refreshError) {
         // If refresh token is invalid or expired, redirect to login
-        // (Unless we're already there)
-        if (!window.location.pathname.includes('/login')) {
+        // (Unless we're already there or this is a public endpoint)
+        if (!isPublicEndpoint && !window.location.pathname.includes('/login')) {
           window.location.href = '/login';
         }
 

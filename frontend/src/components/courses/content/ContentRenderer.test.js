@@ -1,8 +1,7 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ContentRenderer from './ContentRenderer';
-import axiosInstance from '../../../utils/axiosConfig';
 
 // Mock the markdown utils
 jest.mock('../../../utils/markdownUtils', () => ({
@@ -12,75 +11,89 @@ jest.mock('../../../utils/markdownUtils', () => ({
 }));
 
 // Mock react-markdown component
-jest.mock('react-markdown', () => {
-  return function MockReactMarkdown(props) {
-    return <div data-testid='react-markdown'>{props.children}</div>;
-  };
-});
+jest.mock(
+  'react-markdown',
+  () =>
+    function MockReactMarkdown({ children }) {
+      return <div data-testid='react-markdown'>{children}</div>;
+    },
+);
 
 // Mock the axiosConfig import
-jest.mock('../../../utils/axiosConfig', () => {
-  return {
-    get: jest.fn(),
-    post: jest.fn(),
-  };
-});
+jest.mock('../../../utils/axiosConfig', () => ({
+  get: jest.fn(),
+  post: jest.fn(),
+}));
 
 // Mock MUI TextField component
-jest.mock('@mui/material/TextField', () => {
-  return function MockTextField(props) {
-    return (
-      <input
-        data-testid={props['data-testid'] || 'quiz-answer-field'}
-        value={props.value || ''}
-        onChange={props.onChange}
-        placeholder={props.placeholder}
-      />
-    );
-  };
-});
+jest.mock(
+  '@mui/material/TextField',
+  () =>
+    function MockTextField({
+      'data-testid': dataTestId = 'quiz-answer-field',
+      value = '',
+      onChange,
+      placeholder,
+    }) {
+      return (
+        <input
+          data-testid={dataTestId}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+        />
+      );
+    },
+);
 
 // Mock MUI Radio component
-jest.mock('@mui/material/Radio', () => {
-  return function MockRadio(props) {
-    return (
-      <input
-        type='radio'
-        data-testid={`radio-${props.value}`}
-        checked={props.checked}
-        onChange={props.onChange}
-        value={props.value}
-      />
-    );
-  };
-});
+jest.mock(
+  '@mui/material/Radio',
+  () =>
+    function MockRadio({ value, checked, onChange }) {
+      return (
+        <input
+          type='radio'
+          data-testid={`radio-${value}`}
+          checked={checked}
+          onChange={onChange}
+          value={value}
+        />
+      );
+    },
+);
 
 // Mock MUI FormControlLabel component
-jest.mock('@mui/material/FormControlLabel', () => {
-  return function MockFormControlLabel(props) {
-    return (
-      <label data-testid={`label-${props.value}`}>
-        {props.control}
-        <span>{props.label}</span>
-      </label>
-    );
-  };
-});
+jest.mock(
+  '@mui/material/FormControlLabel',
+  () =>
+    function MockFormControlLabel({ value, control, label }) {
+      return (
+        <label data-testid={`label-${value}`} htmlFor={`control-${value}`}>
+          {control}
+          <span>{label}</span>
+        </label>
+      );
+    },
+);
 
 // Mock MUI RadioGroup component
-jest.mock('@mui/material/RadioGroup', () => {
-  return function MockRadioGroup(props) {
-    return (
-      <div
-        data-testid={props['data-testid'] || 'multiple-choice-options'}
-        onChange={props.onChange}
-        value={props.value}
-      >
-        {props.children}
-      </div>
-    );
-  };
-});
+jest.mock(
+  '@mui/material/RadioGroup',
+  () =>
+    function MockRadioGroup({
+      'data-testid': dataTestId = 'multiple-choice-options',
+      onChange,
+      value,
+      children,
+    }) {
+      return (
+        <div data-testid={dataTestId} onChange={onChange} value={value}>
+          {children}
+        </div>
+      );
+    },
+);
 
 describe('ContentRenderer', () => {
   const mockOnCompleted = jest.fn();
@@ -167,7 +180,7 @@ describe('ContentRenderer', () => {
     render(
       <ContentRenderer
         contentItem={markdownContent}
-        isCompleted={true}
+        isCompleted
         completing={false}
         onCompleted={mockOnCompleted}
       />,
@@ -191,7 +204,7 @@ describe('ContentRenderer', () => {
       <ContentRenderer
         contentItem={markdownContent}
         isCompleted={false}
-        completing={true}
+        completing
         onCompleted={mockOnCompleted}
       />,
     );
@@ -353,7 +366,7 @@ describe('ContentRenderer - Quiz functionality', () => {
     render(
       <ContentRenderer
         contentItem={mockQuizContent}
-        isCompleted={true}
+        isCompleted
         onCompleted={mockOnCompleted}
         courseId={courseId}
       />,

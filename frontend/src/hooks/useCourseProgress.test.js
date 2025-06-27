@@ -1,5 +1,5 @@
-import { renderHook, act } from '@testing-library/react';
-import { waitFor } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
+
 import useCourseProgress from './useCourseProgress';
 import axiosInstance from '../utils/axiosConfig';
 
@@ -12,7 +12,6 @@ jest.mock('../utils/axiosConfig', () => ({
 describe('useCourseProgress Hook', () => {
   const mockCourseId = 'course-123';
   const mockSectionId = 'section-456';
-  const mockContentId = 'content-789';
   const mockProgress = [
     { contentId: 'content-123', completed: true },
     { contentId: 'content-789', completed: true },

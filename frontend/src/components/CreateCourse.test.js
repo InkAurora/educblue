@@ -1,20 +1,23 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import axios from 'axios';
 import CreateCourse from './CreateCourse';
 
+import axiosInstance from '../utils/axiosConfig';
+
 // Mock SimpleMDE editor
-jest.mock('react-simplemde-editor', () => {
-  return function MockSimpleMDE(props) {
-    return (
-      <textarea
-        data-testid='mock-simplemde'
-        onChange={(e) => props.onChange(e.target.value)}
-        value={props.value}
-      />
-    );
-  };
-});
+jest.mock(
+  'react-simplemde-editor',
+  () =>
+    function MockSimpleMDE({ onChange, value }) {
+      return (
+        <textarea
+          data-testid='mock-simplemde'
+          onChange={(e) => onChange(e.target.value)}
+          value={value}
+        />
+      );
+    },
+);
 
 // Mock useNavigate
 const mockedNavigate = jest.fn();
@@ -35,8 +38,6 @@ jest.mock('../utils/axiosConfig', () => ({
     delete: jest.fn(),
   },
 }));
-
-import axiosInstance from '../utils/axiosConfig';
 
 // Mock localStorage
 const localStorageMock = {

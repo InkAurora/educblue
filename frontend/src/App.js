@@ -31,20 +31,27 @@ function AppWithSidebar() {
   const [sidebarData, setSidebarData] = useState(null);
 
   useEffect(() => {
-    // Check if current route is a course content page
+    // Check if current route is a course content page or course details page
     const isCourseContentPage =
       location.pathname.includes('/courses/') &&
       location.pathname.includes('/content/');
 
-    setShowSidebar(isCourseContentPage);
+    const isCourseDetailsPage =
+      location.pathname.match(/^\/courses\/[^/]+$/) !== null;
+
+    setShowSidebar(isCourseContentPage || isCourseDetailsPage);
 
     // Extract course ID from URL for sidebar data
-    if (isCourseContentPage) {
+    if (isCourseContentPage || isCourseDetailsPage) {
       const courseIdMatch = location.pathname.match(/\/courses\/([^/]+)/);
+      const sectionIdMatch = location.pathname.match(/\/sections\/([^/]+)/);
       if (courseIdMatch) {
         // For now, we'll pass the courseId to the sidebar
         // The sidebar component will handle fetching its own data
-        setSidebarData({ courseId: courseIdMatch[1] });
+        setSidebarData({
+          courseId: courseIdMatch[1],
+          sectionId: sectionIdMatch ? sectionIdMatch[1] : null,
+        });
       }
     } else {
       setSidebarData(null);
@@ -97,6 +104,7 @@ function AppWithSidebar() {
             >
               <CourseSidebar
                 courseId={sidebarData.courseId}
+                currentSectionId={sidebarData.sectionId}
                 // The sidebar will handle fetching course data internally
               />
             </Box>

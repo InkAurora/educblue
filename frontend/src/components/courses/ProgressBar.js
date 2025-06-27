@@ -8,11 +8,11 @@ import { Box, Typography, LinearProgress } from '@mui/material';
  * @param {Number} props.percentage The percentage of course completion (0-100)
  * @returns {JSX.Element} The progress bar component
  */
-const ProgressBar = ({ percentage }) => {
+function ProgressBar({ percentage }) {
   // Ensure percentage is a valid number between 0 and 100
   const validPercentage = (() => {
     // Check if percentage is a valid number
-    if (typeof percentage !== 'number' || isNaN(percentage)) {
+    if (typeof percentage !== 'number' || Number.isNaN(percentage)) {
       return 0;
     }
     // Clamp between 0 and 100
@@ -40,12 +40,12 @@ const ProgressBar = ({ percentage }) => {
       {/* Text below progress bar */}
       <Box sx={{ mt: 0.5, display: 'flex', justifyContent: 'flex-end' }}>
         <Typography variant='body2' color='text.secondary'>
-          Progress: {validPercentage}%
+          Progress: {Math.round(validPercentage)}%
         </Typography>
       </Box>
     </Box>
   );
-};
+}
 
 ProgressBar.propTypes = {
   percentage: PropTypes.number,

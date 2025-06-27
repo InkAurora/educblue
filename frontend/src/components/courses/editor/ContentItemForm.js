@@ -298,7 +298,8 @@ function ContentItemForm({
             {currentItem.options &&
               currentItem.options.map((option, index) => (
                 <TextField
-                  key={index}
+                  // eslint-disable-next-line react/no-array-index-key
+                  key={`option-${index}-${option?.substring(0, 10) || index}`}
                   margin='normal'
                   required
                   fullWidth

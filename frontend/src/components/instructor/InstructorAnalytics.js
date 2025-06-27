@@ -28,10 +28,10 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { jwtDecode } from 'jwt-decode';
-import axiosInstance from '../../utils/axiosConfig';
 import HomeIcon from '@mui/icons-material/Home';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
+import axiosInstance from '../../utils/axiosConfig';
 
 /**
  * InstructorAnalytics component displays analytics data for course instructors.
