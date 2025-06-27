@@ -58,7 +58,8 @@ const useCourseProgress = (courseId, sectionId, contentId) => {
     } catch (progressErr) {
       if (!isMountedRef.current) return { records: [], percentage: 0 };
 
-      // console.error('Error fetching progress data:', progressErr);
+      // eslint-disable-next-line no-console
+      console.error('Error fetching progress data:', progressErr);
       if (progressErr.response?.status === 404) {
         // No progress found is not an error state, just means no progress yet
         setProgress([]);
