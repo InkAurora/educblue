@@ -132,7 +132,12 @@ function AdminDashboard() {
       const response = await axiosInstance.put(`/api/users/${userId}`, {
         role: newRole,
       });
-      setUsers(users.map((u) => (u._id === userId ? response.data.user : u)));
+      // Ensure the updated user object has the correct _id property
+      const updatedUser = {
+        ...response.data.user,
+        _id: response.data.user.id || response.data.user._id || userId,
+      };
+      setUsers(users.map((u) => (u._id === userId ? updatedUser : u)));
       setSuccessMessage('User role updated successfully.');
     } catch (err) {
       setError(
@@ -210,7 +215,12 @@ function AdminDashboard() {
       const response = await axiosInstance.put(`/api/users/${userId}`, {
         enrolledCourses: courseIdsToEnroll,
       });
-      setUsers(users.map((u) => (u._id === userId ? response.data.user : u)));
+      // Ensure the updated user object has the correct _id property
+      const updatedUser = {
+        ...response.data.user,
+        _id: response.data.user.id || response.data.user._id || userId,
+      };
+      setUsers(users.map((u) => (u._id === userId ? updatedUser : u)));
       setOpenEnrollDialog(false);
       setSelectedUser(null);
       setSuccessMessage('User enrollments updated successfully.');

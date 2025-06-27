@@ -19,8 +19,9 @@ jest.mock('../../utils/axiosConfig', () => ({
 }));
 
 // Mock react-router-dom
+const mockNavigate = jest.fn();
 jest.mock('react-router-dom', () => ({
-  useNavigate: () => jest.fn(),
+  useNavigate: () => mockNavigate,
 }));
 
 // Mock Material-UI Select component
@@ -87,6 +88,7 @@ describe('AdminDashboard Component', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockNavigate.mockClear();
   });
 
   test('redirects non-admins to dashboard', async () => {
@@ -97,15 +99,10 @@ describe('AdminDashboard Component', () => {
       }),
     );
 
-    const navigateMock = jest.fn();
-    // eslint-disable-next-line global-require
-    const { useNavigate } = require('react-router-dom');
-    jest.spyOn({ useNavigate }, 'useNavigate').mockReturnValue(navigateMock);
-
     render(<AdminDashboard />);
 
     await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledWith('/dashboard');
+      expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
     });
   });
 
@@ -175,7 +172,11 @@ describe('AdminDashboard Component', () => {
     // Mock put request for role update
     axiosInstance.put.mockResolvedValue({
       data: {
-        user: { ...mockUsers[0], role: 'instructor' },
+        user: {
+          ...mockUsers[0],
+          role: 'instructor',
+          id: mockUsers[0]._id, // Backend returns id instead of _id
+        },
         message: 'User updated successfully',
       },
     });
@@ -246,7 +247,13 @@ describe('AdminDashboard Component', () => {
 
     // Mock the put request for enrollment update
     axiosInstance.put.mockResolvedValue({
-      data: { message: 'User enrollments updated successfully' },
+      data: {
+        user: {
+          ...mockUsers[0],
+          id: mockUsers[0]._id, // Backend returns id instead of _id
+        },
+        message: 'User enrollments updated successfully',
+      },
     });
 
     // Toggle a course enrollment status
