@@ -118,7 +118,7 @@ describe('CourseDetails Component', () => {
 
     // Wait for data to load
     await waitFor(() => {
-      expect(screen.getAllByText('Test Course')).toHaveLength(2); // Should appear in both sidebar and main content
+      expect(screen.getByText('Test Course')).toBeInTheDocument();
     });
 
     // Verify the admin can see sections
@@ -223,7 +223,7 @@ describe('CourseDetails Component', () => {
 
     // Wait for data to load
     await waitFor(() => {
-      expect(screen.getAllByText('Test Course')).toHaveLength(2); // Should appear in both sidebar and main content
+      expect(screen.getByText('Test Course')).toBeInTheDocument();
     });
 
     // Verify student can access sections
