@@ -17,22 +17,31 @@ jest.mock('../../../utils/axiosConfig', () => ({
 jest.mock(
   './ContentItemList',
   () =>
-    function ({ content, onEdit, onDelete, onAdd }) {
+    function MockContentItemList({ content, onEdit, onDelete, onAdd }) {
       return (
         <div data-testid='mock-content-item-list'>
-          <button data-testid='add-content-button' onClick={onAdd}>
+          <button
+            type='button'
+            data-testid='add-content-button'
+            onClick={onAdd}
+          >
             Add Content
           </button>
           {content.map((item, index) => (
-            <div key={index} data-testid={`content-item-${index}`}>
+            <div
+              key={`content-${item.id || index}`}
+              data-testid={`content-item-${index}`}
+            >
               {item.title} ({item.type})
               <button
+                type='button'
                 data-testid={`edit-button-${index}`}
                 onClick={() => onEdit(index)}
               >
                 Edit
               </button>
               <button
+                type='button'
                 data-testid={`delete-button-${index}`}
                 onClick={() => onDelete(index)}
               >
@@ -48,7 +57,7 @@ jest.mock(
 jest.mock(
   './ContentItemForm',
   () =>
-    function ({
+    function MockContentItemForm({
       open,
       onClose,
       currentItem,
@@ -138,10 +147,10 @@ jest.mock(
               </select>
             </div>
           )}
-          <button data-testid='cancel-button' onClick={onClose}>
+          <button type='button' data-testid='cancel-button' onClick={onClose}>
             Cancel
           </button>
-          <button data-testid='save-button' onClick={onSave}>
+          <button type='button' data-testid='save-button' onClick={onSave}>
             Save
           </button>
         </div>

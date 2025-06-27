@@ -30,7 +30,7 @@ jest.mock('../../utils/axiosConfig', () => ({
 }));
 
 // Mock localStorage
-const localStorageMock = (function () {
+const localStorageMock = (function localStorageMockFunction() {
   let store = {};
   return {
     getItem: jest.fn((key) => store[key] || null),

@@ -1,7 +1,6 @@
 // Direct test approach for axiosConfig.js
 describe('axiosConfig', () => {
   // Mock axios
-  const mockAxiosCreate = jest.fn();
   const mockAxiosPost = jest.fn();
   const mockAxiosInstance = jest
     .fn()
@@ -38,6 +37,7 @@ describe('axiosConfig', () => {
     function requestInterceptor(config) {
       const token = mockLocalStorage.getItem('token');
       if (token) {
+        // eslint-disable-next-line no-param-reassign
         config.headers.Authorization = `Bearer ${token}`;
       }
       return config;

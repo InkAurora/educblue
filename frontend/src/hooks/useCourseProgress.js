@@ -58,7 +58,7 @@ const useCourseProgress = (courseId, sectionId, contentId) => {
     } catch (progressErr) {
       if (!isMountedRef.current) return { records: [], percentage: 0 };
 
-      console.error('Error fetching progress data:', progressErr);
+      // console.error('Error fetching progress data:', progressErr);
       if (progressErr.response?.status === 404) {
         // No progress found is not an error state, just means no progress yet
         setProgress([]);
@@ -108,10 +108,10 @@ const useCourseProgress = (courseId, sectionId, contentId) => {
             }
           }
         } catch (err) {
-          console.error(
-            'Error fetching content details for progress tracking:',
-            err,
-          );
+          // console.error(
+          //   'Error fetching content details for progress tracking:',
+          //   err,
+          // );
         }
       };
 
@@ -142,14 +142,14 @@ const useCourseProgress = (courseId, sectionId, contentId) => {
    */
   const markContentCompleted = async () => {
     if (!courseId || !sectionId || !actualContentId) {
-      console.error(
-        'Cannot mark content completed: Missing courseId, sectionId, or contentId',
-        {
-          courseId,
-          sectionId,
-          actualContentId,
-        },
-      );
+      // console.error(
+      //   'Cannot mark content completed: Missing courseId, sectionId, or contentId',
+      //   {
+      //     courseId,
+      //     sectionId,
+      //     actualContentId,
+      //   },
+      // );
       return false;
     }
 

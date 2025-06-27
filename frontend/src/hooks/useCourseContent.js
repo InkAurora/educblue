@@ -114,7 +114,7 @@ const useCourseContent = (courseId) => {
       document
         .querySelector('[data-testid="error-alert"]')
         ?.setAttribute('data-error', 'Please add at least one content item');
-      return;
+      return false;
     }
 
     try {
@@ -224,7 +224,7 @@ const useCourseContent = (courseId) => {
       document
         .querySelector('[data-testid="error-alert"]')
         ?.setAttribute('data-error', 'Please add content before publishing');
-      return;
+      return false;
     }
 
     try {
@@ -279,6 +279,7 @@ const useCourseContent = (courseId) => {
 
       // Redirect to the published course
       navigate(`/courses/${courseId}`);
+      return true;
     } catch (err) {
       // console.error('Error publishing course:', err);
       setPublishing(false);
@@ -298,6 +299,7 @@ const useCourseContent = (courseId) => {
       } else {
         setError(`Failed to publish course: ${err.message || 'Unknown error'}`);
       }
+      return false;
     }
   };
 

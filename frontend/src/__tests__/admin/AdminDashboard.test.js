@@ -98,9 +98,9 @@ describe('AdminDashboard Component', () => {
     );
 
     const navigateMock = jest.fn();
-    jest
-      .spyOn(require('react-router-dom'), 'useNavigate')
-      .mockReturnValue(navigateMock);
+    // eslint-disable-next-line global-require
+    const { useNavigate } = require('react-router-dom');
+    jest.spyOn({ useNavigate }, 'useNavigate').mockReturnValue(navigateMock);
 
     render(<AdminDashboard />);
 

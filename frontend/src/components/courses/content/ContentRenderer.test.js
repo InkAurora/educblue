@@ -1,8 +1,7 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ContentRenderer from './ContentRenderer';
-import axiosInstance from '../../../utils/axiosConfig';
 
 // Mock the markdown utils
 jest.mock('../../../utils/markdownUtils', () => ({
@@ -15,8 +14,8 @@ jest.mock('../../../utils/markdownUtils', () => ({
 jest.mock(
   'react-markdown',
   () =>
-    function MockReactMarkdown(props) {
-      return <div data-testid='react-markdown'>{props.children}</div>;
+    function MockReactMarkdown({ children }) {
+      return <div data-testid='react-markdown'>{children}</div>;
     },
 );
 
@@ -30,13 +29,18 @@ jest.mock('../../../utils/axiosConfig', () => ({
 jest.mock(
   '@mui/material/TextField',
   () =>
-    function MockTextField(props) {
+    function MockTextField({
+      'data-testid': dataTestId = 'quiz-answer-field',
+      value = '',
+      onChange,
+      placeholder,
+    }) {
       return (
         <input
-          data-testid={props['data-testid'] || 'quiz-answer-field'}
-          value={props.value || ''}
-          onChange={props.onChange}
-          placeholder={props.placeholder}
+          data-testid={dataTestId}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
         />
       );
     },
@@ -46,14 +50,14 @@ jest.mock(
 jest.mock(
   '@mui/material/Radio',
   () =>
-    function MockRadio(props) {
+    function MockRadio({ value, checked, onChange }) {
       return (
         <input
           type='radio'
-          data-testid={`radio-${props.value}`}
-          checked={props.checked}
-          onChange={props.onChange}
-          value={props.value}
+          data-testid={`radio-${value}`}
+          checked={checked}
+          onChange={onChange}
+          value={value}
         />
       );
     },
@@ -63,11 +67,11 @@ jest.mock(
 jest.mock(
   '@mui/material/FormControlLabel',
   () =>
-    function MockFormControlLabel(props) {
+    function MockFormControlLabel({ value, control, label }) {
       return (
-        <label data-testid={`label-${props.value}`}>
-          {props.control}
-          <span>{props.label}</span>
+        <label data-testid={`label-${value}`} htmlFor={`control-${value}`}>
+          {control}
+          <span>{label}</span>
         </label>
       );
     },
@@ -77,14 +81,15 @@ jest.mock(
 jest.mock(
   '@mui/material/RadioGroup',
   () =>
-    function MockRadioGroup(props) {
+    function MockRadioGroup({
+      'data-testid': dataTestId = 'multiple-choice-options',
+      onChange,
+      value,
+      children,
+    }) {
       return (
-        <div
-          data-testid={props['data-testid'] || 'multiple-choice-options'}
-          onChange={props.onChange}
-          value={props.value}
-        >
-          {props.children}
+        <div data-testid={dataTestId} onChange={onChange} value={value}>
+          {children}
         </div>
       );
     },
