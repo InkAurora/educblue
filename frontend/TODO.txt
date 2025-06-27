@@ -3,3 +3,4 @@
 - Fix course content menu not showing on mobile
 - Fix browser bottom bar not hiding on iOS Safari
 - Fix progress bar not updating without refreshing the page
+- Fix course details page misaligned center
