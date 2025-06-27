@@ -378,14 +378,14 @@ pre::-webkit-scrollbar-thumb:hover {
   html {
     height: -webkit-fill-available;
   }
-  
+
   body {
     /* Enable momentum scrolling on iOS */
     -webkit-overflow-scrolling: touch;
     /* Prevent bounce scrolling that can interfere with bottom bar hiding */
     overscroll-behavior-y: none;
   }
-  
+
   #root {
     height: -webkit-fill-available;
   }
