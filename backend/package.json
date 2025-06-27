@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "seed": "node seed.js",
-    "prestart": "npm run lint"
+    "prestart": "if [ \"$NODE_ENV\" != \"production\" ]; then npm run lint; fi"
   },
   "keywords": [],
   "author": "",

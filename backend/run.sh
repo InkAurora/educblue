@@ -22,6 +22,5 @@ echo "Environment: $NODE_ENV"
 echo "Port: $PORT"
 
 # Build and start containers with branch-specific naming (force rebuild without cache)
-docker system prune -f
 docker-compose build --no-cache
 docker-compose up
