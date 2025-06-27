@@ -104,9 +104,11 @@ function CourseSidebar({
         if (sectionsData.length > 0 && !selectedSection) {
           const sectionToSelect =
             currentSectionId &&
-            sectionsData.find((s) => s.id === currentSectionId)
+            sectionsData.find(
+              (s) => s.id === currentSectionId || s._id === currentSectionId,
+            )
               ? currentSectionId
-              : sectionsData[0].id;
+              : sectionsData[0].id || sectionsData[0]._id;
           setSelectedSection(sectionToSelect);
         }
       } catch (err) {
@@ -119,7 +121,19 @@ function CourseSidebar({
     if (courseId) {
       fetchSections();
     }
-  }, [courseId, selectedSection, currentSectionId]);
+  }, [courseId, currentSectionId]);
+
+  // Update selected section when currentSectionId prop changes (only when URL changes)
+  useEffect(() => {
+    if (currentSectionId && sections.length > 0) {
+      const sectionExists = sections.find(
+        (s) => s.id === currentSectionId || s._id === currentSectionId,
+      );
+      if (sectionExists) {
+        setSelectedSection(currentSectionId);
+      }
+    }
+  }, [currentSectionId, sections]); // Removed selectedSection from dependencies to prevent infinite loop
 
   // Fetch content for selected section
   useEffect(() => {
@@ -293,11 +307,14 @@ function CourseSidebar({
               <MenuItem value='' disabled>
                 {loadingSections ? 'Loading sections...' : 'Select a section'}
               </MenuItem>
-              {sections.map((section) => (
-                <MenuItem key={section.id} value={section.id}>
-                  {section.title}
-                </MenuItem>
-              ))}
+              {sections.map((section) => {
+                const sectionId = section._id || section.id;
+                return (
+                  <MenuItem key={sectionId} value={sectionId}>
+                    {section.title}
+                  </MenuItem>
+                );
+              })}
             </Select>
           </FormControl>
         </Box>

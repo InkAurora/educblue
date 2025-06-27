@@ -41,10 +41,14 @@ function AppWithSidebar() {
     // Extract course ID from URL for sidebar data
     if (isCourseContentPage) {
       const courseIdMatch = location.pathname.match(/\/courses\/([^/]+)/);
+      const sectionIdMatch = location.pathname.match(/\/sections\/([^/]+)/);
       if (courseIdMatch) {
         // For now, we'll pass the courseId to the sidebar
         // The sidebar component will handle fetching its own data
-        setSidebarData({ courseId: courseIdMatch[1] });
+        setSidebarData({
+          courseId: courseIdMatch[1],
+          sectionId: sectionIdMatch ? sectionIdMatch[1] : null,
+        });
       }
     } else {
       setSidebarData(null);
@@ -97,6 +101,7 @@ function AppWithSidebar() {
             >
               <CourseSidebar
                 courseId={sidebarData.courseId}
+                currentSectionId={sidebarData.sectionId}
                 // The sidebar will handle fetching course data internally
               />
             </Box>

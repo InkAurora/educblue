@@ -424,6 +424,16 @@ function CourseDetails({ testId = null }) {
                       const sectionId = section._id || section.id;
                       const contentCount = section.content?.length || 0;
 
+                      // Get the first content item of this section for the URL
+                      const firstContent = section.content?.[0];
+                      const firstContentId =
+                        firstContent?._id || firstContent?.id;
+
+                      // Generate URL - if section has content, link to first content, otherwise to section
+                      const sectionUrl = firstContentId
+                        ? `/courses/${id}/sections/${sectionId}/content/${firstContentId}`
+                        : `/courses/${id}/sections/${sectionId}`;
+
                       // Check if any content in this section is completed
                       const hasCompletedContent =
                         Array.isArray(progress) &&
@@ -438,7 +448,7 @@ function CourseDetails({ testId = null }) {
                         <ListItem
                           key={sectionId}
                           component={Link}
-                          to={`/courses/${id}/sections/${sectionId}`}
+                          to={sectionUrl}
                           sx={{
                             borderBottom:
                               index < course.sections.length - 1
