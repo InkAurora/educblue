@@ -34,11 +34,12 @@ const useCourseProgress = (courseId, sectionId, contentId) => {
       const responseData = progressResponse.data;
 
       // Extract progress records array and percentage
-      const progressRecords = Array.isArray(responseData.progressRecords)
-        ? responseData.progressRecords
-        : Array.isArray(responseData)
-          ? responseData
-          : [];
+      let progressRecords = [];
+      if (Array.isArray(responseData.progressRecords)) {
+        progressRecords = responseData.progressRecords;
+      } else if (Array.isArray(responseData)) {
+        progressRecords = responseData;
+      }
 
       const percentage =
         typeof responseData.progressPercentage === 'number'
@@ -52,7 +53,7 @@ const useCourseProgress = (courseId, sectionId, contentId) => {
 
       return {
         records: progressRecords,
-        percentage: percentage,
+        percentage,
       };
     } catch (progressErr) {
       if (!isMountedRef.current) return { records: [], percentage: 0 };

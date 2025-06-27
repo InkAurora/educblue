@@ -114,11 +114,14 @@ describe('AdminDashboard Component', () => {
     axiosInstance.get.mockImplementation((url) => {
       if (url === '/api/users/me') {
         return Promise.resolve({ data: mockAdminUser });
-      } else if (url === '/api/users') {
+      }
+      if (url === '/api/users') {
         return Promise.resolve({ data: mockUsers });
-      } else if (url === '/api/analytics') {
+      }
+      if (url === '/api/analytics') {
         return Promise.resolve({ data: mockAnalytics });
-      } else if (url === '/api/courses') {
+      }
+      if (url === '/api/courses') {
         return Promise.resolve({ data: mockCourses });
       }
       return Promise.reject(new Error('Unexpected URL'));
@@ -156,11 +159,14 @@ describe('AdminDashboard Component', () => {
     axiosInstance.get.mockImplementation((url) => {
       if (url === '/api/users/me') {
         return Promise.resolve({ data: mockAdminUser });
-      } else if (url === '/api/users') {
+      }
+      if (url === '/api/users') {
         return Promise.resolve({ data: mockUsers });
-      } else if (url === '/api/analytics') {
+      }
+      if (url === '/api/analytics') {
         return Promise.resolve({ data: mockAnalytics });
-      } else if (url === '/api/courses') {
+      }
+      if (url === '/api/courses') {
         return Promise.resolve({ data: mockCourses });
       }
       return Promise.reject(new Error('Unexpected URL'));
@@ -201,11 +207,14 @@ describe('AdminDashboard Component', () => {
     axiosInstance.get.mockImplementation((url) => {
       if (url === '/api/users/me') {
         return Promise.resolve({ data: mockAdminUser });
-      } else if (url === '/api/users') {
+      }
+      if (url === '/api/users') {
         return Promise.resolve({ data: mockUsers });
-      } else if (url === '/api/analytics') {
+      }
+      if (url === '/api/analytics') {
         return Promise.resolve({ data: mockAnalytics });
-      } else if (url === '/api/courses') {
+      }
+      if (url === '/api/courses') {
         return Promise.resolve({ data: mockCourses });
       }
       return Promise.reject(new Error('Unexpected URL'));

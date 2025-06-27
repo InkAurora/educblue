@@ -3,7 +3,7 @@ module.exports = {
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.js'],
   moduleNameMapper: {
     '^axios$': '<rootDir>/src/__mocks__/axios.js',
-    '\.(css|less|sass|scss)$': '<rootDir>/src/__mocks__/styleMock.js',
+    '\\.(css|less|sass|scss)$': '<rootDir>/src/__mocks__/styleMock.js',
   },
   transform: {
     '^.+\\.(js|jsx)$': 'babel-jest',

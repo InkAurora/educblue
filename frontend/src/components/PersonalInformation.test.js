@@ -4,15 +4,13 @@ import PersonalInformation from './PersonalInformation';
 import axiosInstance from '../utils/axiosConfig';
 
 // Mock the axios instance
-jest.mock('../utils/axiosConfig', () => {
-  return {
-    __esModule: true,
-    default: {
-      get: jest.fn(),
-      put: jest.fn(),
-    },
-  };
-});
+jest.mock('../utils/axiosConfig', () => ({
+  __esModule: true,
+  default: {
+    get: jest.fn(),
+    put: jest.fn(),
+  },
+}));
 
 describe('PersonalInformation Component', () => {
   const mockUserData = {

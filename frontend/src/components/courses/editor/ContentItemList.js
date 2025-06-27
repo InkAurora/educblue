@@ -47,6 +47,7 @@ function ContentItemList({ content, onEdit, onDelete, onAdd }) {
       {content.length > 0 ? (
         <List>
           {content.map((item, index) => (
+            // eslint-disable-next-line react/no-array-index-key
             <React.Fragment key={index}>
               <ListItem>
                 <ListItemText
@@ -77,8 +78,8 @@ function ContentItemList({ content, onEdit, onDelete, onAdd }) {
         </List>
       ) : (
         <Alert severity='info' sx={{ mt: 2, mb: 2 }}>
-          No content added yet. Click the "Add Content" button to create your
-          first content item.
+          No content added yet. Click the &quot;Add Content&quot; button to
+          create your first content item.
         </Alert>
       )}
 

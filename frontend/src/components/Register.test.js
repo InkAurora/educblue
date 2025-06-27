@@ -1,7 +1,9 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import axios from 'axios';
 import Register from './Register';
+
+// Import the mocked axiosConfig
+import axiosInstance from '../utils/axiosConfig';
 
 // Mock useNavigate
 const mockedUsedNavigate = jest.fn();
@@ -10,18 +12,13 @@ jest.mock('react-router-dom', () => ({
 }));
 
 // Mock axiosConfig
-jest.mock('../utils/axiosConfig', () => {
-  return {
+jest.mock('../utils/axiosConfig', () => ({
+  post: jest.fn(),
+  __esModule: true,
+  default: {
     post: jest.fn(),
-    __esModule: true,
-    default: {
-      post: jest.fn(),
-    },
-  };
-});
-
-// Import the mocked axiosConfig
-import axiosInstance from '../utils/axiosConfig';
+  },
+}));
 
 // Mock localStorage
 const localStorageMock = {
@@ -378,15 +375,13 @@ describe('Register Component', () => {
     // Mock axiosInstance to delay response
     axiosInstance.post.mockImplementationOnce(
       () =>
-        new Promise((resolve) =>
-          setTimeout(
-            () =>
-              resolve({
-                data: { accessToken: 'token', refreshToken: 'refresh-token' },
-              }),
-            100,
-          ),
-        ),
+        new Promise((resolve) => {
+          setTimeout(() => {
+            resolve({
+              data: { accessToken: 'token', refreshToken: 'refresh-token' },
+            });
+          }, 100);
+        }),
     );
 
     render(<Register />);

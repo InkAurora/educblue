@@ -42,7 +42,7 @@ function ContentRenderer({
   sectionId,
   isInstructor,
 }) {
-  const { type, title, content, videoUrl, options, question } = contentItem;
+  const { type, content, videoUrl, options, question } = contentItem;
   const [videoEnded, setVideoEnded] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [showFeedback, setShowFeedback] = useState(false);
@@ -59,41 +59,33 @@ function ContentRenderer({
   const [quizScore, setQuizScore] = useState(null);
   const contentId = contentItem._id || contentItem.id;
 
-  // Check if the video URL is a YouTube URL
-  useEffect(() => {
-    if (type === 'video' && videoUrl) {
-      const videoId = getYoutubeVideoId(videoUrl);
-      if (videoId) {
-        setIsYoutubeVideo(true);
-        setYoutubeVideoId(videoId);
+  // Handle video end event
+  const handleVideoEnd = async () => {
+    setVideoEnded(true);
+    if (!isCompleted) {
+      const success = await onCompleted();
+      if (success) {
+        setFeedbackMessage('Progress saved!');
+        setFeedbackType('success');
       } else {
-        setIsYoutubeVideo(false);
-        setYoutubeVideoId(null);
+        setFeedbackMessage('Failed to save progress. Please try again.');
+        setFeedbackType('error');
       }
+      setShowFeedback(true);
     }
-  }, [type, videoUrl]);
+  };
 
-  // Initialize YouTube iframe API
-  useEffect(() => {
-    if (!isYoutubeVideo || !youtubeVideoId) return;
+  // YouTube player ready handler
+  const onPlayerReady = () => {
+    // console.log('YouTube player is ready');
+  };
 
-    // Ensure YT API is loaded
-    if (!window.YT) {
-      const tag = document.createElement('script');
-      tag.src = 'https://www.youtube.com/iframe_api';
-      const firstScriptTag = document.getElementsByTagName('script')[0];
-      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-      window.onYouTubeIframeAPIReady = initYoutubePlayer;
-    } else if (window.YT && window.YT.Player) {
-      initYoutubePlayer();
+  // YouTube player state change handler
+  const onPlayerStateChange = (event) => {
+    if (event.data === window.YT.PlayerState.ENDED) {
+      handleVideoEnd();
     }
-
-    return () => {
-      if (youtubePlayer && typeof youtubePlayer.destroy === 'function') {
-        youtubePlayer.destroy();
-      }
-    };
-  }, [isYoutubeVideo, youtubeVideoId]);
+  };
 
   // Function to initialize YouTube player
   const initYoutubePlayer = () => {
@@ -116,17 +108,41 @@ function ContentRenderer({
     setYoutubePlayer(player);
   };
 
-  // YouTube player ready handler
-  const onPlayerReady = (event) => {
-    // console.log('YouTube player is ready');
-  };
-
-  // YouTube player state change handler
-  const onPlayerStateChange = (event) => {
-    if (event.data === window.YT.PlayerState.ENDED) {
-      handleVideoEnd();
+  // Check if the video URL is a YouTube URL
+  useEffect(() => {
+    if (type === 'video' && videoUrl) {
+      const videoId = getYoutubeVideoId(videoUrl);
+      if (videoId) {
+        setIsYoutubeVideo(true);
+        setYoutubeVideoId(videoId);
+      } else {
+        setIsYoutubeVideo(false);
+        setYoutubeVideoId(null);
+      }
     }
-  };
+  }, [type, videoUrl]);
+
+  // Initialize YouTube iframe API
+  useEffect(() => {
+    if (!isYoutubeVideo || !youtubeVideoId) return undefined;
+
+    // Ensure YT API is loaded
+    if (!window.YT) {
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      const firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+      window.onYouTubeIframeAPIReady = initYoutubePlayer;
+    } else if (window.YT && window.YT.Player) {
+      initYoutubePlayer();
+    }
+
+    return () => {
+      if (youtubePlayer && typeof youtubePlayer.destroy === 'function') {
+        youtubePlayer.destroy();
+      }
+    };
+  }, [isYoutubeVideo, youtubeVideoId]);
 
   // Pre-fill quiz answers and score from progress data
   useEffect(() => {
@@ -159,22 +175,6 @@ function ContentRenderer({
     }
     return undefined;
   }, [showFeedback]);
-
-  // Handle video end event
-  const handleVideoEnd = async () => {
-    setVideoEnded(true);
-    if (!isCompleted) {
-      const success = await onCompleted();
-      if (success) {
-        setFeedbackMessage('Progress saved!');
-        setFeedbackType('success');
-      } else {
-        setFeedbackMessage('Failed to save progress. Please try again.');
-        setFeedbackType('error');
-      }
-      setShowFeedback(true);
-    }
-  };
 
   // Handle manual completion
   const handleCompletionClick = async () => {

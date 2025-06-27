@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
+import { jwtDecode } from 'jwt-decode';
 import Navbar from '../components/Navbar';
 import axiosInstance from '../utils/axiosConfig';
 
@@ -16,7 +17,6 @@ jest.mock('../utils/axiosConfig', () => ({
 jest.mock('jwt-decode', () => ({
   jwtDecode: jest.fn(),
 }));
-import { jwtDecode } from 'jwt-decode';
 
 // Mock useNavigate
 const mockedUsedNavigate = jest.fn();

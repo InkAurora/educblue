@@ -8,3 +8,4 @@
 ✅ Hide sidebar on mobile after selecting a content - COMPLETED
 ✅ Fix course details page misaligned center - COMPLETED
 ✅ Remove content page margin at the top and padding at the bottom - COMPLETED
+- Fix user role not changing a second time without refreshing the page (wrong API request)

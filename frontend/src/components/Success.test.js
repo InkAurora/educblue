@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Success from './Success';
+import axiosInstance from '../utils/axiosConfig';
 
 // Mock the axios instance properly
 jest.mock('../utils/axiosConfig', () => ({
@@ -11,7 +12,6 @@ jest.mock('../utils/axiosConfig', () => ({
     post: jest.fn(),
   },
 }));
-import axiosInstance from '../utils/axiosConfig';
 
 // Mock react-router-dom
 jest.mock('react-router-dom', () => ({

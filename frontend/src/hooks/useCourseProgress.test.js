@@ -1,5 +1,5 @@
-import { renderHook, act } from '@testing-library/react';
-import { waitFor } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
+
 import useCourseProgress from './useCourseProgress';
 import axiosInstance from '../utils/axiosConfig';
 

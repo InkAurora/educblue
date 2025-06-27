@@ -34,7 +34,7 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import axiosInstance from '../../utils/axiosConfig';
 
-const AdminDashboard = () => {
+function AdminDashboard() {
   const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [analytics, setAnalytics] = useState({
@@ -413,18 +413,18 @@ const AdminDashboard = () => {
       >
         <DialogTitle>Enroll User in Courses</DialogTitle>
         <DialogContent>
-          {coursesLoading ? (
-            <CircularProgress />
-          ) : coursesError ? (
+          {coursesLoading && <CircularProgress />}
+          {!coursesLoading && coursesError && (
             <Alert severity='error'>{coursesError}</Alert>
-          ) : (
+          )}
+          {!coursesLoading && !coursesError && (
             <List>
               {availableCourses.map((course) => (
                 <ListItem
                   key={course._id}
                   dense
-                  button
                   onClick={() => handleCourseToggle(course._id)}
+                  sx={{ cursor: 'pointer' }}
                 >
                   <Checkbox
                     edge='start'
@@ -488,6 +488,6 @@ const AdminDashboard = () => {
       </Dialog>
     </Container>
   );
-};
+}
 
 export default AdminDashboard;

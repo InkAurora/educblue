@@ -106,9 +106,11 @@ describe('CourseDetails Component', () => {
             enrolledCourses: [],
           },
         });
-      } else if (url === '/api/courses/test-course-id') {
+      }
+      if (url === '/api/courses/test-course-id') {
         return Promise.resolve({ data: mockCourse });
-      } else if (url === '/api/progress/test-course-id') {
+      }
+      if (url === '/api/progress/test-course-id') {
         return Promise.resolve({ data: mockProgressResponse });
       }
       return Promise.reject(new Error('Unexpected URL'));
@@ -144,7 +146,8 @@ describe('CourseDetails Component', () => {
             enrolledCourses: [],
           },
         });
-      } else if (url === '/api/courses/test-course-id') {
+      }
+      if (url === '/api/courses/test-course-id') {
         return Promise.resolve({ data: mockCourse });
       }
       return Promise.reject(new Error('Unexpected URL'));
@@ -179,7 +182,8 @@ describe('CourseDetails Component', () => {
             enrolledCourses: [],
           },
         });
-      } else if (url === '/api/courses/test-course-id') {
+      }
+      if (url === '/api/courses/test-course-id') {
         return Promise.resolve({ data: mockCourse });
       }
       return Promise.reject(new Error('Unexpected URL'));
@@ -211,9 +215,11 @@ describe('CourseDetails Component', () => {
             enrolledCourses: ['test-course-id'],
           },
         });
-      } else if (url === '/api/courses/test-course-id') {
+      }
+      if (url === '/api/courses/test-course-id') {
         return Promise.resolve({ data: mockCourse });
-      } else if (url === '/api/progress/test-course-id') {
+      }
+      if (url === '/api/progress/test-course-id') {
         return Promise.resolve({ data: mockProgressResponse });
       }
       return Promise.reject(new Error('Unexpected URL'));

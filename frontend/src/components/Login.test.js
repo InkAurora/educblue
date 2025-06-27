@@ -1,17 +1,14 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import Login from './Login';
-import axios from 'axios';
 import axiosInstance from '../utils/axiosConfig';
 
 // Mock axios config module
-jest.mock('../utils/axiosConfig', () => {
-  return {
-    post: jest.fn(),
-    __esModule: true,
-    default: { post: jest.fn() },
-  };
-});
+jest.mock('../utils/axiosConfig', () => ({
+  post: jest.fn(),
+  __esModule: true,
+  default: { post: jest.fn() },
+}));
 
 // Mock useNavigate
 const mockedUsedNavigate = jest.fn();
@@ -21,7 +18,7 @@ jest.mock('react-router-dom', () => ({
 }));
 
 // Mock localStorage
-const localStorageMock = (function () {
+const localStorageMock = (function localStorageMock() {
   let store = {};
   return {
     getItem: jest.fn((key) => store[key] || null),
