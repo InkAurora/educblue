@@ -434,10 +434,11 @@ function CourseDetails({ testId = null }) {
                         ? `/courses/${id}/sections/${sectionId}/content/${firstContentId}`
                         : `/courses/${id}/sections/${sectionId}`;
 
-                      // Check if any content in this section is completed
+                      // Check if all content in this section is completed
                       const hasCompletedContent =
                         Array.isArray(progress) &&
-                        section.content?.some((contentItem) => {
+                        section.content?.length > 0 &&
+                        section.content.every((contentItem) => {
                           const contentId = contentItem._id || contentItem.id;
                           return progress.some(
                             (p) => p.contentId === contentId && p.completed,
