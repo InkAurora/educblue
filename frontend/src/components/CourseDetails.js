@@ -7,62 +7,16 @@ import {
   CircularProgress,
   Alert,
   Button,
-  Grid,
-  Paper,
   List,
   ListItem,
-  ListItemText,
-  ListItemIcon,
 } from '@mui/material';
-import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
-import DescriptionIcon from '@mui/icons-material/Description';
-import QuizIcon from '@mui/icons-material/Quiz';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import axiosInstance from '../utils/axiosConfig';
 import { convertMarkdownToHTML } from '../utils/markdownUtils';
 import CourseSidebar from './CourseSidebar';
 import ProgressBar from './courses/ProgressBar';
 
-// Helper function to get the appropriate icon based on content type
-const getContentTypeIcon = (type) => {
-  switch (type) {
-    case 'video':
-      return <PlayCircleOutlineIcon />;
-    case 'quiz':
-    case 'multipleChoice':
-      return <QuizIcon />;
-    case 'document':
-    case 'markdown':
-    default:
-      return <DescriptionIcon />;
-  }
-};
-
-// Helper function to generate or ensure valid contentIds for MongoDB
-const getValidContentId = (item, index) => {
-  // If the item already has a valid MongoDB ObjectID format id, use it
-  if (item.id && /^[0-9a-fA-F]{24}$/.test(item.id)) {
-    return item.id;
-  }
-  // If the item has any id property, use that
-  if (item.id) {
-    return item.id;
-  }
-  // If item has _id property (MongoDB default), use that
-  if (item._id) {
-    return item._id;
-  }
-  // If we have an item object but no id, use the item's title
-  // to create a consistent identifier (as a fallback)
-  if (item.title) {
-    // Create a hash from the title + index to use as a more consistent ID
-    return `${item.title.replace(/\s+/g, '-').toLowerCase()}-${index}`;
-  }
-  // Last resort, just use a placeholder with index
-  return `content-item-${index}`;
-};
-
-function CourseDetails({ 'data-testid': dataTestId, testId = null }) {
+function CourseDetails({ testId = null }) {
   const params = useParams();
   const id = testId || params?.id;
   const navigate = useNavigate();
@@ -75,7 +29,6 @@ function CourseDetails({ 'data-testid': dataTestId, testId = null }) {
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [user, setUser] = useState(null);
   const [isInstructor, setIsInstructor] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [loadingUser, setLoadingUser] = useState(true);
 
@@ -464,25 +417,31 @@ function CourseDetails({ 'data-testid': dataTestId, testId = null }) {
                   }}
                 >
                   <Typography variant='h6' gutterBottom fontWeight='bold'>
-                    Course Contents
+                    Course Sections
                   </Typography>
                   <List sx={{ p: 0, width: '100%' }}>
-                    {course?.content?.map((item, index) => {
-                      const contentId = getValidContentId(item, index);
-                      const completed =
+                    {course?.sections?.map((section, index) => {
+                      const sectionId = section._id || section.id;
+                      const contentCount = section.content?.length || 0;
+
+                      // Check if any content in this section is completed
+                      const hasCompletedContent =
                         Array.isArray(progress) &&
-                        progress.some(
-                          (p) => p.contentId === contentId && p.completed,
-                        );
+                        section.content?.some((contentItem) => {
+                          const contentId = contentItem._id || contentItem.id;
+                          return progress.some(
+                            (p) => p.contentId === contentId && p.completed,
+                          );
+                        });
 
                       return (
                         <ListItem
-                          key={contentId}
+                          key={sectionId}
                           component={Link}
-                          to={`/courses/${id}/content/${contentId}`}
+                          to={`/courses/${id}/sections/${sectionId}`}
                           sx={{
                             borderBottom:
-                              index < course.content.length - 1
+                              index < course.sections.length - 1
                                 ? '1px solid #eee'
                                 : 'none',
                             py: 1.5,
@@ -501,12 +460,22 @@ function CourseDetails({ 'data-testid': dataTestId, testId = null }) {
                               flex: 1,
                             }}
                           >
-                            {getContentTypeIcon(item.type)}
-                            <Typography sx={{ ml: 2, fontWeight: 500 }}>
-                              {item.title}
-                            </Typography>
+                            <Box>
+                              <Typography sx={{ fontWeight: 500 }}>
+                                {section.title}
+                              </Typography>
+                              <Typography
+                                variant='body2'
+                                color='text.secondary'
+                              >
+                                {contentCount}{' '}
+                                {contentCount === 1 ? 'item' : 'items'}
+                                {section.description &&
+                                  ` • ${section.description}`}
+                              </Typography>
+                            </Box>
                           </Box>
-                          {completed && (
+                          {hasCompletedContent && (
                             <CheckCircleIcon color='success' fontSize='small' />
                           )}
                         </ListItem>

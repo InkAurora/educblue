@@ -64,9 +64,22 @@ describe('CourseDetails Component', () => {
     instructor: 'Instructor Name',
     price: 99.99,
     duration: '6 weeks',
-    content: [
-      { _id: 'content1', title: 'Introduction', type: 'markdown' },
-      { _id: 'content2', title: 'Lesson 1', type: 'video' },
+    sections: [
+      {
+        _id: 'section1',
+        title: 'Introduction',
+        description: 'Getting started',
+        content: [
+          { _id: 'content1', title: 'Welcome Video', type: 'video' },
+          { _id: 'content2', title: 'Course Overview', type: 'markdown' },
+        ],
+      },
+      {
+        _id: 'section2',
+        title: 'Advanced Topics',
+        description: 'Deep dive into advanced concepts',
+        content: [{ _id: 'content3', title: 'Lesson 1', type: 'video' }],
+      },
     ],
   };
 
@@ -108,9 +121,9 @@ describe('CourseDetails Component', () => {
       expect(screen.getAllByText('Test Course')).toHaveLength(2); // Should appear in both sidebar and main content
     });
 
-    // Verify the admin can see instructor-only content
+    // Verify the admin can see sections
     expect(screen.getByText('Introduction')).toBeInTheDocument();
-    expect(screen.getByText('Lesson 1')).toBeInTheDocument();
+    expect(screen.getByText('Advanced Topics')).toBeInTheDocument();
 
     // Course content should be accessible despite not being enrolled
     expect(
@@ -213,9 +226,9 @@ describe('CourseDetails Component', () => {
       expect(screen.getAllByText('Test Course')).toHaveLength(2); // Should appear in both sidebar and main content
     });
 
-    // Verify student can access content
+    // Verify student can access sections
     expect(screen.getByText('Introduction')).toBeInTheDocument();
-    expect(screen.getByText('Lesson 1')).toBeInTheDocument();
+    expect(screen.getByText('Advanced Topics')).toBeInTheDocument();
 
     // Enrollment prompt should not be shown
     expect(
