@@ -35,4 +35,8 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node healthcheck.js
 
 # Start the application
-CMD ["npm", "start"]
+CMD if [ "$NODE_ENV" = "development" ]; then \
+      npm run dev; \
+    else \
+      npm start; \
+    fi
