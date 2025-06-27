@@ -255,10 +255,8 @@ function CourseDetails({ testId = null }) {
           {(isEnrolled || isInstructor) && (
             <Box sx={{ display: { xs: 'none', md: 'block' }, flexShrink: 0 }}>
               <CourseSidebar
-                course={course}
-                progress={progress}
-                progressPercentage={progressPercentage}
                 courseId={id}
+                // Remove progress props so sidebar can handle its own progress data and receive update events
               />
             </Box>
           )}

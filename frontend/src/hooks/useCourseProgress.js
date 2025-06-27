@@ -199,8 +199,26 @@ const useCourseProgress = (courseId, sectionId, contentId) => {
       // Refresh progress data to get updated percentage
       await fetchProgressData();
 
+      // Notify other components that progress has been updated
+      if (typeof window !== 'undefined') {
+        // Use localStorage to trigger storage event for cross-tab communication
+        localStorage.setItem(
+          `progress-update-${courseId}`,
+          Date.now().toString(),
+        );
+        localStorage.removeItem(`progress-update-${courseId}`);
+
+        // Also dispatch a custom event for same-window communication
+        window.dispatchEvent(
+          new CustomEvent('progress-updated', {
+            detail: { courseId, contentId: actualContentId },
+          }),
+        );
+      }
+
       return true;
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.error('Error marking content as completed:', err);
 
       if (isMountedRef.current) {
@@ -233,9 +251,7 @@ const useCourseProgress = (courseId, sectionId, contentId) => {
    * Force refresh of progress data
    * @returns {Promise<Object>} The latest progress data with records and percentage
    */
-  const refreshProgress = async () => {
-    return await fetchProgressData();
-  };
+  const refreshProgress = () => fetchProgressData();
 
   /**
    * Check if the current content item is completed

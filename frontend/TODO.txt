@@ -4,6 +4,7 @@
 ✅ Fix course showing as completed when it has not all the content completed in the details page - COMPLETED
 ✅ Fix course content menu not showing on mobile - COMPLETED
 ✅ Fix browser bottom bar not hiding on iOS Safari - COMPLETED
-- Fix progress bar not updating without refreshing the page
+✅ Fix progress bar not updating without refreshing the page - COMPLETED
 - Hide sidebar on mobile after selecting a content
 - Fix course details page misaligned center
+- Remove content page margin at the top and padding at the bottom

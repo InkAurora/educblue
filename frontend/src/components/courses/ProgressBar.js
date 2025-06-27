@@ -40,7 +40,7 @@ const ProgressBar = ({ percentage }) => {
       {/* Text below progress bar */}
       <Box sx={{ mt: 0.5, display: 'flex', justifyContent: 'flex-end' }}>
         <Typography variant='body2' color='text.secondary'>
-          Progress: {validPercentage}%
+          Progress: {Math.round(validPercentage)}%
         </Typography>
       </Box>
     </Box>
