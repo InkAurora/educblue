@@ -9,11 +9,11 @@ import {
   Button,
   List,
   ListItem,
+  Paper,
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import axiosInstance from '../utils/axiosConfig';
 import { convertMarkdownToHTML } from '../utils/markdownUtils';
-import CourseSidebar from './CourseSidebar';
 import ProgressBar from './courses/ProgressBar';
 
 function CourseDetails({ testId = null }) {
@@ -244,259 +244,216 @@ function CourseDetails({ testId = null }) {
   return (
     <Box
       sx={{
-        width: '100%',
-        boxSizing: 'border-box',
-        display: 'flex',
+        flex: 1,
+        overflow: 'auto',
+        p: { xs: 1, sm: 2, md: 3 },
       }}
     >
-      {course && (
-        <>
-          {/* Desktop sidebar - Only shown for enrolled users or instructors */}
+      <Paper sx={{ p: 3, maxWidth: '900px', mx: 'auto' }}>
+        {/* Course Header - visible to all users */}
+        <Box>
+          <Typography variant='h4' component='h1' gutterBottom>
+            {course.title}
+          </Typography>
+
+          <Typography variant='body1' color='text.secondary' gutterBottom>
+            Instructor: {course.instructor?.fullName || course.instructor}
+          </Typography>
+          <Typography variant='body1' paragraph>
+            {course.description}
+          </Typography>
+
+          {/* Progress Bar - only for enrolled users or instructors */}
           {(isEnrolled || isInstructor) && (
-            <Box sx={{ display: { xs: 'none', md: 'block' }, flexShrink: 0 }}>
-              <CourseSidebar
-                courseId={id}
-                // Remove progress props so sidebar can handle its own progress data and receive update events
-              />
+            <Box sx={{ my: 2, width: '100%' }}>
+              <ProgressBar percentage={progressPercentage} />
             </Box>
           )}
 
-          {/* Main Content Area */}
-          <Box
-            sx={{
-              width: '100%',
-              maxWidth: '100%',
-              pb: 3,
-              boxSizing: 'border-box',
-              flex: '1 1 auto',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-            }}
-          >
-            {/* Course Header - visible to all users */}
-            <Box sx={{ p: 3, width: '100%', maxWidth: '900px' }}>
-              <Typography variant='h4' component='h1' gutterBottom>
-                {course.title}
+          {/* Course price and enrollment/payment buttons - only for non-enrolled users */}
+          {!isEnrolled && !isInstructor && (
+            <Box
+              sx={{
+                mb: 4,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <Typography variant='h5' color='primary'>
+                ${course.price}
               </Typography>
 
-              <Typography variant='body1' color='text.secondary' gutterBottom>
-                Instructor: {course.instructor?.fullName || course.instructor}
-              </Typography>
-              <Typography variant='body1' paragraph>
-                {course.description}
-              </Typography>
-
-              {/* Progress Bar - only for enrolled users or instructors */}
-              {(isEnrolled || isInstructor) && (
-                <Box sx={{ my: 2, width: '100%' }}>
-                  <ProgressBar percentage={progressPercentage} />
-                </Box>
-              )}
-
-              {/* Course price and enrollment/payment buttons - only for non-enrolled users */}
-              {!isEnrolled && !isInstructor && (
-                <Box
-                  sx={{
-                    mb: 4,
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
+              {course.price > 0 ? (
+                <Button
+                  variant='contained'
+                  color='primary'
+                  onClick={handlePayment}
+                  disabled={processing}
                 >
-                  <Typography variant='h5' color='primary'>
-                    ${course.price}
-                  </Typography>
-
-                  {course.price > 0 ? (
-                    <Button
-                      variant='contained'
-                      color='primary'
-                      onClick={handlePayment}
-                      disabled={processing}
-                    >
-                      {processing ? 'Processing...' : 'Buy Course'}
-                    </Button>
-                  ) : (
-                    <Button
-                      variant='contained'
-                      color='primary'
-                      onClick={handleEnrollFree}
-                      disabled={processing}
-                    >
-                      {processing ? 'Processing...' : 'Enroll for Free'}
-                    </Button>
-                  )}
-                </Box>
-              )}
-
-              {/* Payment status messages */}
-              {paymentStatus && (
-                <Box sx={{ mb: 3 }}>
-                  <Alert severity={paymentStatus.type}>
-                    {paymentStatus.message}
-                  </Alert>
-                </Box>
-              )}
-
-              {/* Access restriction alert for non-enrolled users */}
-              {!isEnrolled && !isInstructor && (
-                <Alert severity='info' sx={{ mb: 3 }}>
-                  Please enroll to access course content
-                </Alert>
+                  {processing ? 'Processing...' : 'Buy Course'}
+                </Button>
+              ) : (
+                <Button
+                  variant='contained'
+                  color='primary'
+                  onClick={handleEnrollFree}
+                  disabled={processing}
+                >
+                  {processing ? 'Processing...' : 'Enroll for Free'}
+                </Button>
               )}
             </Box>
+          )}
 
-            {/* Course Description in Markdown */}
-            {course.markdownDescription && (
+          {/* Payment status messages */}
+          {paymentStatus && (
+            <Box sx={{ mb: 3 }}>
+              <Alert severity={paymentStatus.type}>
+                {paymentStatus.message}
+              </Alert>
+            </Box>
+          )}
+
+          {/* Access restriction alert for non-enrolled users */}
+          {!isEnrolled && !isInstructor && (
+            <Alert severity='info' sx={{ mb: 3 }}>
+              Please enroll to access course content
+            </Alert>
+          )}
+        </Box>
+
+        {/* Course Description in Markdown */}
+        {course.markdownDescription && (
+          <Box sx={{ mb: 2 }}>
+            <Box
+              sx={{
+                bgcolor: 'white',
+                border: '1px solid #e0e0e0',
+                p: 3,
+                width: '100%',
+                boxSizing: 'border-box',
+                overflowX: 'hidden',
+                textAlign: 'left',
+              }}
+            >
+              <Typography variant='h6' gutterBottom fontWeight='bold'>
+                About this course
+              </Typography>
+
               <Box
                 sx={{
-                  px: 3,
-                  mb: 2,
-                  boxSizing: 'border-box',
+                  overflow: 'hidden',
+                  maxWidth: '100%',
                   width: '100%',
-                  maxWidth: '900px',
-                }}
-              >
-                <Box
-                  sx={{
-                    bgcolor: 'white',
-                    border: '1px solid #e0e0e0',
-                    p: 3,
-                    width: '100%',
+                  wordWrap: 'break-word',
+                  '& *': {
+                    maxWidth: '100%',
                     boxSizing: 'border-box',
-                    overflowX: 'hidden',
-                    textAlign: 'left',
-                  }}
-                >
-                  <Typography variant='h6' gutterBottom fontWeight='bold'>
-                    About this course
-                  </Typography>
-
-                  <Box
-                    sx={{
-                      overflow: 'hidden',
-                      maxWidth: '100%',
-                      width: '100%',
-                      wordWrap: 'break-word',
-                      '& *': {
-                        maxWidth: '100%',
-                        boxSizing: 'border-box',
-                      },
-                    }}
-                    dangerouslySetInnerHTML={{
-                      __html: convertMarkdownToHTML(course.markdownDescription),
-                    }}
-                  />
-                </Box>
-              </Box>
-            )}
-
-            {/* Only show mobile version of course contents for enrolled users */}
-            {(isEnrolled || isInstructor) && (
-              <Box
-                sx={{
-                  display: { xs: 'block', md: 'none' },
-                  px: 3,
-                  mb: 3,
-                  width: '100%',
-                  maxWidth: '900px',
-                  boxSizing: 'border-box',
+                  },
                 }}
-              >
-                <Box
-                  sx={{
-                    bgcolor: 'white',
-                    border: '1px solid #e0e0e0',
-                    p: 3,
-                    width: '100%',
-                    boxSizing: 'border-box',
-                    overflowX: 'hidden',
-                  }}
-                >
-                  <Typography variant='h6' gutterBottom fontWeight='bold'>
-                    Course Sections
-                  </Typography>
-                  <List sx={{ p: 0, width: '100%' }}>
-                    {course?.sections?.map((section, index) => {
-                      const sectionId = section._id || section.id;
-                      const contentCount = section.content?.length || 0;
-
-                      // Get the first content item of this section for the URL
-                      const firstContent = section.content?.[0];
-                      const firstContentId =
-                        firstContent?._id || firstContent?.id;
-
-                      // Generate URL - if section has content, link to first content, otherwise to section
-                      const sectionUrl = firstContentId
-                        ? `/courses/${id}/sections/${sectionId}/content/${firstContentId}`
-                        : `/courses/${id}/sections/${sectionId}`;
-
-                      // Check if all content in this section is completed
-                      const hasCompletedContent =
-                        Array.isArray(progress) &&
-                        section.content?.length > 0 &&
-                        section.content.every((contentItem) => {
-                          const contentId = contentItem._id || contentItem.id;
-                          return progress.some(
-                            (p) => p.contentId === contentId && p.completed,
-                          );
-                        });
-
-                      return (
-                        <ListItem
-                          key={sectionId}
-                          component={Link}
-                          to={sectionUrl}
-                          sx={{
-                            borderBottom:
-                              index < course.sections.length - 1
-                                ? '1px solid #eee'
-                                : 'none',
-                            py: 1.5,
-                            px: 0,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            textDecoration: 'none',
-                            color: 'inherit',
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              flex: 1,
-                            }}
-                          >
-                            <Box>
-                              <Typography sx={{ fontWeight: 500 }}>
-                                {section.title}
-                              </Typography>
-                              <Typography
-                                variant='body2'
-                                color='text.secondary'
-                              >
-                                {contentCount}{' '}
-                                {contentCount === 1 ? 'item' : 'items'}
-                                {section.description &&
-                                  ` • ${section.description}`}
-                              </Typography>
-                            </Box>
-                          </Box>
-                          {hasCompletedContent && (
-                            <CheckCircleIcon color='success' fontSize='small' />
-                          )}
-                        </ListItem>
-                      );
-                    })}
-                  </List>
-                </Box>
-              </Box>
-            )}
+                dangerouslySetInnerHTML={{
+                  __html: convertMarkdownToHTML(course.markdownDescription),
+                }}
+              />
+            </Box>
           </Box>
-        </>
-      )}
+        )}
+
+        {/* Only show mobile version of course contents for enrolled users */}
+        {(isEnrolled || isInstructor) && (
+          <Box
+            sx={{
+              display: { xs: 'block', md: 'none' },
+              mb: 3,
+            }}
+          >
+            <Box
+              sx={{
+                bgcolor: 'white',
+                border: '1px solid #e0e0e0',
+                p: 3,
+                width: '100%',
+                boxSizing: 'border-box',
+                overflowX: 'hidden',
+              }}
+            >
+              <Typography variant='h6' gutterBottom fontWeight='bold'>
+                Course Sections
+              </Typography>
+              <List sx={{ p: 0, width: '100%' }}>
+                {course?.sections?.map((section, index) => {
+                  const sectionId = section._id || section.id;
+                  const contentCount = section.content?.length || 0;
+
+                  // Get the first content item of this section for the URL
+                  const firstContent = section.content?.[0];
+                  const firstContentId = firstContent?._id || firstContent?.id;
+
+                  // Generate URL - if section has content, link to first content, otherwise to section
+                  const sectionUrl = firstContentId
+                    ? `/courses/${id}/sections/${sectionId}/content/${firstContentId}`
+                    : `/courses/${id}/sections/${sectionId}`;
+
+                  // Check if all content in this section is completed
+                  const hasCompletedContent =
+                    Array.isArray(progress) &&
+                    section.content?.length > 0 &&
+                    section.content.every((contentItem) => {
+                      const contentId = contentItem._id || contentItem.id;
+                      return progress.some(
+                        (p) => p.contentId === contentId && p.completed,
+                      );
+                    });
+
+                  return (
+                    <ListItem
+                      key={sectionId}
+                      component={Link}
+                      to={sectionUrl}
+                      sx={{
+                        borderBottom:
+                          index < course.sections.length - 1
+                            ? '1px solid #eee'
+                            : 'none',
+                        py: 1.5,
+                        px: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        textDecoration: 'none',
+                        color: 'inherit',
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          flex: 1,
+                        }}
+                      >
+                        <Box>
+                          <Typography sx={{ fontWeight: 500 }}>
+                            {section.title}
+                          </Typography>
+                          <Typography variant='body2' color='text.secondary'>
+                            {contentCount}{' '}
+                            {contentCount === 1 ? 'item' : 'items'}
+                            {section.description && ` • ${section.description}`}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      {hasCompletedContent && (
+                        <CheckCircleIcon color='success' fontSize='small' />
+                      )}
+                    </ListItem>
+                  );
+                })}
+              </List>
+            </Box>
+          </Box>
+        )}
+      </Paper>
     </Box>
   );
 }

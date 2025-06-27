@@ -6,5 +6,5 @@
 ✅ Fix browser bottom bar not hiding on iOS Safari - COMPLETED
 ✅ Fix progress bar not updating without refreshing the page - COMPLETED
 ✅ Hide sidebar on mobile after selecting a content - COMPLETED
-- Fix course details page misaligned center
+✅ Fix course details page misaligned center - COMPLETED
 - Remove content page margin at the top and padding at the bottom
