@@ -324,7 +324,7 @@ function ContentRenderer({
   };
 
   return (
-    <Box sx={{ mt: 3, position: 'relative', pb: 4 }}>
+    <Box sx={{ position: 'relative' }}>
       {/* Video content rendering */}
       {type === 'video' && videoUrl && (
         <Box sx={{ mb: 4 }} data-testid='video-content'>
